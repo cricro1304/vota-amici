@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useRef } from 'react';
 import { PlayerAvatar } from './PlayerAvatar';
 import { submitVote, revealResults } from '@/lib/gameActions';
 import { toast } from 'sonner';
@@ -16,37 +15,36 @@ interface VotingScreenProps {
 }
 
 export function VotingScreen({ room, players, currentRound, question, hasVoted, playerId, votes }: VotingScreenProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submittedRef = useRef(false);
 
-  const otherPlayers = players.filter(p => p.id !== playerId);
   const totalPlayers = players.length;
   const votedCount = votes.length;
-  const allVoted = votedCount >= totalPlayers;
-  const isHost = room.host_player_id === playerId;
 
-  const handleVote = async () => {
-    if (!selectedId || !currentRound) return;
+  const handleVote = async (votedForId: string) => {
+    if (submittedRef.current || submitting) return;
+    submittedRef.current = true;
     setSubmitting(true);
     try {
-      await submitVote(currentRound.id, playerId, selectedId);
+      await submitVote(currentRound.id, playerId, votedForId);
+      setSubmitted(true);
+
+      // Check if all players have now voted (this vote + existing)
+      const newVoteCount = votedCount + 1;
+      if (newVoteCount >= totalPlayers) {
+        console.log('All players voted, auto-revealing results');
+        await revealResults(currentRound.id, room.id);
+      }
     } catch (e: any) {
       toast.error(e.message);
+      submittedRef.current = false;
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Auto-reveal if all voted and host
-  const handleReveal = async () => {
-    try {
-      await revealResults(currentRound.id, room.id);
-    } catch (e: any) {
-      toast.error(e.message);
-    }
-  };
-
-  if (hasVoted) {
+  if (hasVoted || submitted) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full animate-pop-in">
         <div className="text-5xl animate-float">✅</div>
@@ -62,15 +60,17 @@ export function VotingScreen({ room, players, currentRound, question, hasVoted, 
             style={{ width: `${(votedCount / totalPlayers) * 100}%` }}
           />
         </div>
-        {isHost && allVoted && (
-          <Button
-            size="lg"
-            className="h-14 text-lg font-display font-bold rounded-2xl w-full max-w-xs"
-            onClick={handleReveal}
-          >
-            📊 Mostra Risultati
-          </Button>
-        )}
+      </div>
+    );
+  }
+
+  if (submitting) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full animate-pop-in">
+        <div className="text-5xl animate-float">⏳</div>
+        <h2 className="text-xl font-display font-bold text-foreground text-center">
+          Invio del voto...
+        </h2>
       </div>
     );
   }
@@ -87,40 +87,23 @@ export function VotingScreen({ room, players, currentRound, question, hasVoted, 
         </h2>
       </div>
 
-      {/* Voting options */}
+      {/* Voting options - includes all players (self-vote allowed) */}
       <div className="grid grid-cols-2 gap-4 w-full">
-        {otherPlayers.map((p, i) => {
+        {players.map((p) => {
           const playerIndex = players.findIndex(pl => pl.id === p.id);
-          const isSelected = selectedId === p.id;
           return (
             <button
               key={p.id}
-              onClick={() => setSelectedId(p.id)}
-              className={`
-                flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200
-                ${isSelected
-                  ? 'bg-primary/10 ring-2 ring-primary scale-105'
-                  : 'bg-card card-shadow hover:scale-105 active:scale-95'
-                }
-              `}
+              onClick={() => handleVote(p.id)}
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 bg-card card-shadow hover:scale-105 active:scale-95"
             >
               <PlayerAvatar name={p.name} index={playerIndex} size="lg" />
-              <span className="font-bold text-foreground">{p.name}</span>
+              <span className="font-bold text-foreground">
+                {p.name}{p.id === playerId ? ' (Tu)' : ''}
+              </span>
             </button>
           );
         })}
-      </div>
-
-      {/* Submit */}
-      <div className="mt-auto w-full max-w-xs">
-        <Button
-          size="lg"
-          className="w-full h-14 text-lg font-display font-bold rounded-2xl"
-          onClick={handleVote}
-          disabled={!selectedId || submitting}
-        >
-          {submitting ? '⏳ Votando...' : '🗳️ Vota!'}
-        </Button>
       </div>
     </div>
   );
