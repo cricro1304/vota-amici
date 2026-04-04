@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -26,34 +26,44 @@ export function useGameState(roomId: string | null, playerId: string | null) {
     allVotes: [],
   });
   const [loading, setLoading] = useState(true);
-
-  const fetchRoom = useCallback(async () => {
-    if (!roomId) return;
-    const { data } = await supabase.from('rooms').select('*').eq('id', roomId).single();
-    if (data) setState(s => ({ ...s, room: data }));
-  }, [roomId]);
+  const currentRoundIdRef = useRef<string | null>(null);
 
   const fetchPlayers = useCallback(async () => {
     if (!roomId) return;
-    const { data } = await supabase.from('players').select('*').eq('room_id', roomId).order('created_at');
+    const { data, error } = await supabase.from('players').select('*').eq('room_id', roomId).order('created_at');
+    if (error) console.error('fetchPlayers error:', error);
     if (data) setState(s => ({ ...s, players: data }));
   }, [roomId]);
 
+  const fetchVotesForRound = useCallback(async (roundId: string) => {
+    const { data, error } = await supabase.from('votes').select('*').eq('round_id', roundId);
+    if (error) console.error('fetchVotes error:', error);
+    if (data) setState(s => ({ ...s, votes: data }));
+  }, []);
+
   const fetchCurrentRound = useCallback(async () => {
     if (!roomId) return;
-    const { data: room } = await supabase.from('rooms').select('*').eq('id', roomId).single();
+    // Always get fresh room state
+    const { data: room, error: roomErr } = await supabase.from('rooms').select('*').eq('id', roomId).single();
+    if (roomErr) console.error('fetchRoom error:', roomErr);
     if (!room) return;
+
     setState(s => ({ ...s, room }));
 
-    if (room.status === 'in_round' || room.status === 'results') {
-      const { data: round } = await supabase
+    if ((room.status === 'in_round' || room.status === 'results') && room.current_round > 0) {
+      // Get the round matching current_round number
+      const { data: round, error: roundErr } = await supabase
         .from('rounds')
         .select('*')
         .eq('room_id', roomId)
         .eq('round_number', room.current_round)
         .single();
+      if (roundErr) console.error('fetchRound error:', roundErr);
+
       if (round) {
+        currentRoundIdRef.current = round.id;
         setState(s => ({ ...s, currentRound: round }));
+
         // Fetch question
         const { data: question } = await supabase
           .from('questions')
@@ -61,12 +71,16 @@ export function useGameState(roomId: string | null, playerId: string | null) {
           .eq('id', round.question_id)
           .single();
         if (question) setState(s => ({ ...s, currentQuestion: question.text }));
-        // Fetch votes for this round
-        const { data: votes } = await supabase.from('votes').select('*').eq('round_id', round.id);
-        if (votes) setState(s => ({ ...s, votes }));
+
+        // Fetch votes ONLY for this round
+        await fetchVotesForRound(round.id);
       }
+    } else {
+      // Reset round state when not in a round
+      currentRoundIdRef.current = null;
+      setState(s => ({ ...s, currentRound: null, votes: [], currentQuestion: null }));
     }
-  }, [roomId]);
+  }, [roomId, fetchVotesForRound]);
 
   const fetchAllVotes = useCallback(async () => {
     if (!roomId) return;
@@ -81,41 +95,51 @@ export function useGameState(roomId: string | null, playerId: string | null) {
   useEffect(() => {
     if (!roomId) return;
     setLoading(true);
-    Promise.all([fetchRoom(), fetchPlayers(), fetchCurrentRound(), fetchAllVotes()]).finally(() =>
+    Promise.all([fetchPlayers(), fetchCurrentRound(), fetchAllVotes()]).finally(() =>
       setLoading(false)
     );
-  }, [roomId, fetchRoom, fetchPlayers, fetchCurrentRound, fetchAllVotes]);
+  }, [roomId, fetchPlayers, fetchCurrentRound, fetchAllVotes]);
 
   // Realtime subscriptions
   useEffect(() => {
     if (!roomId) return;
 
-    const roomChannel = supabase
+    const channel = supabase
       .channel(`room-${roomId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, () => {
-        fetchRoom();
+        console.log('[realtime] room changed');
         fetchCurrentRound();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` }, () => {
+        console.log('[realtime] players changed');
         fetchPlayers();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rounds', filter: `room_id=eq.${roomId}` }, () => {
+        console.log('[realtime] rounds changed');
         fetchCurrentRound();
       })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, () => {
-        fetchCurrentRound();
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, (payload) => {
+        console.log('[realtime] vote inserted', payload);
+        // Only refetch votes for current round
+        const roundId = currentRoundIdRef.current;
+        if (roundId) {
+          fetchVotesForRound(roundId);
+        }
         fetchAllVotes();
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(roomChannel);
+      supabase.removeChannel(channel);
     };
-  }, [roomId, fetchRoom, fetchPlayers, fetchCurrentRound, fetchAllVotes]);
+  }, [roomId, fetchPlayers, fetchCurrentRound, fetchVotesForRound, fetchAllVotes]);
 
   const isHost = state.room?.host_player_id === playerId;
   const currentPlayer = state.players.find(p => p.id === playerId);
-  const hasVoted = state.votes.some(v => v.voter_id === playerId);
+  // Derive hasVoted from DB votes for current round
+  const hasVoted = state.currentRound
+    ? state.votes.some(v => v.voter_id === playerId && v.round_id === state.currentRound?.id)
+    : false;
 
   return { ...state, loading, isHost, currentPlayer, hasVoted, refetch: fetchCurrentRound };
 }
