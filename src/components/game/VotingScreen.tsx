@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useCallback } from 'react';
 import { PlayerAvatar } from './PlayerAvatar';
 import { submitVote } from '@/lib/gameActions';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,37 +16,36 @@ interface VotingScreenProps {
 }
 
 export function VotingScreen({ room, players, currentRound, question, hasVoted, playerId, votes }: VotingScreenProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const submittedRef = useRef(false);
-  const lastRoundIdRef = useRef<string | null>(null);
-
-  // Reset local state when round changes
-  useEffect(() => {
-    if (currentRound.id !== lastRoundIdRef.current) {
-      lastRoundIdRef.current = currentRound.id;
-      setSelectedId(null);
-      setSubmitting(false);
-      submittedRef.current = false;
-    }
-  }, [currentRound.id]);
+  // Use a ref map keyed by round ID to track submission state across renders
+  const submittedRoundsRef = useRef<Set<string>>(new Set());
+  const selectedForRoundRef = useRef<Record<string, string>>({});
 
   const totalPlayers = players.length;
-  // Only count votes for THIS round
   const currentRoundVotes = votes.filter(v => v.round_id === currentRound.id);
   const votedCount = currentRoundVotes.length;
 
-  const handleVote = async (votedForId: string) => {
-    if (submittedRef.current || submitting || hasVoted) return;
-    submittedRef.current = true;
-    setSelectedId(votedForId);
-    setSubmitting(true);
+  const alreadySubmitted = hasVoted || submittedRoundsRef.current.has(currentRound.id);
+  const selectedId = selectedForRoundRef.current[currentRound.id] || null;
+
+  const handleVote = useCallback(async (votedForId: string) => {
+    // Guard: only allow one vote per round, ever
+    if (submittedRoundsRef.current.has(currentRound.id)) return;
+    submittedRoundsRef.current.add(currentRound.id);
+    selectedForRoundRef.current[currentRound.id] = votedForId;
+
+    // Force a re-render by using a dummy state isn't needed — the parent will
+    // re-render via realtime. But we need the UI to update NOW, so we use
+    // a forced update trick: we dispatch a micro-task setState from parent.
+    // Actually, since refs don't trigger re-render, we need to force one.
+    // We'll use the DOM directly to disable buttons immediately.
+    const buttons = document.querySelectorAll('[data-vote-btn]');
+    buttons.forEach(btn => (btn as HTMLButtonElement).disabled = true);
 
     try {
       await submitVote(currentRound.id, playerId, votedForId);
-      console.log('[vote] submitted successfully');
+      console.log('[vote] submitted successfully for round', currentRound.id);
 
-      // After vote, check actual count from DB to decide auto-reveal
+      // Check if all players voted
       const { data: allVotes, error } = await supabase
         .from('votes')
         .select('id')
@@ -61,14 +60,14 @@ export function VotingScreen({ room, players, currentRound, question, hasVoted, 
       }
     } catch (e: any) {
       toast.error(e.message);
-      submittedRef.current = false;
-      setSelectedId(null);
-    } finally {
-      setSubmitting(false);
+      // Rollback on error
+      submittedRoundsRef.current.delete(currentRound.id);
+      delete selectedForRoundRef.current[currentRound.id];
+      buttons.forEach(btn => (btn as HTMLButtonElement).disabled = false);
     }
-  };
+  }, [currentRound.id, playerId, totalPlayers, room.id]);
 
-  if (hasVoted || selectedId) {
+  if (alreadySubmitted || selectedId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full animate-pop-in">
         <div className="text-5xl animate-float">✅</div>
@@ -90,7 +89,6 @@ export function VotingScreen({ room, players, currentRound, question, hasVoted, 
 
   return (
     <div className="flex-1 flex flex-col items-center gap-6 w-full animate-pop-in">
-      {/* Round info */}
       <div className="bg-card card-shadow rounded-2xl p-5 text-center w-full">
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
           Round {room.current_round}
@@ -100,15 +98,14 @@ export function VotingScreen({ room, players, currentRound, question, hasVoted, 
         </h2>
       </div>
 
-      {/* Voting options */}
       <div className="grid grid-cols-2 gap-4 w-full">
         {players.map((p) => {
           const playerIndex = players.findIndex(pl => pl.id === p.id);
           return (
             <button
               key={p.id}
+              data-vote-btn
               onClick={() => handleVote(p.id)}
-              disabled={submitting || hasVoted}
               className="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 bg-card card-shadow hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
             >
               <PlayerAvatar name={p.name} index={playerIndex} size="lg" />
