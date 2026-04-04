@@ -1,67 +1,27 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from './PlayerAvatar';
 import type { Tables } from '@/integrations/supabase/types';
 
 interface EndScreenProps {
   players: Tables<'players'>[];
   allVotes: Tables<'votes'>[];
-  rounds?: Tables<'rounds'>[];
-  questions?: Tables<'questions'>[];
 }
 
-type RecapItem = {
-  roundNumber: number;
-  questionText: string;
-  winnerNames: string[];
-  winnerVotes: number;
-};
-
-export function EndScreen({
-  players,
-  allVotes,
-  rounds = [],
-  questions = [],
-}: EndScreenProps) {
+export function EndScreen({ players, allVotes }: EndScreenProps) {
   const navigate = useNavigate();
 
-  const recap = useMemo<RecapItem[]>(() => {
-    const questionMap = new Map(questions.map((q) => [q.id, q.text]));
-    const playerMap = new Map(players.map((p) => [p.id, p.name]));
+  // Tally all votes across rounds
+  const voteCounts: Record<string, number> = {};
+  players.forEach(p => (voteCounts[p.id] = 0));
+  allVotes.forEach(v => {
+    if (voteCounts[v.voted_for_id] !== undefined) {
+      voteCounts[v.voted_for_id]++;
+    }
+  });
 
-    return [...rounds]
-      .sort((a, b) => a.round_number - b.round_number)
-      .map((round) => {
-        const roundVotes = allVotes.filter((v) => v.round_id === round.id);
-
-        const counts: Record<string, number> = {};
-        for (const vote of roundVotes) {
-          counts[vote.voted_for_id] = (counts[vote.voted_for_id] || 0) + 1;
-        }
-
-        const maxVotes =
-          Object.keys(counts).length > 0 ? Math.max(...Object.values(counts)) : 0;
-
-        const winnerIds =
-          maxVotes > 0
-            ? Object.entries(counts)
-                .filter(([_, count]) => count === maxVotes)
-                .map(([playerId]) => playerId)
-            : [];
-
-        const winnerNames =
-          winnerIds.length > 0
-            ? winnerIds.map((id) => playerMap.get(id) || 'Sconosciuto')
-            : ['Nessuno'];
-
-        return {
-          roundNumber: round.round_number,
-          questionText: questionMap.get(round.question_id) || `Round ${round.round_number}`,
-          winnerNames,
-          winnerVotes: maxVotes,
-        };
-      });
-  }, [players, allVotes, rounds, questions]);
+  const sorted = [...players].sort((a, b) => (voteCounts[b.id] || 0) - (voteCounts[a.id] || 0));
+  const maxVotes = sorted.length > 0 ? voteCounts[sorted[0].id] : 0;
 
   const handleNewGame = () => {
     sessionStorage.clear();
@@ -71,33 +31,38 @@ export function EndScreen({
   return (
     <div className="flex-1 flex flex-col items-center gap-6 w-full animate-pop-in">
       <div className="text-center">
-        <div className="text-5xl mb-2">🏁</div>
+        <div className="text-5xl mb-2">🏆</div>
         <h2 className="text-2xl font-display font-bold text-foreground">
-          Recap Finale
+          Classifica Finale
         </h2>
       </div>
 
       <div className="w-full flex flex-col gap-3">
-        {recap.length > 0 ? (
-          recap.map((item) => (
+        {sorted.map((p, rank) => {
+          const count = voteCounts[p.id] || 0;
+          const isTop = count === maxVotes && count > 0;
+          const playerIndex = players.findIndex(pl => pl.id === p.id);
+          const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : '';
+
+          return (
             <div
-              key={item.roundNumber}
-              className="bg-card card-shadow rounded-2xl p-4"
+              key={p.id}
+              className={`
+                flex items-center gap-4 p-4 rounded-2xl
+                ${isTop ? 'bg-winner/20 winner-glow' : 'bg-card card-shadow'}
+              `}
             >
-              <p className="font-bold text-foreground text-lg leading-relaxed">
-                {item.roundNumber}) {item.questionText}: {item.winnerNames.join(', ')}{' '}
-                <span className="text-primary">({item.winnerVotes} voti)</span>
-              </p>
+              <span className="text-2xl w-8 text-center">{medal || `${rank + 1}.`}</span>
+              <PlayerAvatar name={p.name} index={playerIndex} size="md" isWinner={isTop} />
+              <div className="flex-1">
+                <p className="font-bold text-foreground">{p.name}</p>
+              </div>
+              <span className="text-xl font-display font-bold text-primary">
+                {count}
+              </span>
             </div>
-          ))
-        ) : (
-          <div className="bg-card card-shadow rounded-2xl p-4 text-center">
-            <p className="font-bold text-foreground">Nessun recap disponibile</p>
-            <p className="text-muted-foreground text-sm mt-1">
-              Controlla che rounds e questions vengano passati correttamente a EndScreen.
-            </p>
-          </div>
-        )}
+          );
+        })}
       </div>
 
       <div className="mt-auto w-full max-w-xs">
