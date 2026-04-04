@@ -6,8 +6,8 @@ import type { Tables } from '@/integrations/supabase/types';
 interface EndScreenProps {
   players: Tables<'players'>[];
   allVotes: Tables<'votes'>[];
-  rounds: Tables<'rounds'>[];
-  questions: Tables<'questions'>[];
+  rounds?: Tables<'rounds'>[];
+  questions?: Tables<'questions'>[];
 }
 
 type RecapItem = {
@@ -17,7 +17,12 @@ type RecapItem = {
   winnerVotes: number;
 };
 
-export function EndScreen({ players, allVotes, rounds, questions }: EndScreenProps) {
+export function EndScreen({
+  players,
+  allVotes,
+  rounds = [],
+  questions = [],
+}: EndScreenProps) {
   const navigate = useNavigate();
 
   const recap = useMemo<RecapItem[]>(() => {
@@ -51,7 +56,7 @@ export function EndScreen({ players, allVotes, rounds, questions }: EndScreenPro
 
         return {
           roundNumber: round.round_number,
-          questionText: questionMap.get(round.question_id) || 'Domanda sconosciuta',
+          questionText: questionMap.get(round.question_id) || `Round ${round.round_number}`,
           winnerNames,
           winnerVotes: maxVotes,
         };
@@ -73,17 +78,26 @@ export function EndScreen({ players, allVotes, rounds, questions }: EndScreenPro
       </div>
 
       <div className="w-full flex flex-col gap-3">
-        {recap.map((item) => (
-          <div
-            key={item.roundNumber}
-            className="bg-card card-shadow rounded-2xl p-4"
-          >
-            <p className="font-bold text-foreground text-lg leading-relaxed">
-              {item.roundNumber}) {item.questionText}: {item.winnerNames.join(', ')}{' '}
-              <span className="text-primary">({item.winnerVotes} voti)</span>
+        {recap.length > 0 ? (
+          recap.map((item) => (
+            <div
+              key={item.roundNumber}
+              className="bg-card card-shadow rounded-2xl p-4"
+            >
+              <p className="font-bold text-foreground text-lg leading-relaxed">
+                {item.roundNumber}) {item.questionText}: {item.winnerNames.join(', ')}{' '}
+                <span className="text-primary">({item.winnerVotes} voti)</span>
+              </p>
+            </div>
+          ))
+        ) : (
+          <div className="bg-card card-shadow rounded-2xl p-4 text-center">
+            <p className="font-bold text-foreground">Nessun recap disponibile</p>
+            <p className="text-muted-foreground text-sm mt-1">
+              Controlla che rounds e questions vengano passati correttamente a EndScreen.
             </p>
           </div>
-        ))}
+        )}
       </div>
 
       <div className="mt-auto w-full max-w-xs">
