@@ -186,8 +186,6 @@ export default function Room() {
         <EndScreen
           players={gameState.players}
           allVotes={gameState.allVotes}
-          rounds={gameState.rounds}
-          questions={gameState.questions}
         />
       )}
     </GameLayout>
