@@ -27,7 +27,7 @@ export function VotingScreen({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset stato locale quando cambia round
+  // Reset locale quando cambia round
   useEffect(() => {
     setSelectedId(null);
     setIsSubmitting(false);
@@ -41,10 +41,9 @@ export function VotingScreen({
   );
 
   const votedCountFromDb = currentRoundVotes.length;
-
-  // Conteggio ottimistico: se io ho appena cliccato ma il realtime non è ancora arrivato,
-  // mostro comunque +1 subito.
   const alreadyCountedInDb = currentRoundVotes.some((v) => v.voter_id === playerId);
+
+  // Se ho cliccato io ma il realtime non è ancora arrivato, mostro comunque +1
   const optimisticVotedCount =
     selectedId && !alreadyCountedInDb ? votedCountFromDb + 1 : votedCountFromDb;
 
@@ -53,17 +52,18 @@ export function VotingScreen({
   const autoRevealIfComplete = useCallback(async () => {
     const { data: allVotes, error } = await supabase
       .from('votes')
-      .select('id, voter_id')
+      .select('voter_id')
       .eq('round_id', currentRound.id);
 
     if (error) {
-      console.error('[vote] count check error:', error);
+      console.error('[vote] error while checking vote count:', error);
       return;
     }
 
-    const uniqueVoterIds = new Set((allVotes ?? []).map((v) => v.voter_id));
-    if (uniqueVoterIds.size >= totalPlayers) {
-      console.log('[vote] all players voted, auto-revealing');
+    const uniqueVoters = new Set((allVotes ?? []).map((v) => v.voter_id));
+
+    if (uniqueVoters.size >= totalPlayers) {
+      console.log('[vote] all players voted, auto-revealing results');
       const { revealResults } = await import('@/lib/gameActions');
       await revealResults(currentRound.id, room.id);
     }
@@ -71,9 +71,9 @@ export function VotingScreen({
 
   const handleVote = useCallback(
     async (votedForId: string) => {
-      if (isSubmitting || hasVoted || selectedId) return;
+      if (isSubmitting || alreadySubmitted) return;
 
-      // UI immediata: un click solo
+      // UI immediata: un tap solo
       setSelectedId(votedForId);
       setIsSubmitting(true);
 
@@ -84,27 +84,29 @@ export function VotingScreen({
         console.error('[vote] submit error:', e);
         toast.error(e?.message || 'Errore durante il voto');
         setSelectedId(null);
-      } finally {
         setIsSubmitting(false);
       }
     },
-    [isSubmitting, hasVoted, selectedId, currentRound.id, playerId, autoRevealIfComplete]
+    [isSubmitting, alreadySubmitted, currentRound.id, playerId, autoRevealIfComplete]
   );
 
   if (alreadySubmitted) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full animate-pop-in">
         <div className="text-5xl animate-float">✅</div>
+
         <h2 className="text-xl font-display font-bold text-foreground text-center">
           Voto registrato!
         </h2>
+
         <p className="text-muted-foreground font-semibold text-center">
           In attesa degli altri giocatori... ({optimisticVotedCount}/{totalPlayers})
         </p>
+
         <div className="w-full max-w-xs bg-muted rounded-full h-3 overflow-hidden">
           <div
             className="h-full bg-primary rounded-full transition-all duration-500"
-            style={{ width: `${(optimisticVotedCount / totalPlayers) * 100}%` }}
+            style={{ width: `${totalPlayers > 0 ? (optimisticVotedCount / totalPlayers) * 100 : 0}%` }}
           />
         </div>
       </div>
@@ -117,6 +119,7 @@ export function VotingScreen({
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
           Round {room.current_round}
         </p>
+
         <h2 className="text-2xl font-display font-bold text-foreground">
           {question}
         </h2>
@@ -128,33 +131,32 @@ export function VotingScreen({
           const isSelected = selectedId === p.id;
 
           return (
-            <div
+            <button
               key={p.id}
-              role="button"
-              tabIndex={isSubmitting ? -1 : 0}
-              aria-disabled={isSubmitting}
-              onClick={() => {
-                if (!isSubmitting) handleVote(p.id);
-              }}
-              onKeyDown={(e) => {
-                if (isSubmitting) return;
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleVote(p.id);
-                }
+              type="button"
+              disabled={isSubmitting || alreadySubmitted}
+              onPointerUp={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleVote(p.id);
               }}
               className={[
-                'flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 bg-card card-shadow',
-                isSubmitting ? 'pointer-events-none opacity-60' : 'cursor-pointer hover:scale-105 active:scale-95',
+                'w-full flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200 bg-card card-shadow',
+                'select-none touch-manipulation',
+                'disabled:opacity-60 disabled:pointer-events-none',
+                !isSubmitting && !alreadySubmitted ? 'cursor-pointer hover:scale-105 active:scale-95' : '',
                 isSelected ? 'ring-4 ring-primary scale-105' : '',
               ].join(' ')}
             >
-              <PlayerAvatar name={p.name} index={playerIndex} size="lg" />
-              <span className="font-bold text-foreground text-center">
-                {p.name}
-                {p.id === playerId ? ' (Tu)' : ''}
-              </span>
-            </div>
+              <div className="pointer-events-none w-full flex flex-col items-center gap-2">
+                <PlayerAvatar name={p.name} index={playerIndex} size="lg" />
+
+                <span className="font-bold text-foreground text-center">
+                  {p.name}
+                  {p.id === playerId ? ' (Tu)' : ''}
+                </span>
+              </div>
+            </button>
           );
         })}
       </div>
