@@ -15,15 +15,34 @@ export default function Home() {
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
 
-// handleCreate
-const { room, player } = await createRoom(name.trim());
-localStorage.setItem(`playerId:${room.code}`, player.id); // ← era sessionStorage con chiave sbagliata
-navigate(`/room/${room.code}`);
+  const handleCreate = async () => {
+    if (!name.trim()) return toast.error('Inserisci il tuo nome!');
+    setLoading(true);
+    try {
+      const { room, player } = await createRoom(name.trim());
+      localStorage.setItem(`playerId:${room.code}`, player.id);
+      navigate(`/room/${room.code}`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-// handleJoin
-const { room, player } = await joinRoom(roomCode.trim(), name.trim());
-localStorage.setItem(`playerId:${room.code}`, player.id); // ← era sessionStorage con chiave sbagliata
-navigate(`/room/${room.code}`);
+  const handleJoin = async () => {
+    if (!name.trim()) return toast.error('Inserisci il tuo nome!');
+    if (!roomCode.trim()) return toast.error('Inserisci il codice stanza!');
+    setLoading(true);
+    try {
+      const { room, player } = await joinRoom(roomCode.trim(), name.trim());
+      localStorage.setItem(`playerId:${room.code}`, player.id);
+      navigate(`/room/${room.code}`);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <GameLayout>
