@@ -25,7 +25,7 @@ export default function Room() {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(() => {
     if (!code) return null;
-    return sessionStorage.getItem(`playerId:${code.toUpperCase()}`);
+    return localStorage.getItem(`playerId:${code.toUpperCase()}`);
   });
 
   const [rejoinName, setRejoinName] = useState('');
@@ -75,7 +75,7 @@ export default function Room() {
 
     try {
       const { player } = await joinRoom(normalizedCode, rejoinName.trim());
-      sessionStorage.setItem(storageKey, player.id);
+      localStorage.setItem(storageKey, player.id);
       setPlayerId(player.id);
     } catch (e: any) {
       console.error('[room] rejoin error:', e);
