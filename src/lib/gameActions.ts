@@ -33,6 +33,21 @@ export async function joinRoom(roomCode: string, playerName: string) {
     .single();
 
   if (roomError || !room) throw new Error('Stanza non trovata');
+
+  // Cerca se esiste già un player con questo nome nella stanza
+  const { data: existing } = await supabase
+    .from('players')
+    .select('*')
+    .eq('room_id', room.id)
+    .eq('name', playerName)
+    .maybeSingle();
+
+  if (existing) {
+    // Ritorna il player esistente senza crearne uno nuovo
+    return { room, player: existing };
+  }
+
+  // Solo se la partita è già iniziata E il giocatore non esiste, blocca
   if (room.status !== 'lobby') throw new Error('La partita è già iniziata');
 
   const { data: player, error: playerError } = await supabase
@@ -41,7 +56,7 @@ export async function joinRoom(roomCode: string, playerName: string) {
     .select()
     .single();
 
-  if (playerError || !player) throw new Error('Errore nell\'unirsi alla stanza');
+  if (playerError || !player) throw new Error("Errore nell'unirsi alla stanza");
 
   return { room, player };
 }
