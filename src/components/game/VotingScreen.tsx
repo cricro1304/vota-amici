@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { PlayerAvatar } from './PlayerAvatar';
 import { submitVote } from '@/lib/gameActions';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,12 +26,33 @@ export function VotingScreen({
 }: VotingScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const timerExpiredRef = useRef(false);
+
+  const timerSeconds = (room as any).timer_seconds as number | null;
+  const [timeLeft, setTimeLeft] = useState<number | null>(timerSeconds ?? null);
 
   // Reset locale quando cambia round
   useEffect(() => {
     setSelectedId(null);
     setIsSubmitting(false);
-  }, [currentRound.id]);
+    timerExpiredRef.current = false;
+    setTimeLeft(timerSeconds ?? null);
+  }, [currentRound.id, timerSeconds]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0) return;
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timeLeft !== null && timeLeft > 0]); // restart only when timer is active
 
   const totalPlayers = players.length;
 
@@ -43,7 +64,6 @@ export function VotingScreen({
   const votedCountFromDb = currentRoundVotes.length;
   const alreadyCountedInDb = currentRoundVotes.some((v) => v.voter_id === playerId);
 
-  // Se ho cliccato io ma il realtime non è ancora arrivato, mostro comunque +1
   const optimisticVotedCount =
     selectedId && !alreadyCountedInDb ? votedCountFromDb + 1 : votedCountFromDb;
 
@@ -73,7 +93,6 @@ export function VotingScreen({
     async (votedForId: string) => {
       if (isSubmitting || alreadySubmitted) return;
 
-      // UI immediata: un tap solo
       setSelectedId(votedForId);
       setIsSubmitting(true);
 
@@ -89,6 +108,23 @@ export function VotingScreen({
     },
     [isSubmitting, alreadySubmitted, currentRound.id, playerId, autoRevealIfComplete]
   );
+
+  // Timer expired: auto-reveal (host triggers it)
+  useEffect(() => {
+    if (timeLeft !== 0 || timerExpiredRef.current) return;
+    timerExpiredRef.current = true;
+
+    // If the player hasn't voted, submit a random vote
+    if (!alreadySubmitted && !isSubmitting) {
+      const randomPlayer = players[Math.floor(Math.random() * players.length)];
+      if (randomPlayer) {
+        handleVote(randomPlayer.id);
+      }
+    } else {
+      // Already voted, just try to reveal
+      autoRevealIfComplete();
+    }
+  }, [timeLeft, alreadySubmitted, isSubmitting, players, handleVote, autoRevealIfComplete]);
 
   if (alreadySubmitted) {
     return (
@@ -123,6 +159,20 @@ export function VotingScreen({
         <h2 className="text-2xl font-display font-bold text-foreground">
           {question}
         </h2>
+
+        {timeLeft !== null && (
+          <div className="mt-3 flex flex-col items-center gap-1">
+            <span className={`text-3xl font-display font-bold ${timeLeft <= 3 ? 'text-destructive animate-pulse' : 'text-primary'}`}>
+              ⏱️ {timeLeft}s
+            </span>
+            <div className="w-full max-w-[200px] bg-muted rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${timeLeft <= 3 ? 'bg-destructive' : 'bg-primary'}`}
+                style={{ width: `${timerSeconds ? (timeLeft / timerSeconds) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 w-full">
