@@ -20,7 +20,7 @@ export default function Home() {
     if (!name.trim()) return toast.error('Inserisci il tuo nome!');
     setLoading(true);
     try {
-      const { room, player } = await createRoom(name.trim());
+      const { room, player } = await createRoom(name.trim(), timerEnabled ? 10 : null);
       localStorage.setItem(`playerId:${room.code}`, player.id);
       navigate(`/room/${room.code}`);
     } catch (e: any) {
