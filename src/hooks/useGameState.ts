@@ -14,6 +14,7 @@ interface GameState {
   votes: Vote[];
   currentQuestion: string | null;
   allVotes: Vote[];
+  allRounds: (Round & { questionText?: string })[];
 }
 
 export function useGameState(roomId: string | null, playerId: string | null) {
@@ -24,6 +25,7 @@ export function useGameState(roomId: string | null, playerId: string | null) {
     votes: [],
     currentQuestion: null,
     allVotes: [],
+    allRounds: [],
   });
   const [loading, setLoading] = useState(true);
   const currentRoundIdRef = useRef<string | null>(null);
@@ -84,11 +86,20 @@ export function useGameState(roomId: string | null, playerId: string | null) {
 
   const fetchAllVotes = useCallback(async () => {
     if (!roomId) return;
-    const { data: rounds } = await supabase.from('rounds').select('id').eq('room_id', roomId);
+    const { data: rounds } = await supabase.from('rounds').select('*').eq('room_id', roomId).order('round_number');
     if (!rounds || rounds.length === 0) return;
     const roundIds = rounds.map(r => r.id);
     const { data: votes } = await supabase.from('votes').select('*').in('round_id', roundIds);
-    if (votes) setState(s => ({ ...s, allVotes: votes }));
+
+    // Fetch question texts for all rounds
+    const questionIds = [...new Set(rounds.map(r => r.question_id))];
+    const { data: questions } = await supabase.from('questions').select('id, text').in('id', questionIds);
+    const questionMap: Record<string, string> = {};
+    questions?.forEach(q => { questionMap[q.id] = q.text; });
+
+    const allRounds = rounds.map(r => ({ ...r, questionText: questionMap[r.question_id] || '' }));
+
+    setState(s => ({ ...s, allVotes: votes || [], allRounds }));
   }, [roomId]);
 
   // Initial fetch
