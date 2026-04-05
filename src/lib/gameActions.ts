@@ -1,12 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
 import { generateRoomCode } from './gameUtils';
 
-export async function createRoom(hostName: string) {
+export async function createRoom(hostName: string, timerSeconds: number | null = null) {
   const code = generateRoomCode();
 
   const { data: room, error: roomError } = await supabase
     .from('rooms')
-    .insert({ code, status: 'lobby' })
+    .insert({ code, status: 'lobby', timer_seconds: timerSeconds } as any)
     .select()
     .single();
 

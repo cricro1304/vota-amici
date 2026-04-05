@@ -14,6 +14,7 @@ export default function Home() {
   const [name, setName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [timerEnabled, setTimerEnabled] = useState(false);
 
   const handleCreate = async () => {
     if (!name.trim()) return toast.error('Inserisci il tuo nome!');
