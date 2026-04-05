@@ -6,11 +6,14 @@ export async function createRoom(hostName: string, timerSeconds: number | null =
 
   const { data: room, error: roomError } = await supabase
     .from('rooms')
-    .insert({ code, status: 'lobby', timer_seconds: timerSeconds } as any)
+    .insert({ code, status: 'lobby', timer_seconds: timerSeconds })
     .select()
     .single();
 
-  if (roomError || !room) throw new Error('Errore nella creazione della stanza');
+  if (roomError || !room) {
+    console.error('Room creation error:', roomError);
+    throw new Error('Errore nella creazione della stanza');
+  }
 
   const { data: player, error: playerError } = await supabase
     .from('players')
