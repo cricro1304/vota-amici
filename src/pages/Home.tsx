@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { GameLayout } from '@/components/game/GameLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { createRoom, joinRoom } from '@/lib/gameActions';
 import { toast } from 'sonner';
 
@@ -88,6 +90,16 @@ export default function Home() {
               maxLength={20}
               autoFocus
             />
+            <div className="flex items-center justify-between bg-card rounded-2xl p-4 card-shadow">
+              <Label htmlFor="timer-toggle" className="font-semibold text-foreground cursor-pointer">
+                ⏱️ Timer 10 secondi
+              </Label>
+              <Switch
+                id="timer-toggle"
+                checked={timerEnabled}
+                onCheckedChange={setTimerEnabled}
+              />
+            </div>
             <Button
               size="lg"
               className="h-14 text-lg font-display font-bold rounded-2xl"
