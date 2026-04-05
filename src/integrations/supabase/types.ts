@@ -101,6 +101,7 @@ export type Database = {
           host_player_id: string | null
           id: string
           status: string
+          timer_seconds: number | null
         }
         Insert: {
           code: string
@@ -109,6 +110,7 @@ export type Database = {
           host_player_id?: string | null
           id?: string
           status?: string
+          timer_seconds?: number | null
         }
         Update: {
           code?: string
@@ -117,6 +119,7 @@ export type Database = {
           host_player_id?: string | null
           id?: string
           status?: string
+          timer_seconds?: number | null
         }
         Relationships: [
           {
