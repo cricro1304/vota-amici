@@ -44,7 +44,7 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
     if (revealedCount >= sorted.length) return;
     const timer = setTimeout(() => {
       setRevealedCount(prev => prev + 1);
-    }, revealedCount === 0 ? 500 : 1000);
+    }, revealedCount === 0 ? 500 : 2000);
     return () => clearTimeout(timer);
   }, [revealedCount, sorted.length]);
 
