@@ -79,15 +79,17 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
 
       {/* Results - revealed one by one from last to first */}
       <div className="w-full flex flex-col gap-3">
-        {sorted.map((p, index) => {
-          const isVisible = index < revealedCount;
-          if (!isVisible) return null;
+        {/* Render revealed players from last place to first (reverse order) */}
+        {Array.from({ length: revealedCount }).map((_, revealIndex) => {
+          // Reveal from the end of sorted array (last place first)
+          const sortedIndex = sorted.length - 1 - revealIndex;
+          const p = sorted[sortedIndex];
+          if (!p) return null;
 
           const count = voteCounts[p.id] || 0;
           const isWinner = allRevealed && count === maxVotes && count > 0;
           const playerIndex = players.findIndex(pl => pl.id === p.id);
-          // Display position from bottom: last revealed = last place visually shown first
-          const position = sorted.length - index;
+          const position = sortedIndex + 1;
 
           return (
             <div
