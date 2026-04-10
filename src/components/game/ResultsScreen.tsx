@@ -78,7 +78,7 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
       </div>
 
       {/* Results - revealed one by one from last to first */}
-      <div className="w-full flex flex-col gap-3">
+      <div className="w-full flex flex-col-reverse gap-3">
         {/* Render revealed players from last place to first (reverse order) */}
         {Array.from({ length: revealedCount }).map((_, revealIndex) => {
           // Reveal from the end of sorted array (last place first)
