@@ -56,7 +56,7 @@ export default function Home() {
             Chi è il più...?
           </h2>
           <p className="text-muted-foreground mt-2 font-medium">
-            Il gioco di voto tra amici!
+            Scopri cosa pensano davvero di te i tuoi amici 👀
           </p>
         </div>
 
