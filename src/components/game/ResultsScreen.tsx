@@ -77,51 +77,59 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
         </h2>
       </div>
 
-      {/* Results - revealed one by one from last to first */}
-      <div className="w-full flex flex-col-reverse gap-3">
-        {/* Render revealed players from last place to first (reverse order) */}
-        {Array.from({ length: revealedCount }).map((_, revealIndex) => {
-          // Reveal from the end of sorted array (last place first)
-          const sortedIndex = sorted.length - 1 - revealIndex;
-          const p = sorted[sortedIndex];
-          if (!p) return null;
+      {/* Results - revealed one by one from last to first, displayed 1st at top */}
+      <div className="w-full flex flex-col gap-3">
+        {(() => {
+          const revealedPlayers: { p: typeof sorted[0]; sortedIndex: number }[] = [];
+          for (let i = 0; i < revealedCount; i++) {
+            const sortedIndex = sorted.length - 1 - i;
+            if (sorted[sortedIndex]) {
+              revealedPlayers.push({ p: sorted[sortedIndex], sortedIndex });
+            }
+          }
+          // Sort by position so 1° is at top, last° at bottom
+          revealedPlayers.sort((a, b) => a.sortedIndex - b.sortedIndex);
 
-          const count = voteCounts[p.id] || 0;
-          const isWinner = allRevealed && count === maxVotes && count > 0;
-          const playerIndex = players.findIndex(pl => pl.id === p.id);
-          const position = sortedIndex + 1;
+          return revealedPlayers.map(({ p, sortedIndex }) => {
+            const count = voteCounts[p.id] || 0;
+            const isWinner = allRevealed && count === maxVotes && count > 0;
+            const playerIndex = players.findIndex(pl => pl.id === p.id);
+            const position = sortedIndex + 1;
+            const isLastRevealed = sortedIndex === sorted.length - revealedCount;
 
-          return (
-            <div
-              key={p.id}
-              className={`
-                flex items-center gap-4 p-4 rounded-2xl transition-all duration-500 animate-pop-in
-                ${isWinner ? 'bg-winner/20 winner-glow' : 'bg-card card-shadow'}
-              `}
-            >
-              <span className="text-lg font-bold text-muted-foreground w-6 text-center">
-                {position}°
-              </span>
-              <PlayerAvatar name={p.name} index={playerIndex} size="md" isWinner={isWinner} />
-              <div className="flex-1">
-                <p className="font-bold text-foreground">
-                  {p.name} {isWinner && '🏆'}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${isWinner ? 'bg-winner' : 'bg-primary/50'}`}
-                      style={{ width: votes.length > 0 ? `${(count / votes.length) * 100}%` : '0%' }}
-                    />
+            return (
+              <div
+                key={p.id}
+                className={`
+                  flex items-center gap-4 p-4 rounded-2xl transition-all duration-500
+                  ${isLastRevealed ? 'animate-pop-in' : ''}
+                  ${isWinner ? 'bg-winner/20 winner-glow' : 'bg-card card-shadow'}
+                `}
+              >
+                <span className="text-lg font-bold text-muted-foreground w-6 text-center">
+                  {position}°
+                </span>
+                <PlayerAvatar name={p.name} index={playerIndex} size="md" isWinner={isWinner} />
+                <div className="flex-1">
+                  <p className="font-bold text-foreground">
+                    {p.name} {isWinner && '🏆'}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${isWinner ? 'bg-winner' : 'bg-primary/50'}`}
+                        style={{ width: votes.length > 0 ? `${(count / votes.length) * 100}%` : '0%' }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-muted-foreground min-w-[2rem] text-right">
+                      {count}
+                    </span>
                   </div>
-                  <span className="text-sm font-bold text-muted-foreground min-w-[2rem] text-right">
-                    {count}
-                  </span>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          });
+        })()}
       </div>
 
       {/* Host controls - only show after all revealed */}
