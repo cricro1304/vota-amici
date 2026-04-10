@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from './PlayerAvatar';
 import { nextRound, endGame } from '@/lib/gameActions';
@@ -14,7 +15,6 @@ interface ResultsScreenProps {
 }
 
 export function ResultsScreen({ room, players, currentRound, question, votes, isHost }: ResultsScreenProps) {
-  // Tally votes
   const voteCounts: Record<string, number> = {};
   players.forEach(p => (voteCounts[p.id] = 0));
   votes.forEach(v => {
@@ -24,7 +24,30 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
   });
 
   const maxVotes = Math.max(...Object.values(voteCounts));
-  const sorted = [...players].sort((a, b) => (voteCounts[b.id] || 0) - (voteCounts[a.id] || 0));
+  // Sort ascending (least votes first) so we reveal from last place to first
+  const sorted = [...players].sort((a, b) => (voteCounts[a.id] || 0) - (voteCounts[b.id] || 0));
+
+  const [revealedCount, setRevealedCount] = useState(0);
+  const roundIdRef = useRef(currentRound.id);
+
+  // Reset reveal when round changes
+  useEffect(() => {
+    if (roundIdRef.current !== currentRound.id) {
+      roundIdRef.current = currentRound.id;
+      setRevealedCount(0);
+    }
+  }, [currentRound.id]);
+
+  // Progressively reveal players
+  useEffect(() => {
+    if (revealedCount >= sorted.length) return;
+    const timer = setTimeout(() => {
+      setRevealedCount(prev => prev + 1);
+    }, revealedCount === 0 ? 500 : 1000);
+    return () => clearTimeout(timer);
+  }, [revealedCount, sorted.length]);
+
+  const allRevealed = revealedCount >= sorted.length;
 
   const handleNext = async () => {
     try {
@@ -53,21 +76,29 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
         </h2>
       </div>
 
-      {/* Results */}
+      {/* Results - revealed one by one from last to first */}
       <div className="w-full flex flex-col gap-3">
-        {sorted.map((p) => {
+        {sorted.map((p, index) => {
+          const isVisible = index < revealedCount;
+          if (!isVisible) return null;
+
           const count = voteCounts[p.id] || 0;
-          const isWinner = count === maxVotes && count > 0;
+          const isWinner = allRevealed && count === maxVotes && count > 0;
           const playerIndex = players.findIndex(pl => pl.id === p.id);
+          // Display position from bottom: last revealed = last place visually shown first
+          const position = sorted.length - index;
 
           return (
             <div
               key={p.id}
               className={`
-                flex items-center gap-4 p-4 rounded-2xl transition-all
+                flex items-center gap-4 p-4 rounded-2xl transition-all duration-500 animate-pop-in
                 ${isWinner ? 'bg-winner/20 winner-glow' : 'bg-card card-shadow'}
               `}
             >
+              <span className="text-lg font-bold text-muted-foreground w-6 text-center">
+                {position}°
+              </span>
               <PlayerAvatar name={p.name} index={playerIndex} size="md" isWinner={isWinner} />
               <div className="flex-1">
                 <p className="font-bold text-foreground">
@@ -90,9 +121,9 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
         })}
       </div>
 
-      {/* Host controls */}
-      {isHost && (
-        <div className="mt-auto w-full max-w-xs flex flex-col gap-3">
+      {/* Host controls - only show after all revealed */}
+      {isHost && allRevealed && (
+        <div className="mt-auto w-full max-w-xs flex flex-col gap-3 animate-pop-in">
           <Button
             size="lg"
             className="w-full h-14 text-lg font-display font-bold rounded-2xl"
