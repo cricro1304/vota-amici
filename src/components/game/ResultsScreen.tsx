@@ -25,7 +25,8 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
 
   const maxVotes = Math.max(...Object.values(voteCounts));
   // Sort ascending (least votes first) so we reveal from last place to first
-  const sorted = [...players].sort((a, b) => (voteCounts[a.id] || 0) - (voteCounts[b.id] || 0));
+  // Sort descending (most votes first) - but reveal from last to first
+  const sorted = [...players].sort((a, b) => (voteCounts[b.id] || 0) - (voteCounts[a.id] || 0));
 
   const [revealedCount, setRevealedCount] = useState(0);
   const roundIdRef = useRef(currentRound.id);
