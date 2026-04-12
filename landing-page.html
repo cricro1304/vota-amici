@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chi è il più...? | Il gioco che svela la verità sui tuoi amici</title>
+  <meta name="description" content="Il party game che mette alla prova le amicizie. Vota, scopri e ridi con i tuoi amici. Gratis!" />
+  <meta property="og:title" content="Chi è il più...? | Il gioco che svela la verità" />
+  <meta property="og:description" content="Il party game che mette alla prova le amicizie. Chi è il più pigro? Il più drammatico? Scoprilo adesso!" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --pink: #e6366e;
+      --pink-light: #f9d1dc;
+      --pink-glow: rgba(230, 54, 110, 0.25);
+      --cyan: #3ba3d0;
+      --cyan-light: #c4e8f7;
+      --teal: #2db88a;
+      --yellow: #f5c518;
+      --purple: #9b59b6;
+      --orange: #f0883e;
+      --bg: #fff8ed;
+      --bg-card: #ffffff;
+      --text: #2b2640;
+      --text-muted: #8a8494;
+      --radius: 1rem;
+      --shadow: 0 4px 20px -4px rgba(230, 54, 110, 0.15), 0 2px 8px -2px rgba(0,0,0,0.08);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow-x: hidden;
+    }
+    h1, h2, h3, h4, .fredoka { font-family: 'Fredoka', sans-serif; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      background: linear-gradient(135deg, var(--pink) 0%, #f06292 50%, var(--cyan) 100%);
+      padding: 0.75rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 1.25rem; color: white; }
+    .nav-cta {
+      background: white; color: var(--pink);
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      padding: 0.5rem 1.25rem; border-radius: 2rem;
+      text-decoration: none; font-size: 0.95rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .nav-link {
+      color: white; font-family: 'Fredoka', sans-serif;
+      font-weight: 600; font-size: 0.95rem;
+      text-decoration: none; opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+    .nav-link:hover { opacity: 1; }
+    .nav-cta:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(255,255,255,0.3); }
+
+    /* Language toggle */
+    .lang-toggle {
+      display: flex; background: rgba(255,255,255,0.2);
+      border-radius: 1rem; overflow: hidden;
+    }
+    .lang-btn {
+      font-family: 'Fredoka', sans-serif; font-weight: 600;
+      font-size: 0.8rem; padding: 0.3rem 0.65rem;
+      color: rgba(255,255,255,0.7);
+      background: transparent; border: none; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-btn.active {
+      background: white; color: var(--pink);
+      border-radius: 0.85rem;
+    }
+
+    /* Social icons in footer */
+    .footer-socials {
+      display: flex; justify-content: center; gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    .footer-socials a {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--pink); color: white;
+      text-decoration: none; font-size: 1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .footer-socials a:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(230, 54, 110, 0.3);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 6rem 1.5rem 4rem;
+      position: relative; overflow: hidden;
+      background:
+        radial-gradient(ellipse 80% 60% at 30% 50%, rgba(230, 54, 110, 0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 70% 50% at 75% 40%, rgba(59, 163, 208, 0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 50% 80%, rgba(245, 197, 24, 0.06) 0%, transparent 70%),
+        var(--bg);
+    }
+    .hero-inner {
+      max-width: 1100px; width: 100%; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 3rem;
+    }
+    .hero-text { position: relative; z-index: 2; }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 700; line-height: 1.12; margin-bottom: 1.25rem;
+    }
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--pink), var(--cyan));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--text-muted); font-weight: 600;
+      margin-bottom: 0.5rem; line-height: 1.6;
+    }
+    .hero-tagline {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+      color: var(--pink); font-weight: 500;
+      margin-bottom: 2rem;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--pink); color: white;
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 1.25rem; padding: 0.9rem 2.2rem;
+      border-radius: 2rem; border: none; cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 6px 24px var(--pink-glow);
+    }
+    .hero-cta:hover { transform: scale(1.06); box-shadow: 0 8px 32px rgba(230, 54, 110, 0.4); }
+    .hero-cta:active { transform: scale(0.97); }
+    .hero-free { margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-muted); font-weight: 600; }
+
+    /* ── BLOB DECORATIONS ── */
+    .blob {
+      position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5;
+      pointer-events: none; z-index: 0;
+    }
+    .blob-1 { width: 400px; height: 400px; background: var(--pink-light); top: -10%; left: -8%; animation: blobFloat 12s ease-in-out infinite; }
+    .blob-2 { width: 350px; height: 350px; background: var(--cyan-light); bottom: -5%; right: -5%; animation: blobFloat 15s ease-in-out infinite reverse; }
+    .blob-3 { width: 200px; height: 200px; background: rgba(245, 197, 24, 0.3); top: 20%; right: 25%; animation: blobFloat 10s ease-in-out infinite 3s; }
+
+    @keyframes blobFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(20px, -15px) scale(1.05); }
+      66% { transform: translate(-10px, 10px) scale(0.95); }
+    }
+
+    /* ── IPHONE MOCKUP ── */
+    .hero-phone-area {
+      display: flex; justify-content: center; align-items: center;
+      position: relative; z-index: 2;
+    }
+    .iphone-frame {
+      width: 280px; height: 570px;
+      background: #1a1a2e;
+      border-radius: 40px;
+      padding: 12px;
+      box-shadow:
+        0 25px 60px rgba(0,0,0,0.15),
+        0 0 0 2px rgba(255,255,255,0.1),
+        inset 0 0 0 2px rgba(255,255,255,0.05);
+      position: relative;
+      animation: phoneFloat 4s ease-in-out infinite;
+    }
+    .iphone-notch {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 28px;
+      background: #1a1a2e;
+      border-radius: 0 0 18px 18px;
+      z-index: 10;
+    }
+    .iphone-screen {
+      width: 100%; height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--bg);
+      position: relative;
+    }
+
+    @keyframes phoneFloat {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-12px) rotate(0deg); }
+    }
+
+    /* ── APP SCREENS (animated carousel inside phone) ── */
+    .screen-carousel {
+      width: 100%; height: 100%;
+      position: relative;
+    }
+    .app-screen {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      opacity: 0; transition: opacity 0.6s ease;
+      padding: 40px 16px 16px;
+    }
+    .app-screen.active { opacity: 1; }
+
+    .app-header {
+      text-align: center; padding: 8px 0 12px;
+      background: linear-gradient(135deg, var(--pink), #f06292, var(--cyan));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700; font-size: 14px;
+    }
+
+    /* Screen 1: Question */
+    .screen-question {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+    }
+    .screen-question .q-badge {
+      background: var(--pink-light); color: var(--pink);
+      font-family: 'Fredoka', sans-serif; font-weight: 600;
+      font-size: 10px; padding: 4px 12px; border-radius: 12px;
+    }
+    .screen-question .q-text {
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 18px; text-align: center; color: var(--text);
+      line-height: 1.3; padding: 0 8px;
+    }
+    .screen-question .q-emoji { font-size: 36px; }
+
+    /* Screen 1: Vote buttons */
+    .vote-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      padding: 0 4px 8px; margin-top: auto;
+    }
+    .vote-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: white; border: 2px solid #eee;
+      border-radius: 14px; padding: 8px 10px;
+      font-family: 'Nunito', sans-serif; font-weight: 700;
+      font-size: 11px; color: var(--text);
+      transition: all 0.3s;
+    }
+    .vote-btn.selected {
+      border-color: var(--pink); background: rgba(230, 54, 110, 0.06);
+      transform: scale(1.04);
+    }
+    .vote-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; color: white;
+      flex-shrink: 0;
+    }
+
+    /* Screen 2: Result */
+    .screen-result {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+    }
+    .result-label {
+      font-family: 'Fredoka', sans-serif; font-weight: 600;
+      font-size: 13px; color: var(--text-muted);
+    }
+    .result-q {
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 14px; color: var(--text); text-align: center;
+    }
+    .result-winner-ring {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--yellow), var(--orange));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 30px rgba(245, 197, 24, 0.4);
+      animation: winnerPulse 2s ease-in-out infinite;
+      margin: 8px 0;
+    }
+    .result-winner-inner {
+      width: 68px; height: 68px; border-radius: 50%;
+      background: var(--pink);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: white;
+      font-family: 'Fredoka', sans-serif;
+    }
+    .result-name {
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 22px; color: var(--text);
+    }
+    .result-votes {
+      font-size: 11px; color: var(--text-muted); font-weight: 700;
+    }
+
+    @keyframes winnerPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(245, 197, 24, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(245, 197, 24, 0.5); }
+    }
+
+    /* Screen 3: Winner-only reveal */
+    .screen-winner-only {
+      gap: 4px;
+    }
+
+    /* Screen indicator dots */
+    .screen-dots {
+      display: flex; justify-content: center; gap: 6px;
+      padding: 8px 0 12px;
+    }
+    .screen-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #d4d0c8; transition: all 0.3s;
+    }
+    .screen-dot.active {
+      background: var(--pink); width: 18px; border-radius: 3px;
+    }
+
+    /* ── SECTIONS SHARED ── */
+    section { padding: 5rem 1.5rem; }
+    .section-inner { max-width: 960px; margin: 0 auto; }
+    .section-title {
+      text-align: center; font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700; margin-bottom: 0.75rem;
+    }
+    .section-subtitle {
+      text-align: center; font-size: 1.1rem;
+      color: var(--text-muted); font-weight: 600;
+      margin-bottom: 3rem; max-width: 560px; margin-left: auto; margin-right: auto;
+    }
+
+    /* ── HOW IT WORKS (PINK TINT) ── */
+    .how-it-works {
+      background: linear-gradient(135deg, #fce8ef 0%, #f9d1dc 50%, #fce4ec 100%);
+    }
+    .steps {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2rem;
+    }
+    .step {
+      background: rgba(255,255,255,0.75); border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(230, 54, 110, 0.08);
+      padding: 2rem 1.5rem;
+      text-align: center; position: relative; transition: transform 0.3s;
+      backdrop-filter: blur(8px);
+    }
+    .step:hover { transform: translateY(-4px); }
+    .step-number {
+      position: absolute; top: -0.75rem; left: 50%; transform: translateX(-50%);
+      background: var(--pink); color: white;
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      width: 2rem; height: 2rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+    }
+    .step-emoji { font-size: 2.5rem; margin-bottom: 0.75rem; margin-top: 0.5rem; }
+    .step h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--text); }
+    .step p { font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; font-weight: 600; }
+
+    /* ── QUESTION CAROUSEL ── */
+    .questions-section {
+      background: linear-gradient(135deg, var(--pink) 0%, #f06292 50%, var(--cyan) 100%);
+      color: white; text-align: center;
+    }
+    .questions-section .section-title { color: white; }
+    .questions-section .section-subtitle { color: rgba(255,255,255,0.8); }
+    .question-carousel {
+      display: flex; gap: 1rem; overflow: hidden;
+      mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
+      margin-bottom: 1.5rem;
+    }
+    .question-track {
+      display: flex; gap: 1rem;
+      animation: scroll-left 30s linear infinite;
+    }
+    .question-track-2 { animation: scroll-right 28s linear infinite; }
+    .question-chip {
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.18); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 0.65rem 1.3rem; border-radius: 2rem;
+      font-family: 'Fredoka', sans-serif; font-weight: 600;
+      font-size: 0.95rem; white-space: nowrap;
+    }
+
+    /* ── PACKS ── */
+    .packs-section { background: var(--bg); }
+    .packs-wrapper { perspective: 800px; }
+
+    /* Free pack - stays prominent */
+    .pack-hero {
+      background: var(--bg-card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 2rem;
+      text-align: center; border: 3px solid var(--teal);
+      max-width: 420px; margin: 0 auto 2.5rem;
+      transition: transform 0.3s;
+    }
+    .pack-hero:hover { transform: translateY(-4px); }
+    .pack-hero-emoji { font-size: 3rem; margin-bottom: 0.5rem; }
+    .pack-hero h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .pack-hero p { font-size: 0.95rem; color: var(--text-muted); font-weight: 600; line-height: 1.5; }
+    .pack-hero .pack-badge {
+      display: inline-block; margin-top: 0.75rem;
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 0.85rem; padding: 0.35rem 1rem; border-radius: 2rem;
+      background: var(--teal); color: white;
+    }
+    .pack-play-btn {
+      display: inline-block; margin-top: 0.75rem;
+      background: var(--pink); color: white;
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 1.05rem; padding: 0.6rem 1.5rem; border-radius: 2rem;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(230, 54, 110, 0.25);
+    }
+    .pack-play-btn:hover { transform: scale(1.05); box-shadow: 0 6px 24px rgba(230, 54, 110, 0.35); }
+
+    /* Premium tiles grid */
+    .packs-coming-label {
+      text-align: center; font-family: 'Fredoka', sans-serif;
+      font-weight: 600; font-size: 1.05rem; color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+    .packs-grid {
+      display: flex; flex-wrap: wrap;
+      gap: 1rem; justify-content: center;
+    }
+    .pack-tile {
+      background: var(--bg-card); border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 2px solid rgba(230, 54, 110, 0.1);
+      padding: 1.25rem 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      width: 150px;
+      position: relative;
+      z-index: 1;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .pack-tile:hover, .pack-tile.touched {
+      border-color: var(--pink);
+      box-shadow: 0 8px 24px -6px rgba(230, 54, 110, 0.2);
+      z-index: 10;
+    }
+    .pack-tile-emoji { font-size: 2.2rem; margin-bottom: 0.4rem; }
+    .pack-tile h4 {
+      font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--text);
+    }
+    .pack-tile .pack-tile-tag {
+      font-family: 'Fredoka', sans-serif; font-weight: 600;
+      font-size: 0.7rem; color: var(--pink); opacity: 0.8;
+    }
+
+    /* Popup card on hover — floats above, doesn't affect layout */
+    .pack-tile-popup {
+      position: absolute;
+      bottom: calc(100% + 12px); left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      width: 260px;
+      background: var(--bg-card);
+      border: 2px solid var(--pink);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 48px -12px rgba(230, 54, 110, 0.22), 0 8px 16px -4px rgba(0,0,0,0.08);
+      padding: 1rem;
+      text-align: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      z-index: 20;
+    }
+    .pack-tile-popup::after {
+      content: '';
+      position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      border: 8px solid transparent; border-top-color: var(--pink);
+    }
+    .pack-tile:hover .pack-tile-popup,
+    .pack-tile.touched .pack-tile-popup {
+      opacity: 1; pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    /* Keep popup on left/right tiles within viewport */
+    .pack-tile:first-child .pack-tile-popup { left: 0; transform: translateX(0) translateY(8px); }
+    .pack-tile:first-child:hover .pack-tile-popup,
+    .pack-tile:first-child.touched .pack-tile-popup { transform: translateX(0) translateY(0); }
+    .pack-tile:first-child .pack-tile-popup::after { left: 40px; }
+    .pack-tile:last-child .pack-tile-popup { left: auto; right: 0; transform: translateX(0) translateY(8px); }
+    .pack-tile:last-child:hover .pack-tile-popup,
+    .pack-tile:last-child.touched .pack-tile-popup { transform: translateX(0) translateY(0); }
+    .pack-tile:last-child .pack-tile-popup::after { left: auto; right: 40px; }
+
+    .pack-tile-desc {
+      font-size: 0.8rem; color: var(--text-muted); font-weight: 600;
+      line-height: 1.45; margin-bottom: 0.6rem;
+    }
+    .pack-tile-examples {
+      display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: center;
+    }
+    .pack-tile-chip {
+      background: var(--bg); border-radius: 1rem;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .pack-tile-chip.count-chip, .chip.count-chip {
+      background: var(--pink); color: white; font-weight: 800;
+    }
+
+    /* ── SOCIAL PROOF (PINK TINT) — chat bubbles ── */
+    .social-section {
+      background: linear-gradient(135deg, #fce8ef 0%, #f9d1dc 50%, #fce4ec 100%);
+      overflow: hidden;
+    }
+    .chat-feed {
+      max-width: 520px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    .chat-msg {
+      display: flex; gap: 0.75rem; align-items: flex-start;
+      animation: chatSlideIn 0.5s ease both;
+    }
+    .chat-msg:nth-child(1) { animation-delay: 0.1s; }
+    .chat-msg:nth-child(2) { animation-delay: 0.25s; }
+    .chat-msg:nth-child(3) { animation-delay: 0.4s; }
+    .chat-msg:nth-child(4) { animation-delay: 0.55s; }
+    .chat-msg:nth-child(5) { animation-delay: 0.7s; }
+    .chat-msg.right { flex-direction: row-reverse; }
+    .chat-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: white; flex-shrink: 0;
+      font-family: 'Fredoka', sans-serif;
+    }
+    .chat-bubble {
+      background: white;
+      border-radius: 18px; padding: 0.85rem 1.1rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      max-width: 340px; position: relative;
+    }
+    .chat-msg.right .chat-bubble {
+      background: var(--pink); color: white;
+      border-bottom-right-radius: 6px;
+    }
+    .chat-msg:not(.right) .chat-bubble {
+      border-bottom-left-radius: 6px;
+    }
+    .chat-bubble .chat-name {
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 0.75rem; margin-bottom: 0.2rem;
+      opacity: 0.6;
+    }
+    .chat-msg.right .chat-bubble .chat-name { opacity: 0.8; }
+    .chat-bubble .chat-text {
+      font-size: 0.95rem; font-weight: 600; line-height: 1.45;
+    }
+    .chat-bubble .chat-reaction {
+      position: absolute; bottom: -8px; right: 8px;
+      background: white; border-radius: 10px; padding: 1px 6px;
+      font-size: 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    @keyframes chatSlideIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Chat canvas — gentle container */
+    .chat-canvas {
+      max-width: 640px; margin: 0 auto;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(10px);
+      border-radius: 28px;
+      padding: 2.5rem 2.5rem 2rem;
+      box-shadow: 0 12px 40px rgba(230, 54, 110, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    }
+    .chat-canvas .chat-feed { max-width: 100%; gap: 1.25rem; }
+    @media (max-width: 600px) {
+      .chat-canvas { padding: 1.5rem 1.2rem 1.2rem; border-radius: 20px; }
+    }
+
+    /* ── FINAL CTA ── */
+    .final-cta-section {
+      background:
+        radial-gradient(ellipse 60% 50% at 30% 50%, rgba(230, 54, 110, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 70% 50%, rgba(59, 163, 208, 0.08) 0%, transparent 70%),
+        var(--bg);
+      text-align: center; padding: 5rem 1.5rem;
+    }
+    .final-cta-section h2 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700; margin-bottom: 1rem;
+    }
+    .final-cta-section p {
+      font-size: 1.1rem; color: var(--text-muted); font-weight: 600;
+      margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: linear-gradient(135deg, #f9d1dc 0%, #e8c4d4 100%);
+      color: var(--text-muted);
+      text-align: center; padding: 2rem 1.5rem;
+      font-size: 0.9rem; font-weight: 600;
+    }
+    footer .footer-logo {
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      color: var(--pink); font-size: 1.1rem; margin-bottom: 0.5rem;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes scroll-left {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes scroll-right {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .hero-inner {
+        grid-template-columns: 1fr;
+        text-align: center; gap: 2rem;
+      }
+      .hero-text { order: 1; }
+      .hero-phone-area { order: 2; }
+      .iphone-frame { width: 240px; height: 490px; }
+      .hero { padding: 5rem 1.25rem 3rem; min-height: auto; }
+      .hero-cta { font-size: 1.1rem; padding: 0.85rem 1.8rem; }
+      section { padding: 3.5rem 1.25rem; }
+      .steps { grid-template-columns: 1fr; }
+      .blob-1 { width: 250px; height: 250px; }
+      .blob-2 { width: 200px; height: 200px; }
+      .blob-3 { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" data-i18n="nav_logo">🎭 Chi è il più...?</div>
+  <div style="display: flex; align-items: center; gap: 1rem;">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('it')">IT</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <a href="landing-page.html" class="nav-link">🏠 Home</a>
+    <a href="packs.html" class="nav-link" data-i18n="nav_packs">Pacchetti 🎲</a>
+    <a href="https://ilpiu.org" class="nav-cta" target="_blank" data-i18n="nav_cta">Gioca Gratis 🎮</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1 data-i18n="hero_title">Vi siete mai chiesti<br/><span class="highlight">chi sia il più...?</span></h1>
+      <p class="hero-sub" data-i18n="hero_sub">
+        Il più pigro? Il più drammatico? Il più probabile a diventare famoso?<br/>
+        Ora puoi scoprirlo. E no, non sei pronto per le risposte. 👀
+      </p>
+      <p class="hero-tagline" data-i18n="hero_tagline">Il party game che svela cosa pensano davvero i tuoi amici</p>
+      <a href="https://ilpiu.org" class="hero-cta" target="_blank" data-i18n="hero_cta">🎮 Gioca Ora — È Gratis!</a>
+      <p class="hero-free" data-i18n="hero_free">Nessun download. Nessuna registrazione. Solo verità scomode.</p>
+    </div>
+
+    <div class="hero-phone-area">
+      <div class="iphone-frame">
+        <div class="iphone-notch"></div>
+        <div class="iphone-screen">
+          <div class="screen-carousel" id="screenCarousel">
+
+            <!-- Screen 1: Voting -->
+            <div class="app-screen active" id="screen1">
+              <div class="app-header" data-i18n="demo_header">🎉 Chi è il più...?</div>
+              <div class="screen-question">
+                <span class="q-badge" data-i18n="demo_badge">Domanda 3 di 15</span>
+                <div class="q-emoji">😴</div>
+                <div class="q-text" data-i18n="demo_question">Chi è il più pigro?</div>
+              </div>
+              <div class="vote-grid">
+                <div class="vote-btn" id="voteMarco">
+                  <div class="vote-avatar" style="background: var(--pink);">Ma</div>
+                  Marco
+                </div>
+                <div class="vote-btn selected" id="voteLuca">
+                  <div class="vote-avatar" style="background: var(--cyan);">Lu</div>
+                  Luca
+                </div>
+                <div class="vote-btn" id="voteGiulia">
+                  <div class="vote-avatar" style="background: var(--teal);">Gi</div>
+                  Giulia
+                </div>
+                <div class="vote-btn" id="voteSara">
+                  <div class="vote-avatar" style="background: var(--purple);">Sa</div>
+                  Sara
+                </div>
+              </div>
+              <div class="screen-dots">
+                <div class="screen-dot active"></div>
+                <div class="screen-dot"></div>
+              </div>
+            </div>
+
+            <!-- Screen 2: Winner Reveal (suspense style) -->
+            <div class="app-screen" id="screen2">
+              <div class="app-header" data-i18n="demo_header">🎉 Chi è il più...?</div>
+              <div class="screen-result screen-winner-only">
+                <div class="result-label" style="font-size: 14px; color: var(--text-muted);" data-i18n="demo_reveal">Il più pigro è...</div>
+                <div class="result-winner-ring" style="width: 90px; height: 90px; margin: 12px 0;">
+                  <div class="result-winner-inner" style="width: 76px; height: 76px; font-size: 24px;">Lu</div>
+                </div>
+                <div class="result-name" style="font-size: 26px;">Luca! 😴</div>
+                <div class="result-votes" style="margin-top: 4px;" data-i18n="demo_votes">🏆 con 3 voti!</div>
+              </div>
+              <div class="screen-dots">
+                <div class="screen-dot"></div>
+                <div class="screen-dot active"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works">
+  <div class="section-inner">
+    <h2 class="section-title" data-i18n="how_title">Come funziona? Facilissimo 🤌</h2>
+    <p class="section-subtitle" data-i18n="how_sub">Tre passi e siete dentro. Servono almeno 3 amici e un po' di coraggio.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-emoji">🏠</div>
+        <h3 data-i18n="step1_title">Crea una stanza</h3>
+        <p data-i18n="step1_desc">Un tap e hai il tuo codice. Condividilo con i tuoi amici e aspetta che entrino.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-emoji">🗳️</div>
+        <h3 data-i18n="step2_title">Vota in segreto</h3>
+        <p data-i18n="step2_desc">"Chi è il più testardo?" Tutti votano, nessuno sa chi hai scelto. Il dramma è servito.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-emoji">🏆</div>
+        <h3 data-i18n="step3_title">Scopri il vincitore</h3>
+        <p data-i18n="step3_desc">Suspense... rullo di tamburi... e il verdetto arriva. Preparati a ridere (o piangere).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUESTION CAROUSEL -->
+<section class="questions-section">
+  <div class="section-inner">
+    <h2 class="section-title" data-i18n="q_title">Le domande che non osavi fare 😏</h2>
+    <p class="section-subtitle" data-i18n="q_sub">100+ domande tra tutti i pack. Quante amicizie sopravviveranno?</p>
+
+    <!-- Row 1: scrolls left -->
+    <div class="question-carousel">
+      <div class="question-track" id="qTrack1"></div>
+    </div>
+
+    <!-- Row 2: scrolls right -->
+    <div class="question-carousel">
+      <div class="question-track question-track-2" id="qTrack2"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PACKS -->
+<section class="packs-section" id="packs">
+  <div class="section-inner">
+    <h2 class="section-title" data-i18n="packs_title">Per ogni occasione 🎲</h2>
+    <p class="section-subtitle" data-i18n="packs_sub">Il Classico è gratis. Per tutto il resto... ci stiamo lavorando.</p>
+
+    <div class="packs-wrapper">
+      <div class="pack-hero">
+        <div class="pack-hero-emoji">🎭</div>
+        <h3 data-i18n="pack_classic_title">Classico — 100+ domande</h3>
+        <p data-i18n="pack_classic_desc">Le domande essenziali per qualsiasi serata tra amici. Il punto di partenza perfetto.</p>
+        <span class="pack-badge" data-i18n="pack_free_badge">✅ Gratis per sempre</span>
+        <br/>
+        <a href="https://ilpiu.org" target="_blank" class="pack-play-btn" data-i18n="pack_play">🎮 Gioca Ora</a>
+      </div>
+
+      <p class="packs-coming-label" data-i18n="packs_coming">Prossimamente... 🔜</p>
+
+      <div class="packs-grid">
+        <div class="pack-tile">
+          <div class="pack-tile-emoji">💑</div>
+          <h4 data-i18n="tile_coppie">Coppie</h4>
+          <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
+          <div class="pack-tile-popup">
+            <p class="pack-tile-desc" data-i18n="tile_coppie_desc">Quanto vi conoscete davvero? Le domande che mettono alla prova anche le coppie più solide.</p>
+            <div class="pack-tile-examples">
+              <span class="pack-tile-chip" data-i18n="tile_coppie_q1">💤 chi russa di più</span>
+              <span class="pack-tile-chip" data-i18n="tile_coppie_q2">📱 chi sta più al telefono</span>
+              <span class="pack-tile-chip" data-i18n="tile_coppie_q3">🍽️ chi cucina meglio</span>
+              <span class="pack-tile-chip count-chip" data-i18n="tile_count">+50 domande</span>
+            </div>
+          </div>
+        </div>
+        <div class="pack-tile">
+          <div class="pack-tile-emoji">👫</div>
+          <h4 data-i18n="tile_fratelli">Fratelli</h4>
+          <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
+          <div class="pack-tile-popup">
+            <p class="pack-tile-desc" data-i18n="tile_fratelli_desc">Chi era il preferito della mamma? Chi rompeva sempre tutto? Regolamenti di conti.</p>
+            <div class="pack-tile-examples">
+              <span class="pack-tile-chip" data-i18n="tile_fratelli_q1">👶 chi piangeva di più</span>
+              <span class="pack-tile-chip" data-i18n="tile_fratelli_q2">🍪 chi rubava le merendine</span>
+              <span class="pack-tile-chip" data-i18n="tile_fratelli_q3">📺 chi monopolizzava la TV</span>
+              <span class="pack-tile-chip count-chip" data-i18n="tile_count">+50 domande</span>
+            </div>
+          </div>
+        </div>
+        <div class="pack-tile">
+          <div class="pack-tile-emoji">👨‍👩‍👧‍👦</div>
+          <h4 data-i18n="tile_famiglia">Famiglia</h4>
+          <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
+          <div class="pack-tile-popup">
+            <p class="pack-tile-desc" data-i18n="tile_famiglia_desc">Da nonni a nipoti, tutti votano. Scopri chi è il vero capofamiglia e chi è la pecora nera.</p>
+            <div class="pack-tile-examples">
+              <span class="pack-tile-chip" data-i18n="tile_famiglia_q1">🛋️ chi occupa il divano</span>
+              <span class="pack-tile-chip" data-i18n="tile_famiglia_q2">🗣️ chi urla di più</span>
+              <span class="pack-tile-chip" data-i18n="tile_famiglia_q3">🍝 chi mangia di più</span>
+              <span class="pack-tile-chip count-chip" data-i18n="tile_count">+50 domande</span>
+            </div>
+          </div>
+        </div>
+        <div class="pack-tile">
+          <div class="pack-tile-emoji">💼</div>
+          <h4 data-i18n="tile_colleghi">Colleghi</h4>
+          <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
+          <div class="pack-tile-popup">
+            <p class="pack-tile-desc" data-i18n="tile_colleghi_desc">Chi sparisce in pausa pranzo? Chi risponde alle mail a mezzanotte? L'ufficio si confessa.</p>
+            <div class="pack-tile-examples">
+              <span class="pack-tile-chip" data-i18n="tile_colleghi_q1">☕ chi beve più caffè</span>
+              <span class="pack-tile-chip" data-i18n="tile_colleghi_q2">🕐 chi arriva sempre tardi</span>
+              <span class="pack-tile-chip" data-i18n="tile_colleghi_q3">📧 chi manda più mail</span>
+              <span class="pack-tile-chip count-chip" data-i18n="tile_count">+50 domande</span>
+            </div>
+          </div>
+        </div>
+        <div class="pack-tile">
+          <div class="pack-tile-emoji">🏠</div>
+          <h4 data-i18n="tile_coinquilini">Coinquilini</h4>
+          <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
+          <div class="pack-tile-popup">
+            <p class="pack-tile-desc" data-i18n="tile_coinquilini_desc">Chi lascia i piatti nel lavandino? Chi ruba il cibo? La convivenza non avrà più segreti.</p>
+            <div class="pack-tile-examples">
+              <span class="pack-tile-chip" data-i18n="tile_coinquilini_q1">🍳 chi non cucina mai</span>
+              <span class="pack-tile-chip" data-i18n="tile_coinquilini_q2">🧹 chi non pulisce</span>
+              <span class="pack-tile-chip" data-i18n="tile_coinquilini_q3">🔊 chi fa più rumore</span>
+              <span class="pack-tile-chip count-chip" data-i18n="tile_count">+50 domande</span>
+            </div>
+          </div>
+        </div>
+        <div class="pack-tile">
+          <div class="pack-tile-emoji">✈️</div>
+          <h4 data-i18n="tile_viaggi">Viaggi</h4>
+          <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
+          <div class="pack-tile-popup">
+            <p class="pack-tile-desc" data-i18n="tile_viaggi_desc">Chi perderebbe il passaporto? Chi si lamenterebbe di tutto? Per il gruppo viaggi.</p>
+            <div class="pack-tile-examples">
+              <span class="pack-tile-chip" data-i18n="tile_viaggi_q1">🗺️ chi si perde sempre</span>
+              <span class="pack-tile-chip" data-i18n="tile_viaggi_q2">💸 chi spende di più</span>
+              <span class="pack-tile-chip" data-i18n="tile_viaggi_q3">😴 chi dorme in aereo</span>
+              <span class="pack-tile-chip count-chip" data-i18n="tile_count">+50 domande</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF — chat style -->
+<section class="social-section">
+  <div class="section-inner">
+    <h2 class="section-title" data-i18n="social_title">Cosa succede quando ci giochi 😂</h2>
+    <p class="section-subtitle" data-i18n="social_sub">Un gruppo WhatsApp qualunque, dopo una partita.</p>
+    <div class="chat-canvas">
+      <div class="chat-feed">
+        <div class="chat-msg">
+          <div class="chat-avatar" style="background: var(--pink);">Gi</div>
+          <div class="chat-bubble">
+            <div class="chat-name">Giulia</div>
+            <div class="chat-text" data-i18n="chat_1">Marco eletto "il più pigro" all'unanimità 💀 non ha nemmeno protestato perché gli sembrava faticoso</div>
+            <span class="chat-reaction">😂 4</span>
+          </div>
+        </div>
+        <div class="chat-msg right">
+          <div class="chat-avatar" style="background: var(--cyan);">Ma</div>
+          <div class="chat-bubble">
+            <div class="chat-name">Marco</div>
+            <div class="chat-text" data-i18n="chat_2">non ho le energie per rispondere a questa cosa</div>
+          </div>
+        </div>
+        <div class="chat-msg">
+          <div class="chat-avatar" style="background: var(--teal);">Lu</div>
+          <div class="chat-bubble">
+            <div class="chat-name">Luca</div>
+            <div class="chat-text" data-i18n="chat_3">Io pensavo di essere il più simpatico del gruppo. A quanto pare no. Devo ripensare tutta la mia vita.</div>
+            <span class="chat-reaction">🔥 3</span>
+          </div>
+        </div>
+        <div class="chat-msg right">
+          <div class="chat-avatar" style="background: var(--purple);">Sa</div>
+          <div class="chat-bubble">
+            <div class="chat-name">Sara</div>
+            <div class="chat-text" data-i18n="chat_4">l'abbiamo usato in vacanza e siamo quasi tornati a casa in anticipo 😭 10/10 lo rifarei</div>
+          </div>
+        </div>
+        <div class="chat-msg">
+          <div class="chat-avatar" style="background: var(--orange);">An</div>
+          <div class="chat-bubble">
+            <div class="chat-name">Andrea</div>
+            <div class="chat-text" data-i18n="chat_5">raga quando si rifà?? devo riprendermi il titolo di più avventuroso</div>
+            <span class="chat-reaction">🏆 2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta-section" id="play">
+  <h2 data-i18n="cta_title">Pronto a scoprire cosa pensano di te? 👀</h2>
+  <p data-i18n="cta_sub">Crea una stanza, invita i tuoi amici, e che il giudizio abbia inizio.</p>
+  <a href="https://ilpiu.org" class="hero-cta" target="_blank" data-i18n="cta_btn">🚀 Gioca Ora — È Gratis!</a>
+  <p class="hero-free" style="margin-top: 1rem;" data-i18n="cta_note">Funziona su qualsiasi telefono. Basta un browser.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🎭 Chi è il più...?</div>
+  <div class="footer-socials">
+    <a href="https://instagram.com/ilpiu.game" target="_blank" title="Instagram">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+    </a>
+    <a href="https://tiktok.com/@ilpiu.game" target="_blank" title="TikTok">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.72a8.2 8.2 0 0 0 4.76 1.52V6.79a4.83 4.83 0 0 1-1-.1z"/></svg>
+    </a>
+  </div>
+  <p data-i18n="footer_text">Il party game che non sapevi di aver bisogno.<br/>Fatto con 🤌 in Italia.</p>
+</footer>
+
+<script>
+  // Animate phone screens
+  const screens = document.querySelectorAll('.app-screen');
+  let current = 0;
+
+  function nextScreen() {
+    screens[current].classList.remove('active');
+    current = (current + 1) % screens.length;
+    screens[current].classList.add('active');
+
+    // Update dots for each screen
+    const dots = screens[current].querySelectorAll('.screen-dot');
+    // dots are already set in HTML per screen
+  }
+
+  setInterval(nextScreen, 3000);
+
+  // Pack tile touch expand on mobile
+  document.querySelectorAll('.pack-tile').forEach(tile => {
+    tile.addEventListener('click', (e) => {
+      const wasOpen = tile.classList.contains('touched');
+      document.querySelectorAll('.pack-tile').forEach(t => t.classList.remove('touched'));
+      if (!wasOpen) tile.classList.add('touched');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.pack-tile')) {
+      document.querySelectorAll('.pack-tile').forEach(t => t.classList.remove('touched'));
+    }
+  });
+
+  // Animate vote selection on screen 1
+  const voteButtons = document.querySelectorAll('.vote-btn');
+  let voteIndex = 1;
+  setInterval(() => {
+    if (screens[0].classList.contains('active')) {
+      voteButtons.forEach(b => b.classList.remove('selected'));
+      voteIndex = (voteIndex + 1) % voteButtons.length;
+      voteButtons[voteIndex].classList.add('selected');
+    }
+  }, 1800);
+
+  // ── i18n ──
+  const translations = {
+    it: {
+      nav_packs: 'Pacchetti 🎲',
+      nav_cta: 'Gioca Gratis 🎮',
+      hero_title: 'Vi siete mai chiesti<br/><span class="highlight">chi sia il più...?</span>',
+      hero_sub: 'Il più pigro? Il più drammatico? Il più probabile a diventare famoso?<br/>Ora puoi scoprirlo. E no, non sei pronto per le risposte. 👀',
+      hero_tagline: 'Il party game che svela cosa pensano davvero i tuoi amici',
+      hero_cta: '🎮 Gioca Ora — È Gratis!',
+      hero_free: 'Nessun download. Nessuna registrazione. Solo verità scomode.',
+      how_title: 'Come funziona? Facilissimo 🤌',
+      how_sub: 'Tre passi e siete dentro. Servono almeno 3 amici e un po\' di coraggio.',
+      step1_title: 'Crea una stanza',
+      step1_desc: 'Un tap e hai il tuo codice. Condividilo con i tuoi amici e aspetta che entrino.',
+      step2_title: 'Vota in segreto',
+      step2_desc: '"Chi è il più testardo?" Tutti votano, nessuno sa chi hai scelto. Il dramma è servito.',
+      step3_title: 'Scopri il vincitore',
+      step3_desc: 'Suspense... rullo di tamburi... e il verdetto arriva. Preparati a ridere (o piangere).',
+      q_title: 'Le domande che non osavi fare 😏',
+      q_sub: '100+ domande tra tutti i pack. Quante amicizie sopravviveranno?',
+      packs_title: 'Per ogni occasione 🎲',
+      packs_sub: 'Il Classico è gratis. Per tutto il resto... ci stiamo lavorando.',
+      social_title: 'Cosa succede quando ci giochi 😂',
+      social_sub: 'Un gruppo WhatsApp qualunque, dopo una partita.',
+      chat_1: 'Marco eletto "il più pigro" all\'unanimità 💀 non ha nemmeno protestato perché gli sembrava faticoso',
+      chat_2: 'non ho le energie per rispondere a questa cosa',
+      chat_3: 'Io pensavo di essere il più simpatico del gruppo. A quanto pare no. Devo ripensare tutta la mia vita.',
+      chat_4: 'l\'abbiamo usato in vacanza e siamo quasi tornati a casa in anticipo 😭 10/10 lo rifarei',
+      chat_5: 'raga quando si rifà?? devo riprendermi il titolo di più avventuroso',
+      cta_title: 'Pronto a scoprire cosa pensano di te? 👀',
+      cta_sub: 'Crea una stanza, invita i tuoi amici, e che il giudizio abbia inizio.',
+      cta_btn: '🚀 Gioca Ora — È Gratis!',
+      cta_note: 'Funziona su qualsiasi telefono. Basta un browser.',
+      pack_classic_title: 'Classico — 100+ domande',
+      pack_classic_desc: 'Le domande essenziali per qualsiasi serata tra amici. Il punto di partenza perfetto.',
+      pack_free_badge: '✅ Gratis per sempre',
+      pack_play: '🎮 Gioca Ora',
+      packs_coming: 'Prossimamente... 🔜',
+      demo_header: '🎉 Chi è il più...?',
+      demo_badge: 'Domanda 3 di 15',
+      demo_question: 'Chi è il più pigro?',
+      demo_reveal: 'Il più pigro è...',
+      demo_votes: '🏆 con 3 voti!',
+      footer_text: 'Il party game che non sapevi di aver bisogno.<br/>Fatto con 🤌 in Italia.',
+      tile_coppie: 'Coppie',
+      tile_coppie_desc: 'Quanto vi conoscete davvero? Le domande che mettono alla prova anche le coppie più solide.',
+      tile_coppie_q1: '💤 chi russa di più',
+      tile_coppie_q2: '📱 chi sta più al telefono',
+      tile_coppie_q3: '🍽️ chi cucina meglio',
+      tile_fratelli: 'Fratelli',
+      tile_fratelli_desc: 'Chi era il preferito della mamma? Chi rompeva sempre tutto? Regolamenti di conti.',
+      tile_fratelli_q1: '👶 chi piangeva di più',
+      tile_fratelli_q2: '🍪 chi rubava le merendine',
+      tile_fratelli_q3: '📺 chi monopolizzava la TV',
+      tile_famiglia: 'Famiglia',
+      tile_famiglia_desc: 'Da nonni a nipoti, tutti votano. Scopri chi è il vero capofamiglia e chi è la pecora nera.',
+      tile_famiglia_q1: '🛋️ chi occupa il divano',
+      tile_famiglia_q2: '🗣️ chi urla di più',
+      tile_famiglia_q3: '🍝 chi mangia di più',
+      tile_colleghi: 'Colleghi',
+      tile_colleghi_desc: 'Chi sparisce in pausa pranzo? Chi risponde alle mail a mezzanotte? L\'ufficio si confessa.',
+      tile_colleghi_q1: '☕ chi beve più caffè',
+      tile_colleghi_q2: '🕐 chi arriva sempre tardi',
+      tile_colleghi_q3: '📧 chi manda più mail',
+      tile_coinquilini: 'Coinquilini',
+      tile_coinquilini_desc: 'Chi lascia i piatti nel lavandino? Chi ruba il cibo? La convivenza non avrà più segreti.',
+      tile_coinquilini_q1: '🍳 chi non cucina mai',
+      tile_coinquilini_q2: '🧹 chi non pulisce',
+      tile_coinquilini_q3: '🔊 chi fa più rumore',
+      tile_viaggi: 'Viaggi',
+      tile_viaggi_desc: 'Chi perderebbe il passaporto? Chi si lamenterebbe di tutto? Per il gruppo viaggi.',
+      tile_viaggi_q1: '🗺️ chi si perde sempre',
+      tile_viaggi_q2: '💸 chi spende di più',
+      tile_viaggi_q3: '😴 chi dorme in aereo',
+      tile_coming: 'In arrivo',
+      tile_count: '+50 domande',
+      wa_group_name: 'Serata del sabato 🔥',
+      wa_input: 'Scrivi un messaggio...',
+      nav_logo: '🎭 Chi è il più...?',
+      carousel_row1: [
+        'Chi è il più simpatico? 😄', 'Chi è il più pigro? 😴', 'Chi è il più drammatico? 🎭',
+        'Chi è il più testardo? 💪', 'Chi sopravviverebbe su un\'isola deserta? 🏝️',
+        'Chi è il più ritardatario? ⏰', 'Chi è il più chiacchierone? 🗣️',
+        'Chi farebbe il miglior presidente? 🎩', 'Chi è il più goloso? 🍕', 'Chi diventerà famoso? ⭐'
+      ],
+      carousel_row2: [
+        'Chi è il più generoso? 💝', 'Chi è il più permaloso? 😤', 'Chi è il più introverso? 🤫',
+        'Chi è il più romantico? 💘', 'Chi è il più disordinato? 🧦', 'Chi è il più competitivo? 🏅',
+        'Chi è il più avventuroso? 🧗', 'Chi è il più creativo? 🎨', 'Chi è il più fortunato? 🍀',
+        'Chi è il più affidabile? 🤝'
+      ],
+    },
+    en: {
+      nav_packs: 'Packs 🎲',
+      nav_cta: 'Play Free 🎮',
+      hero_title: 'Ever wondered<br/><span class="highlight">who\'s the most...?</span>',
+      hero_sub: 'The laziest? The most dramatic? Most likely to become famous?<br/>Now you can find out. And no, you\'re not ready for the answers. 👀',
+      hero_tagline: 'The party game that reveals what your friends really think',
+      hero_cta: '🎮 Play Now — It\'s Free!',
+      hero_free: 'No download. No sign-up. Just uncomfortable truths.',
+      how_title: 'How does it work? Easy 🤌',
+      how_sub: 'Three steps and you\'re in. You need at least 3 friends and a bit of courage.',
+      step1_title: 'Create a room',
+      step1_desc: 'One tap and you\'ve got your code. Share it with friends and wait for them to join.',
+      step2_title: 'Vote in secret',
+      step2_desc: '"Who\'s the most stubborn?" Everyone votes, nobody knows who you picked. Drama served.',
+      step3_title: 'Discover the winner',
+      step3_desc: 'Suspense... drumroll... and the verdict arrives. Get ready to laugh (or cry).',
+      q_title: 'Questions you never dared to ask 😏',
+      q_sub: '100+ questions across all packs. How many friendships will survive?',
+      packs_title: 'For every occasion 🎲',
+      packs_sub: 'The Classic is free. For everything else... we\'re working on it.',
+      social_title: 'What happens when you play 😂',
+      social_sub: 'A random WhatsApp group, after a game.',
+      chat_1: 'Marco voted "the laziest" unanimously 💀 he didn\'t even protest because it seemed like too much effort',
+      chat_2: 'I don\'t have the energy to respond to this',
+      chat_3: 'I thought I was the funniest in the group. Apparently not. I need to rethink my entire life.',
+      chat_4: 'we used it on vacation and almost went home early 😭 10/10 would do again',
+      chat_5: 'guys when are we playing again?? I need to reclaim my "most adventurous" title',
+      cta_title: 'Ready to find out what they think of you? 👀',
+      cta_sub: 'Create a room, invite your friends, and let the judgment begin.',
+      cta_btn: '🚀 Play Now — It\'s Free!',
+      cta_note: 'Works on any phone. Just a browser.',
+      pack_classic_title: 'Classic — 100+ questions',
+      pack_classic_desc: 'The essential questions for any night with friends. The perfect starting point.',
+      pack_free_badge: '✅ Free forever',
+      pack_play: '🎮 Play Now',
+      packs_coming: 'Coming soon... 🔜',
+      demo_header: '🎉 Who\'s the most...?',
+      demo_badge: 'Question 3 of 15',
+      demo_question: 'Who\'s the laziest?',
+      demo_reveal: 'The laziest is...',
+      demo_votes: '🏆 with 3 votes!',
+      footer_text: 'The party game you didn\'t know you needed.<br/>Made with 🤌 in Italy.',
+      tile_coppie: 'Couples',
+      tile_coppie_desc: 'How well do you really know each other? Questions that test even the strongest couples.',
+      tile_coppie_q1: '💤 who snores the most',
+      tile_coppie_q2: '📱 who\'s on their phone the most',
+      tile_coppie_q3: '🍽️ who cooks better',
+      tile_fratelli: 'Siblings',
+      tile_fratelli_desc: 'Who was mom\'s favorite? Who always broke everything? Time to settle scores.',
+      tile_fratelli_q1: '👶 who cried the most',
+      tile_fratelli_q2: '🍪 who stole the snacks',
+      tile_fratelli_q3: '📺 who hogged the TV',
+      tile_famiglia: 'Family',
+      tile_famiglia_desc: 'From grandparents to grandkids, everyone votes. Find out who\'s the real boss and who\'s the black sheep.',
+      tile_famiglia_q1: '🛋️ who hogs the couch',
+      tile_famiglia_q2: '🗣️ who yells the most',
+      tile_famiglia_q3: '🍝 who eats the most',
+      tile_colleghi: 'Coworkers',
+      tile_colleghi_desc: 'Who disappears at lunch? Who replies to emails at midnight? The office confesses.',
+      tile_colleghi_q1: '☕ who drinks the most coffee',
+      tile_colleghi_q2: '🕐 who\'s always late',
+      tile_colleghi_q3: '📧 who sends the most emails',
+      tile_coinquilini: 'Roommates',
+      tile_coinquilini_desc: 'Who leaves dishes in the sink? Who steals food? Living together will have no more secrets.',
+      tile_coinquilini_q1: '🍳 who never cooks',
+      tile_coinquilini_q2: '🧹 who never cleans',
+      tile_coinquilini_q3: '🔊 who makes the most noise',
+      tile_viaggi: 'Travel',
+      tile_viaggi_desc: 'Who\'d lose their passport? Who\'d complain about everything? For the travel crew.',
+      tile_viaggi_q1: '🗺️ who always gets lost',
+      tile_viaggi_q2: '💸 who spends the most',
+      tile_viaggi_q3: '😴 who sleeps on the plane',
+      tile_coming: 'Coming soon',
+      tile_count: '+50 questions',
+      wa_group_name: 'Saturday night 🔥',
+      wa_input: 'Type a message...',
+      nav_logo: '🎭 Who\'s the most...?',
+      carousel_row1: [
+        'Who\'s the funniest? 😄', 'Who\'s the laziest? 😴', 'Who\'s the most dramatic? 🎭',
+        'Who\'s the most stubborn? 💪', 'Who\'d survive on a desert island? 🏝️',
+        'Who\'s always late? ⏰', 'Who talks the most? 🗣️',
+        'Who\'d make the best president? 🎩', 'Who\'s the biggest foodie? 🍕', 'Who\'ll become famous? ⭐'
+      ],
+      carousel_row2: [
+        'Who\'s the most generous? 💝', 'Who\'s the most sensitive? 😤', 'Who\'s the most introverted? 🤫',
+        'Who\'s the most romantic? 💘', 'Who\'s the messiest? 🧦', 'Who\'s the most competitive? 🏅',
+        'Who\'s the most adventurous? 🧗', 'Who\'s the most creative? 🎨', 'Who\'s the luckiest? 🍀',
+        'Who\'s the most reliable? 🤝'
+      ],
+    }
+  };
+
+  let currentLang = 'it';
+
+  function setLang(lang) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (translations[lang][key]) {
+        el.innerHTML = translations[lang][key];
+      }
+    });
+    document.documentElement.lang = lang;
+    buildCarousel();
+  }
+
+  function buildCarousel() {
+    const t = translations[currentLang];
+    const track1 = document.getElementById('qTrack1');
+    const track2 = document.getElementById('qTrack2');
+    if (!track1 || !track2) return;
+    const makeChips = (arr) => [...arr, ...arr].map(q => `<span class="question-chip">${q}</span>`).join('');
+    track1.innerHTML = makeChips(t.carousel_row1);
+    track2.innerHTML = makeChips(t.carousel_row2);
+  }
+
+  // Build carousel on load
+  buildCarousel();
+</script>
+
+</body>
+</html>
