@@ -14,6 +14,8 @@ interface ResultsScreenProps {
   isHost: boolean;
 }
 
+type RevealPhase = 'intro' | 'suspense' | 'reveal';
+
 export function ResultsScreen({ room, players, currentRound, question, votes, isHost }: ResultsScreenProps) {
   const voteCounts: Record<string, number> = {};
   players.forEach(p => (voteCounts[p.id] = 0));
@@ -23,32 +25,31 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
     }
   });
 
-  const maxVotes = Math.max(...Object.values(voteCounts));
-  // Sort ascending (least votes first) so we reveal from last place to first
-  // Sort descending (most votes first) - but reveal from last to first
-  const sorted = [...players].sort((a, b) => (voteCounts[b.id] || 0) - (voteCounts[a.id] || 0));
+  const maxVotes = Math.max(0, ...Object.values(voteCounts));
+  const winners = maxVotes > 0
+    ? players.filter(p => voteCounts[p.id] === maxVotes)
+    : [];
 
-  const [revealedCount, setRevealedCount] = useState(0);
+  const [phase, setPhase] = useState<RevealPhase>('intro');
   const roundIdRef = useRef(currentRound.id);
 
-  // Reset reveal when round changes
   useEffect(() => {
     if (roundIdRef.current !== currentRound.id) {
       roundIdRef.current = currentRound.id;
-      setRevealedCount(0);
+      setPhase('intro');
     }
   }, [currentRound.id]);
 
-  // Progressively reveal players
   useEffect(() => {
-    if (revealedCount >= sorted.length) return;
-    const timer = setTimeout(() => {
-      setRevealedCount(prev => prev + 1);
-    }, revealedCount === 0 ? 500 : 3000);
-    return () => clearTimeout(timer);
-  }, [revealedCount, sorted.length]);
-
-  const allRevealed = revealedCount >= sorted.length;
+    if (phase === 'intro') {
+      const t = setTimeout(() => setPhase('suspense'), 1500);
+      return () => clearTimeout(t);
+    }
+    if (phase === 'suspense') {
+      const t = setTimeout(() => setPhase('reveal'), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
 
   const handleNext = async () => {
     try {
@@ -67,73 +68,71 @@ export function ResultsScreen({ room, players, currentRound, question, votes, is
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center gap-6 w-full animate-pop-in">
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full">
+      {/* Question context */}
       <div className="text-center">
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
           Round {room.current_round}
         </p>
-        <h2 className="text-xl font-display font-bold text-foreground">
-          {question}
-        </h2>
       </div>
 
-      {/* Results - revealed one by one from last to first, displayed 1st at top */}
-      <div className="w-full flex flex-col gap-3">
-        {(() => {
-          const revealedPlayers: { p: typeof sorted[0]; sortedIndex: number }[] = [];
-          for (let i = 0; i < revealedCount; i++) {
-            const sortedIndex = sorted.length - 1 - i;
-            if (sorted[sortedIndex]) {
-              revealedPlayers.push({ p: sorted[sortedIndex], sortedIndex });
-            }
-          }
-          // Sort by position so 1° is at top, last° at bottom
-          revealedPlayers.sort((a, b) => a.sortedIndex - b.sortedIndex);
+      {/* Phase: intro */}
+      {phase === 'intro' && (
+        <div className="text-center animate-fade-in">
+          <h2 className="text-2xl font-display font-bold text-foreground">
+            {question.replace(/^Chi è il più /, 'Il più ').replace(/^Chi è la più /, 'La più ').replace(/\?$/, '')} è...
+          </h2>
+        </div>
+      )}
 
-          return revealedPlayers.map(({ p, sortedIndex }) => {
-            const count = voteCounts[p.id] || 0;
-            const isWinner = allRevealed && count === maxVotes && count > 0;
-            const playerIndex = players.findIndex(pl => pl.id === p.id);
-            const position = sortedIndex + 1;
-            const isLastRevealed = sortedIndex === sorted.length - revealedCount;
+      {/* Phase: suspense - dots animation */}
+      {phase === 'suspense' && (
+        <div className="text-center flex flex-col items-center gap-4">
+          <h2 className="text-2xl font-display font-bold text-foreground">
+            {question.replace(/^Chi è il più /, 'Il più ').replace(/^Chi è la più /, 'La più ').replace(/\?$/, '')} è...
+          </h2>
+          <div className="flex gap-2 mt-4">
+            <span className="w-4 h-4 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-4 h-4 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-4 h-4 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
+      )}
 
-            return (
-              <div
-                key={p.id}
-                className={`
-                  flex items-center gap-4 p-4 rounded-2xl transition-all duration-500
-                  ${isLastRevealed ? 'animate-pop-in' : ''}
-                  ${isWinner ? 'bg-winner/20 winner-glow' : 'bg-card card-shadow'}
-                `}
-              >
-                <span className="text-lg font-bold text-muted-foreground w-6 text-center">
-                  {position}°
-                </span>
-                <PlayerAvatar name={p.name} index={playerIndex} size="md" isWinner={isWinner} />
-                <div className="flex-1">
-                  <p className="font-bold text-foreground">
-                    {p.name} {isWinner && '🏆'}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ${isWinner ? 'bg-winner' : 'bg-primary/50'}`}
-                        style={{ width: votes.length > 0 ? `${(count / votes.length) * 100}%` : '0%' }}
-                      />
+      {/* Phase: reveal */}
+      {phase === 'reveal' && (
+        <div className="text-center flex flex-col items-center gap-6 animate-pop-in">
+          <h2 className="text-xl font-display font-bold text-muted-foreground">
+            {question.replace(/^Chi è il più /, 'Il più ').replace(/^Chi è la più /, 'La più ').replace(/\?$/, '')} è...
+          </h2>
+
+          {winners.length === 0 ? (
+            <p className="text-2xl font-display font-bold text-foreground">Nessun voto!</p>
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-wrap justify-center gap-6">
+                {winners.map(w => {
+                  const playerIndex = players.findIndex(pl => pl.id === w.id);
+                  return (
+                    <div key={w.id} className="flex flex-col items-center gap-2">
+                      <PlayerAvatar name={w.name} index={playerIndex} size="lg" isWinner />
+                      <p className="text-3xl font-display font-bold text-foreground">
+                        {w.name}
+                      </p>
                     </div>
-                    <span className="text-sm font-bold text-muted-foreground min-w-[2rem] text-right">
-                      {count}
-                    </span>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
-            );
-          });
-        })()}
-      </div>
+              <p className="text-lg text-muted-foreground font-bold">
+                🏆 {winners.length > 1 ? `${maxVotes} voti a testa!` : `con ${maxVotes} vot${maxVotes === 1 ? 'o' : 'i'}!`}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Host controls - only show after all revealed */}
-      {isHost && allRevealed && (
+      {/* Host controls */}
+      {isHost && phase === 'reveal' && (
         <div className="mt-auto w-full max-w-xs flex flex-col gap-3 animate-pop-in">
           <Button
             size="lg"
