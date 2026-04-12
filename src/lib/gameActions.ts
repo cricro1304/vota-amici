@@ -119,8 +119,8 @@ export async function nextRound(roomId: string, currentRoundNumber: number) {
 
   const available = questions?.filter(q => !usedIds.includes(q.id)) || [];
 
-  if (available.length === 0) {
-    // End game
+  if (available.length === 0 || currentRoundNumber >= 10) {
+    // End game (no more questions or max 10 rounds reached)
     await supabase.from('rooms').update({ status: 'finished' }).eq('id', roomId);
     return;
   }
