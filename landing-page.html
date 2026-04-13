@@ -115,13 +115,44 @@
     }
     .hero-text { position: relative; z-index: 2; }
     .hero h1 {
-      font-size: clamp(2rem, 5vw, 3.4rem);
-      font-weight: 700; line-height: 1.12; margin-bottom: 1.25rem;
+      font-size: clamp(2.6rem, 6.5vw, 4.2rem);
+      font-weight: 700; line-height: 1.05; margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .hero h1 .line1 {
+      display: block;
+      transform: rotate(-2deg);
+      margin-bottom: 0.15em;
+      text-shadow: 3px 3px 0 rgba(230, 54, 110, 0.10);
     }
     .hero h1 .highlight {
+      display: block;
       background: linear-gradient(135deg, var(--pink), var(--cyan));
       -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent;
+      transform: rotate(1.5deg) translateX(0.15em);
+      font-size: 1.15em;
+      text-shadow: none;
+      filter: drop-shadow(2px 3px 0 rgba(59, 163, 208, 0.12));
+    }
+    /* Comic speech-bubble accent */
+    .hero h1 .line1::before {
+      content: '';
+      position: absolute;
+      left: -0.5em; top: 0.1em;
+      width: 0.35em; height: 0.35em;
+      background: var(--yellow);
+      border-radius: 50%;
+      opacity: 0.7;
+    }
+    .hero h1 .line1::after {
+      content: '';
+      position: absolute;
+      right: 0.5em; top: -0.15em;
+      width: 0.2em; height: 0.2em;
+      background: var(--pink);
+      border-radius: 50%;
+      opacity: 0.5;
     }
     .hero-sub {
       font-size: clamp(1rem, 2vw, 1.2rem);
@@ -634,6 +665,7 @@
       .hero-phone-area { order: 2; }
       .iphone-frame { width: 240px; height: 490px; }
       .hero { padding: 5rem 1.25rem 3rem; min-height: auto; }
+      .hero h1 .highlight { transform: rotate(1.5deg) translateX(0); }
       .hero-cta { font-size: 1.1rem; padding: 0.85rem 1.8rem; }
       section { padding: 3.5rem 1.25rem; }
       .steps { grid-template-columns: 1fr; }
@@ -667,7 +699,7 @@
 
   <div class="hero-inner">
     <div class="hero-text">
-      <h1 data-i18n="hero_title">Vi siete mai chiesti<br/><span class="highlight">chi sia il più...?</span></h1>
+      <h1 data-i18n="hero_title"><span class="line1">Vi siete mai chiesti</span><span class="highlight">chi sia il più...?</span></h1>
       <p class="hero-sub" data-i18n="hero_sub">
         Il più pigro? Il più drammatico? Il più probabile a diventare famoso?<br/>
         Ora puoi scoprirlo. E no, non sei pronto per le risposte. 👀
@@ -965,21 +997,94 @@
 </footer>
 
 <script>
-  // Animate phone screens
+  // ── QUESTION ROUNDS DATA ──
+  const players = [
+    { name: 'Marco', short: 'Ma', color: 'var(--pink)' },
+    { name: 'Luca',  short: 'Lu', color: 'var(--cyan)' },
+    { name: 'Giulia',short: 'Gi', color: 'var(--teal)' },
+    { name: 'Sara',  short: 'Sa', color: 'var(--purple)' },
+  ];
+
+  const questionRounds = {
+    it: [
+      { emoji: '😴', question: 'Chi è il più pigro?',       badge: 'Domanda 3 di 15', reveal: 'Il più pigro è...',       winnerIdx: 1, winnerEmoji: '😴', votes: 3 },
+      { emoji: '🎭', question: 'Chi è il più drammatico?',  badge: 'Domanda 7 di 15', reveal: 'Il più drammatico è...',  winnerIdx: 0, winnerEmoji: '🎭', votes: 2 },
+      { emoji: '😄', question: 'Chi è il più simpatico?',   badge: 'Domanda 1 di 15', reveal: 'Il più simpatico è...',   winnerIdx: 2, winnerEmoji: '😄', votes: 3 },
+      { emoji: '💪', question: 'Chi è il più testardo?',    badge: 'Domanda 11 di 15',reveal: 'Il più testardo è...',    winnerIdx: 3, winnerEmoji: '💪', votes: 4 },
+      { emoji: '🗣️', question: 'Chi è il più chiacchierone?',badge: 'Domanda 5 di 15',reveal: 'Il più chiacchierone è...',winnerIdx: 2, winnerEmoji: '🗣️', votes: 3 },
+      { emoji: '🍕', question: 'Chi è il più goloso?',      badge: 'Domanda 9 di 15', reveal: 'Il più goloso è...',      winnerIdx: 0, winnerEmoji: '🍕', votes: 2 },
+    ],
+    en: [
+      { emoji: '😴', question: 'Who\'s the laziest?',       badge: 'Question 3 of 15', reveal: 'The laziest is...',       winnerIdx: 1, winnerEmoji: '😴', votes: 3 },
+      { emoji: '🎭', question: 'Who\'s the most dramatic?', badge: 'Question 7 of 15', reveal: 'The most dramatic is...', winnerIdx: 0, winnerEmoji: '🎭', votes: 2 },
+      { emoji: '😄', question: 'Who\'s the funniest?',      badge: 'Question 1 of 15', reveal: 'The funniest is...',      winnerIdx: 2, winnerEmoji: '😄', votes: 3 },
+      { emoji: '💪', question: 'Who\'s the most stubborn?', badge: 'Question 11 of 15',reveal: 'The most stubborn is...', winnerIdx: 3, winnerEmoji: '💪', votes: 4 },
+      { emoji: '🗣️', question: 'Who\'s the biggest talker?',badge: 'Question 5 of 15',reveal: 'The biggest talker is...', winnerIdx: 2, winnerEmoji: '🗣️', votes: 3 },
+      { emoji: '🍕', question: 'Who\'s the biggest foodie?',badge: 'Question 9 of 15', reveal: 'The biggest foodie is...', winnerIdx: 0, winnerEmoji: '🍕', votes: 2 },
+    ]
+  };
+
+  let currentLang = 'it';
+  let roundIndex = 0;
   const screens = document.querySelectorAll('.app-screen');
   let current = 0;
+
+  function applyRound() {
+    const rounds = questionRounds[currentLang] || questionRounds.it;
+    const r = rounds[roundIndex % rounds.length];
+    const winner = players[r.winnerIdx];
+
+    // Screen 1 — question
+    document.querySelector('.q-badge').textContent = r.badge;
+    document.querySelector('.q-emoji').textContent = r.emoji;
+    document.querySelector('.q-text').textContent = r.question;
+
+    // Highlight a random non-winner initially, then animate to winner
+    const voteButtons = document.querySelectorAll('.vote-btn');
+    voteButtons.forEach(b => b.classList.remove('selected'));
+    // Select the winner button after a moment
+    voteButtons[r.winnerIdx].classList.add('selected');
+
+    // Screen 2 — result (color consistent!)
+    document.querySelector('#screen2 .result-label').textContent = r.reveal;
+    document.querySelector('#screen2 .result-winner-inner').textContent = winner.short;
+    document.querySelector('#screen2 .result-winner-inner').style.background = winner.color;
+    // Match the outer ring glow to the winner's color
+    const ring = document.querySelector('#screen2 .result-winner-ring');
+    ring.style.background = `linear-gradient(135deg, ${winner.color}, var(--yellow))`;
+    document.querySelector('#screen2 .result-name').textContent = winner.name + '! ' + r.winnerEmoji;
+    document.querySelector('#screen2 .result-votes').innerHTML = '🏆 ' + (currentLang === 'en' ? 'with ' + r.votes + ' votes!' : 'con ' + r.votes + ' voti!');
+  }
 
   function nextScreen() {
     screens[current].classList.remove('active');
     current = (current + 1) % screens.length;
     screens[current].classList.add('active');
 
-    // Update dots for each screen
-    const dots = screens[current].querySelectorAll('.screen-dot');
-    // dots are already set in HTML per screen
+    // When going back to screen 1, advance to next round
+    if (current === 0) {
+      roundIndex++;
+      applyRound();
+    }
   }
 
+  // Initial apply
+  applyRound();
   setInterval(nextScreen, 3000);
+
+  // Animate vote selection on screen 1 — cycle through players
+  let voteIndex = -1;
+  setInterval(() => {
+    if (screens[0].classList.contains('active')) {
+      const rounds = questionRounds[currentLang] || questionRounds.it;
+      const r = rounds[roundIndex % rounds.length];
+      const voteButtons = document.querySelectorAll('.vote-btn');
+      voteButtons.forEach(b => b.classList.remove('selected'));
+      voteIndex = (voteIndex + 1) % voteButtons.length;
+      voteButtons[voteIndex].classList.add('selected');
+      // Always end on the winner (selected will be overridden on screen switch)
+    }
+  }, 1200);
 
   // Pack tile touch expand on mobile
   document.querySelectorAll('.pack-tile').forEach(tile => {
@@ -995,23 +1100,12 @@
     }
   });
 
-  // Animate vote selection on screen 1
-  const voteButtons = document.querySelectorAll('.vote-btn');
-  let voteIndex = 1;
-  setInterval(() => {
-    if (screens[0].classList.contains('active')) {
-      voteButtons.forEach(b => b.classList.remove('selected'));
-      voteIndex = (voteIndex + 1) % voteButtons.length;
-      voteButtons[voteIndex].classList.add('selected');
-    }
-  }, 1800);
-
   // ── i18n ──
   const translations = {
     it: {
       nav_packs: 'Pacchetti 🎲',
       nav_cta: 'Gioca Gratis 🎮',
-      hero_title: 'Vi siete mai chiesti<br/><span class="highlight">chi sia il più...?</span>',
+      hero_title: '<span class="line1">Vi siete mai chiesti</span><span class="highlight">chi sia il più...?</span>',
       hero_sub: 'Il più pigro? Il più drammatico? Il più probabile a diventare famoso?<br/>Ora puoi scoprirlo. E no, non sei pronto per le risposte. 👀',
       hero_tagline: 'Il party game che svela cosa pensano davvero i tuoi amici',
       hero_cta: '🎮 Gioca Ora — È Gratis!',
@@ -1101,7 +1195,7 @@
     en: {
       nav_packs: 'Packs 🎲',
       nav_cta: 'Play Free 🎮',
-      hero_title: 'Ever wondered<br/><span class="highlight">who\'s the most...?</span>',
+      hero_title: '<span class="line1">Ever wondered</span><span class="highlight">who\'s the most...?</span>',
       hero_sub: 'The laziest? The most dramatic? Most likely to become famous?<br/>Now you can find out. And no, you\'re not ready for the answers. 👀',
       hero_tagline: 'The party game that reveals what your friends really think',
       hero_cta: '🎮 Play Now — It\'s Free!',
@@ -1190,8 +1284,6 @@
     }
   };
 
-  let currentLang = 'it';
-
   function setLang(lang) {
     currentLang = lang;
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
@@ -1204,6 +1296,7 @@
     });
     document.documentElement.lang = lang;
     buildCarousel();
+    applyRound();
   }
 
   function buildCarousel() {
