@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Section — A/B Comparison</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --pink: #e6366e;
+      --pink-light: #f9d1dc;
+      --pink-glow: rgba(230, 54, 110, 0.25);
+      --cyan: #3ba3d0;
+      --cyan-light: #c4e8f7;
+      --teal: #2db88a;
+      --yellow: #f5c518;
+      --purple: #9b59b6;
+      --orange: #f0883e;
+      --bg: #fff8ed;
+      --bg-card: #ffffff;
+      --text: #2b2640;
+      --text-muted: #8a8494;
+      --radius: 1rem;
+      --shadow: 0 4px 20px -4px rgba(230, 54, 110, 0.15), 0 2px 8px -2px rgba(0,0,0,0.08);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow-x: hidden;
+    }
+    h1, h2, h3, h4, .fredoka { font-family: 'Fredoka', sans-serif; }
+
+    /* ── COMPARISON NAV ── */
+    .comp-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: linear-gradient(135deg, var(--pink) 0%, #f06292 50%, var(--cyan) 100%);
+      padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .comp-nav h1 { color: white; font-size: 1.1rem; font-weight: 700; }
+    .comp-nav a {
+      background: white; color: var(--pink);
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      padding: 0.5rem 1.25rem; border-radius: 2rem;
+      text-decoration: none; font-size: 0.9rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .comp-nav a:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(255,255,255,0.3); }
+
+    .spacer { height: 5rem; }
+
+    /* ── SECTION LABEL ── */
+    .option-label {
+      text-align: center; padding: 2.5rem 1.5rem 1rem;
+    }
+    .option-badge {
+      display: inline-block;
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 0.85rem; padding: 0.4rem 1.2rem; border-radius: 2rem;
+      color: white; margin-bottom: 0.75rem;
+    }
+    .option-badge.a { background: var(--pink); }
+    .option-badge.b { background: var(--cyan); }
+    .option-label h2 {
+      font-size: 1.3rem; font-weight: 700; color: var(--text);
+    }
+    .option-label p {
+      font-size: 0.95rem; color: var(--text-muted); font-weight: 600; margin-top: 0.25rem;
+    }
+
+    /* ── SHARED SECTION STYLES ── */
+    section { padding: 3.5rem 1.5rem 5rem; }
+    .section-inner { max-width: 960px; margin: 0 auto; }
+    .section-title {
+      text-align: center; font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700; margin-bottom: 0.75rem;
+    }
+    .section-subtitle {
+      text-align: center; font-size: 1.1rem;
+      color: var(--text-muted); font-weight: 600;
+      margin-bottom: 3rem; max-width: 560px; margin-left: auto; margin-right: auto;
+    }
+
+    /* ══════════════════════════════════════════════
+       OPTION A: "Il verdetto del gruppo"
+       Voting result cards
+       ══════════════════════════════════════════════ */
+    .verdetto-section {
+      background: linear-gradient(135deg, #fce8ef 0%, #f9d1dc 50%, #fce4ec 100%);
+      overflow: hidden;
+    }
+
+    .verdetto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      max-width: 880px;
+      margin: 0 auto;
+    }
+
+    .verdetto-card {
+      background: white;
+      border-radius: 1.25rem;
+      padding: 1.75rem 1.5rem;
+      box-shadow: 0 8px 32px -8px rgba(230, 54, 110, 0.15), 0 2px 8px -2px rgba(0,0,0,0.06);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+      animation: cardFadeIn 0.6s ease both;
+    }
+    .verdetto-card:nth-child(1) { animation-delay: 0.1s; }
+    .verdetto-card:nth-child(2) { animation-delay: 0.25s; }
+    .verdetto-card:nth-child(3) { animation-delay: 0.4s; }
+    .verdetto-card:nth-child(4) { animation-delay: 0.55s; }
+
+    .verdetto-card:hover { transform: translateY(-4px); }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Question badge at top */
+    .verdetto-question {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 600; font-size: 0.8rem;
+      color: var(--pink);
+      background: rgba(230, 54, 110, 0.08);
+      padding: 0.3rem 0.9rem;
+      border-radius: 2rem;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    /* Winner avatar */
+    .verdetto-winner {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 0.75rem;
+    }
+    .verdetto-avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 800; color: white;
+      font-family: 'Fredoka', sans-serif;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .verdetto-crown {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      font-size: 1.5rem;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+      animation: crownBounce 2s ease-in-out infinite;
+    }
+    @keyframes crownBounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-3px); }
+    }
+
+    .verdetto-name {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700; font-size: 1.25rem;
+      color: var(--text);
+      margin-bottom: 0.15rem;
+    }
+    .verdetto-votes {
+      font-size: 0.8rem; color: var(--text-muted); font-weight: 700;
+      margin-bottom: 0.85rem;
+    }
+
+    /* Reaction quote */
+    .verdetto-reaction {
+      background: var(--bg);
+      border-radius: 1rem;
+      padding: 0.65rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+      position: relative;
+    }
+    .verdetto-reaction::before {
+      content: '';
+      position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+      width: 12px; height: 12px; background: var(--bg);
+      border-radius: 2px;
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    /* Vote bar mini viz */
+    .verdetto-bars {
+      display: flex; flex-direction: column; gap: 0.35rem;
+      margin-top: 0.85rem;
+    }
+    .verdetto-bar-row {
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .verdetto-bar-name {
+      font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+      width: 44px; text-align: right;
+    }
+    .verdetto-bar-track {
+      flex: 1; height: 8px; background: rgba(0,0,0,0.04);
+      border-radius: 4px; overflow: hidden;
+    }
+    .verdetto-bar-fill {
+      height: 100%; border-radius: 4px;
+      transition: width 1s ease;
+    }
+
+    /* ══════════════════════════════════════════════
+       OPTION B: "La serata in 5 secondi"
+       Comic strip / storyboard
+       ══════════════════════════════════════════════ */
+    .storyboard-section {
+      background: linear-gradient(135deg, #fce8ef 0%, #f9d1dc 50%, #fce4ec 100%);
+      overflow: hidden;
+    }
+
+    .storyboard-strip {
+      display: flex;
+      gap: 0;
+      max-width: 900px;
+      margin: 0 auto;
+      border-radius: 1.25rem;
+      overflow: hidden;
+      box-shadow: 0 12px 40px -10px rgba(230, 54, 110, 0.2), 0 4px 12px -4px rgba(0,0,0,0.08);
+    }
+
+    .story-panel {
+      flex: 1;
+      background: white;
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      position: relative;
+      min-height: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      border-right: 2px dashed rgba(230, 54, 110, 0.12);
+      animation: panelReveal 0.5s ease both;
+    }
+    .story-panel:last-child { border-right: none; }
+    .story-panel:nth-child(1) { animation-delay: 0s; }
+    .story-panel:nth-child(2) { animation-delay: 0.15s; }
+    .story-panel:nth-child(3) { animation-delay: 0.3s; }
+    .story-panel:nth-child(4) { animation-delay: 0.45s; }
+
+    @keyframes panelReveal {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Panel number badge */
+    .panel-number {
+      position: absolute; top: 0.75rem; left: 0.75rem;
+      width: 1.75rem; height: 1.75rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Fredoka', sans-serif; font-weight: 700;
+      font-size: 0.75rem; color: white;
+      background: var(--pink);
+    }
+
+    /* Scene emoji/illustration */
+    .panel-scene {
+      font-size: 3.5rem;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Character avatars in scene */
+    .panel-avatars {
+      display: flex; justify-content: center; gap: 0.4rem;
+      margin-bottom: 0.25rem;
+    }
+    .panel-av {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; color: white;
+      font-family: 'Fredoka', sans-serif;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Caption */
+    .panel-caption {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700; font-size: 1rem;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .panel-subcaption {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    /* Speech bubbles in panels */
+    .panel-speech {
+      background: var(--bg);
+      border-radius: 1rem;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+      position: relative;
+      max-width: 160px;
+    }
+    .panel-speech::after {
+      content: '';
+      position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%) rotate(45deg);
+      width: 10px; height: 10px; background: var(--bg);
+    }
+    .panel-speech.pink {
+      background: rgba(230, 54, 110, 0.08);
+    }
+    .panel-speech.pink::after {
+      background: rgba(230, 54, 110, 0.08);
+    }
+
+    /* Panel mood indicator */
+    .panel-mood {
+      display: flex; gap: 0.3rem; justify-content: center;
+    }
+    .mood-emoji {
+      font-size: 1.1rem;
+      animation: moodPop 0.3s ease both;
+    }
+    .mood-emoji:nth-child(1) { animation-delay: 0.8s; }
+    .mood-emoji:nth-child(2) { animation-delay: 0.95s; }
+    .mood-emoji:nth-child(3) { animation-delay: 1.1s; }
+    .mood-emoji:nth-child(4) { animation-delay: 1.25s; }
+    @keyframes moodPop {
+      from { opacity: 0; transform: scale(0); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Divider between options */
+    .divider {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: var(--bg);
+    }
+    .divider-line {
+      display: flex; align-items: center; gap: 1rem;
+      max-width: 400px; margin: 0 auto;
+    }
+    .divider-line::before, .divider-line::after {
+      content: ''; flex: 1; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(230, 54, 110, 0.2), transparent);
+    }
+    .divider-line span {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700; font-size: 1rem;
+      color: var(--text-muted);
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      .comp-nav { flex-wrap: wrap; gap: 0.75rem; padding: 0.75rem 1rem; }
+      .comp-nav h1 { font-size: 0.9rem; width: 100%; text-align: center; }
+
+      .verdetto-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        padding: 0 0.5rem;
+      }
+
+      .storyboard-strip {
+        flex-direction: column;
+        border-radius: 1.25rem;
+      }
+      .story-panel {
+        min-height: 220px;
+        border-right: none;
+        border-bottom: 2px dashed rgba(230, 54, 110, 0.12);
+        padding: 1.75rem 1.25rem;
+      }
+      .story-panel:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- COMPARISON NAV -->
+<nav class="comp-nav">
+  <h1>Quale preferisci?</h1>
+  <a href="#optionA">Opzione A</a>
+  <a href="#optionB">Opzione B</a>
+</nav>
+<div class="spacer"></div>
+
+<!-- ═══════════════════════════════════════
+     OPTION A: "Il verdetto del gruppo"
+     ═══════════════════════════════════════ -->
+<div class="option-label" id="optionA">
+  <span class="option-badge a">Opzione A</span>
+  <h2>Il verdetto del gruppo</h2>
+  <p>Card con risultati di voto reali — mostra cosa fa il gioco, non lo racconta</p>
+</div>
+
+<section class="verdetto-section">
+  <div class="section-inner">
+    <h2 class="section-title">Il verdetto del gruppo 🏆</h2>
+    <p class="section-subtitle">Ogni partita ha i suoi vincitori. Ogni vincitore ha la sua reazione.</p>
+
+    <div class="verdetto-grid">
+
+      <!-- Card 1 -->
+      <div class="verdetto-card">
+        <div class="verdetto-question">Chi è il più pigro?</div>
+        <div class="verdetto-winner">
+          <span class="verdetto-crown">👑</span>
+          <div class="verdetto-avatar" style="background: var(--cyan);">Ma</div>
+        </div>
+        <div class="verdetto-name">Marco</div>
+        <div class="verdetto-votes">Eletto all'unanimità · 4/4 voti</div>
+        <div class="verdetto-reaction">"Non ho le energie per protestare" 💀</div>
+        <div class="verdetto-bars">
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Marco</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 100%; background: var(--pink);"></div></div>
+          </div>
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Luca</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 0%; background: var(--cyan);"></div></div>
+          </div>
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Giulia</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 0%; background: var(--teal);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="verdetto-card">
+        <div class="verdetto-question">Chi sopravviverebbe a un'apocalisse zombie?</div>
+        <div class="verdetto-winner">
+          <span class="verdetto-crown">👑</span>
+          <div class="verdetto-avatar" style="background: var(--teal);">Lu</div>
+        </div>
+        <div class="verdetto-name">Luca</div>
+        <div class="verdetto-votes">3 voti su 4</div>
+        <div class="verdetto-reaction">"Finalmente qualcuno che ci crede" 💪</div>
+        <div class="verdetto-bars">
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Luca</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 75%; background: var(--teal);"></div></div>
+          </div>
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Sara</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 25%; background: var(--purple);"></div></div>
+          </div>
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Andrea</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 0%; background: var(--orange);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="verdetto-card">
+        <div class="verdetto-question">Chi è il più drammatico?</div>
+        <div class="verdetto-winner">
+          <span class="verdetto-crown">👑</span>
+          <div class="verdetto-avatar" style="background: var(--pink);">Gi</div>
+        </div>
+        <div class="verdetto-name">Giulia</div>
+        <div class="verdetto-votes">3 voti su 4</div>
+        <div class="verdetto-reaction">"SCUSATE SE HO DEI SENTIMENTI" 😭</div>
+        <div class="verdetto-bars">
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Giulia</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 75%; background: var(--pink);"></div></div>
+          </div>
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Marco</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 25%; background: var(--cyan);"></div></div>
+          </div>
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Luca</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 0%; background: var(--teal);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="verdetto-card">
+        <div class="verdetto-question">Chi manderebbe un messaggio all'ex stasera?</div>
+        <div class="verdetto-winner">
+          <span class="verdetto-crown">👑</span>
+          <div class="verdetto-avatar" style="background: var(--purple);">Sa</div>
+        </div>
+        <div class="verdetto-name">Sara</div>
+        <div class="verdetto-votes">Unanimità imbarazzante · 4/4</div>
+        <div class="verdetto-reaction">"Vi odio tutti ma è vero" 📱</div>
+        <div class="verdetto-bars">
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Sara</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 100%; background: var(--purple);"></div></div>
+          </div>
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Giulia</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 0%; background: var(--pink);"></div></div>
+          </div>
+          <div class="verdetto-bar-row">
+            <span class="verdetto-bar-name">Andrea</span>
+            <div class="verdetto-bar-track"><div class="verdetto-bar-fill" style="width: 0%; background: var(--orange);"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- DIVIDER -->
+<div class="divider">
+  <div class="divider-line"><span>oppure</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     OPTION B: "La serata in 5 secondi"
+     ═══════════════════════════════════════ -->
+<div class="option-label" id="optionB">
+  <span class="option-badge b">Opzione B</span>
+  <h2>La serata in 5 secondi</h2>
+  <p>Comic strip — racconta la parabola emotiva di una partita in 4 pannelli</p>
+</div>
+
+<section class="storyboard-section">
+  <div class="section-inner">
+    <h2 class="section-title">La serata in 5 secondi 🎬</h2>
+    <p class="section-subtitle">Anatomia di una partita tipo. Spoiler: qualcuno si offenderà.</p>
+
+    <div class="storyboard-strip">
+
+      <!-- Panel 1: Calm -->
+      <div class="story-panel">
+        <span class="panel-number">1</span>
+        <div class="panel-scene">😌</div>
+        <div class="panel-avatars">
+          <div class="panel-av" style="background: var(--pink);">Gi</div>
+          <div class="panel-av" style="background: var(--cyan);">Ma</div>
+          <div class="panel-av" style="background: var(--teal);">Lu</div>
+          <div class="panel-av" style="background: var(--purple);">Sa</div>
+        </div>
+        <div class="panel-caption">"Dai giochiamo, sarà divertente"</div>
+        <div class="panel-subcaption">Tutti sorridono. Nessuno sospetta nulla.</div>
+        <div class="panel-mood">
+          <span class="mood-emoji">😊</span>
+          <span class="mood-emoji">😊</span>
+          <span class="mood-emoji">😊</span>
+          <span class="mood-emoji">😊</span>
+        </div>
+      </div>
+
+      <!-- Panel 2: The Question -->
+      <div class="story-panel">
+        <span class="panel-number">2</span>
+        <div class="panel-scene">📱</div>
+        <div class="panel-speech pink">"Chi è il più falso del gruppo?"</div>
+        <div class="panel-caption">Esce la domanda</div>
+        <div class="panel-subcaption">Silenzio improvviso. Sguardi che si incrociano. Qualcuno deglutisce.</div>
+        <div class="panel-mood">
+          <span class="mood-emoji">😳</span>
+          <span class="mood-emoji">👀</span>
+          <span class="mood-emoji">😰</span>
+          <span class="mood-emoji">🫣</span>
+        </div>
+      </div>
+
+      <!-- Panel 3: Chaos -->
+      <div class="story-panel">
+        <span class="panel-number">3</span>
+        <div class="panel-scene">💥</div>
+        <div class="panel-speech">"3 voti su 4: MARCO"</div>
+        <div class="panel-caption">Il verdetto</div>
+        <div class="panel-subcaption">Marco scopre che il gruppo ha delle opinioni. Forti.</div>
+        <div class="panel-mood">
+          <span class="mood-emoji">😂</span>
+          <span class="mood-emoji">💀</span>
+          <span class="mood-emoji">😤</span>
+          <span class="mood-emoji">🔥</span>
+        </div>
+      </div>
+
+      <!-- Panel 4: Aftermath -->
+      <div class="story-panel">
+        <span class="panel-number">4</span>
+        <div class="panel-scene">🫂</div>
+        <div class="panel-avatars">
+          <div class="panel-av" style="background: var(--pink);">Gi</div>
+          <div class="panel-av" style="background: var(--cyan);">Ma</div>
+          <div class="panel-av" style="background: var(--teal);">Lu</div>
+          <div class="panel-av" style="background: var(--purple);">Sa</div>
+        </div>
+        <div class="panel-caption">"Raga quando si rifà?"</div>
+        <div class="panel-subcaption">10 minuti dopo. Tutti amici. Tutti traumatizzati. Tutti pronti per un altro round.</div>
+        <div class="panel-mood">
+          <span class="mood-emoji">❤️</span>
+          <span class="mood-emoji">😂</span>
+          <span class="mood-emoji">🏆</span>
+          <span class="mood-emoji">🔁</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div style="height: 4rem; background: var(--bg);"></div>
+
+</body>
+</html>
