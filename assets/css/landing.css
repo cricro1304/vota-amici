@@ -479,12 +479,14 @@ section { padding: 5rem 1.5rem; }
   position: relative;
 }
 
-/* Full-bleed pink background */
+/* Full-bleed pink background: exactly 100vw, centered on the viewport. */
 .tut-block::before {
   content: '';
   position: absolute;
   top: 0; bottom: 0;
-  left: -50vw; right: -50vw;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
   z-index: -1;
   background: linear-gradient(135deg, #fce8ef 0%, #f9d1dc 50%, #fce4ec 100%);
 }
