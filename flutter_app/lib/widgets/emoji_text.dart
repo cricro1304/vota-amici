@@ -187,11 +187,12 @@ class _TwemojiImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // jsdelivr mirror of the jdecked/twemoji fork (the actively-maintained
-    // successor to Twitter's archived repo). 72x72 PNGs are the sweet spot
-    // — sharp on retina, small enough to cache cheaply.
+    // iamcal/emoji-data — the Apple PNG sprite set Slack/Discord/etc. have
+    // used for years. Same slug convention as Twemoji (lowercase hex, dashed,
+    // FE0F stripped), just a different path. Legally grey: Apple owns the
+    // artwork. Fine for local testing; revisit before shipping publicly.
     final url =
-        'https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/$_slug.png';
+        'https://cdn.jsdelivr.net/gh/iamcal/emoji-data@master/img-apple-64/$_slug.png';
     return SizedBox(
       width: size,
       height: size,
