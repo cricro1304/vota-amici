@@ -20,7 +20,8 @@
 .flow-wrapper {
   position: relative;
   width: 100%;
-  /* NO overflow hidden/clip — it breaks position:sticky. */
+  /* overflow-x: clip is safe for sticky (unlike hidden/auto/scroll) and clips the tut-block box-shadow to the viewport. */
+  overflow-x: clip;
 }
 
 .flow-grid {
