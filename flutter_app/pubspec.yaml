@@ -1,0 +1,42 @@
+name: vota_amici
+description: "Chi è il più...? - Flutter port of the web app"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Routing
+  go_router: ^14.2.0
+
+  # Supabase
+  supabase_flutter: ^2.5.6
+
+  # Local storage (playerId per room)
+  shared_preferences: ^2.2.3
+
+  # Service locator (matches flutter-tester skill setup)
+  get_it: ^7.7.0
+
+  # Env config
+  flutter_dotenv: ^5.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  mockito: ^5.4.4
+  build_runner: ^2.4.11
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env

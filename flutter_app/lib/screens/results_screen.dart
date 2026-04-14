@@ -1,0 +1,266 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../models/player.dart';
+import '../services/game_service.dart';
+import '../state/providers.dart';
+import '../widgets/player_avatar.dart';
+
+enum _Phase { intro, suspense, reveal }
+
+class ResultsScreen extends ConsumerStatefulWidget {
+  const ResultsScreen({
+    super.key,
+    required this.roomId,
+    required this.playerId,
+  });
+
+  final String roomId;
+  final String playerId;
+
+  @override
+  ConsumerState<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends ConsumerState<ResultsScreen> {
+  _Phase _phase = _Phase.intro;
+  String? _roundId;
+  Timer? _introTimer;
+  Timer? _suspenseTimer;
+
+  void _beginReveal(String roundId) {
+    _roundId = roundId;
+    _phase = _Phase.intro;
+    _introTimer?.cancel();
+    _suspenseTimer?.cancel();
+    _introTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (!mounted) return;
+      setState(() => _phase = _Phase.suspense);
+      _suspenseTimer = Timer(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        setState(() => _phase = _Phase.reveal);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _introTimer?.cancel();
+    _suspenseTimer?.cancel();
+    super.dispose();
+  }
+
+  String _stripQuestion(String q) {
+    var s = q;
+    if (s.startsWith('Chi è il più ')) {
+      s = 'Il più ${s.substring('Chi è il più '.length)}';
+    } else if (s.startsWith('Chi è la più ')) {
+      s = 'La più ${s.substring('Chi è la più '.length)}';
+    }
+    if (s.endsWith('?')) s = s.substring(0, s.length - 1);
+    return s;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final room = ref.watch(roomProvider(widget.roomId)).valueOrNull;
+    final round = ref.watch(currentRoundProvider(widget.roomId));
+    final players =
+        ref.watch(playersProvider(widget.roomId)).valueOrNull ?? const [];
+    final votes =
+        ref.watch(currentRoundVotesProvider(widget.roomId)).valueOrNull ?? const [];
+    final questionText = ref.watch(currentQuestionTextProvider(widget.roomId)) ?? '';
+
+    if (room == null || round == null) return const SizedBox.shrink();
+    final isHost = room.hostPlayerId == widget.playerId;
+
+    if (_roundId != round.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _beginReveal(round.id));
+      });
+    }
+
+    // Tally
+    final counts = <String, int>{};
+    for (final p in players) {
+      counts[p.id] = 0;
+    }
+    for (final v in votes) {
+      counts[v.votedForId] = (counts[v.votedForId] ?? 0) + 1;
+    }
+    final maxVotes = counts.values.fold<int>(0, (a, b) => b > a ? b : a);
+    final winners = maxVotes > 0
+        ? players.where((p) => counts[p.id] == maxVotes).toList()
+        : const <Player>[];
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'ROUND ${room.currentRound}',
+          style: const TextStyle(
+            color: Colors.grey,
+            letterSpacing: 2,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_phase == _Phase.intro || _phase == _Phase.suspense)
+          Text(
+            '${_stripQuestion(questionText)} è...',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+        if (_phase == _Phase.suspense) ...[
+          const SizedBox(height: 20),
+          const _BouncingDots(),
+        ],
+        if (_phase == _Phase.reveal) ...[
+          const SizedBox(height: 12),
+          Text(
+            '${_stripQuestion(questionText)} è...',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+          const SizedBox(height: 20),
+          if (winners.isEmpty)
+            const Text(
+              'Nessun voto!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            )
+          else
+            Column(
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 24,
+                  runSpacing: 12,
+                  children: [
+                    for (final w in winners)
+                      Column(
+                        children: [
+                          PlayerAvatar(
+                            name: w.name,
+                            index: players.indexWhere((p) => p.id == w.id),
+                            size: AvatarSize.lg,
+                            isWinner: true,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            w.name,
+                            style: const TextStyle(
+                                fontSize: 22, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  winners.length > 1
+                      ? '🏆 $maxVotes voti a testa!'
+                      : '🏆 con $maxVotes vot${maxVotes == 1 ? 'o' : 'i'}!',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+        ],
+        const Spacer(),
+        if (isHost && _phase == _Phase.reveal) ...[
+          SizedBox(
+            width: 280,
+            child: ElevatedButton(
+              onPressed: () async {
+                final rounds =
+                    ref.read(roundsProvider(widget.roomId)).valueOrNull ?? [];
+                try {
+                  await ref.read(gameServiceProvider).nextRound(
+                        roomId: widget.roomId,
+                        currentRoundNumber: room.currentRound,
+                        existingRounds: rounds,
+                      );
+                } on GameException catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(e.message)));
+                  }
+                }
+              },
+              child: const Text('➡️ Prossimo Round'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: 280,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+              ),
+              onPressed: () =>
+                  ref.read(gameServiceProvider).endGame(widget.roomId),
+              child: const Text('🏁 Fine Partita'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _BouncingDots extends StatefulWidget {
+  const _BouncingDots();
+  @override
+  State<_BouncingDots> createState() => _BouncingDotsState();
+}
+
+class _BouncingDotsState extends State<_BouncingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) {
+        double offset(int i) {
+          final t = (_c.value + i * 0.15) % 1.0;
+          return (t < 0.5 ? t : 1 - t) * 12;
+        }
+
+        final color = Theme.of(context).colorScheme.primary;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < 3; i++) ...[
+              Transform.translate(
+                offset: Offset(0, -offset(i)),
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration:
+                      BoxDecoration(color: color, shape: BoxShape.circle),
+                ),
+              ),
+              if (i < 2) const SizedBox(width: 8),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
