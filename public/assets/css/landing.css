@@ -480,19 +480,32 @@ section { padding: 5rem 1.5rem; }
 }
 
 /* Full-bleed pink background.
-   The tutorial block is NOT horizontally centered on desktop — it lives in the
-   left column of the flow-grid, so `left:50%; margin-left:-50vw` misaligns and
-   the pink strip doesn't fill the viewport. Instead we extend the pseudo-
-   element far past the element's own edges in both directions; body has
-   overflow-x: hidden so the extra width can't produce a horizontal scrollbar. */
+   On mobile (<= 768px) the flow-grid collapses to a single centered column,
+   so the classic `left:50%; width:100vw; margin-left:-50vw` trick aligns the
+   strip exactly with the viewport.
+   On desktop (>= 769px) the tut-block lives in the LEFT column of the
+   flow-grid and is NOT viewport-centered, so the same trick misaligns and
+   leaves an empty band on the right. The desktop override below extends the
+   pseudo-element far past the element's own edges in both directions; body
+   has overflow-x: hidden so the extra width can't cause horizontal scroll. */
 .tut-block::before {
   content: '';
   position: absolute;
   top: 0; bottom: 0;
-  left: -100vw;
-  right: -100vw;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
   z-index: -1;
   background: linear-gradient(135deg, #fce8ef 0%, #f9d1dc 50%, #fce4ec 100%);
+}
+
+@media (min-width: 769px) {
+  .tut-block::before {
+    left: -100vw;
+    right: -100vw;
+    width: auto;
+    margin-left: 0;
+  }
 }
 
 .tut-block .section-title    { margin-bottom: 0.75rem; }
