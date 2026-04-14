@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../services/dev_bot_service.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
 
 enum _Mode { home, create, join }
@@ -104,7 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             PopIn(
               child: Column(
                 children: [
-                  const Text('🎭', style: TextStyle(fontSize: 64)),
+                  const EmojiText('🎭', style: TextStyle(fontSize: 64)),
                   const SizedBox(height: 12),
                   Text(
                     'Chi è il più...?',
@@ -115,7 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
+                  EmojiText(
                     'Scopri cosa pensano davvero di te i tuoi amici 👀',
                     textAlign: TextAlign.center,
                     style: bodyFont(
@@ -145,7 +146,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               width: 300,
               child: ElevatedButton(
                 onPressed: () => setState(() => _mode = _Mode.create),
-                child: const Text('🏠 Crea Stanza'),
+                child: const EmojiText('🏠 Crea Stanza'),
               ),
             ),
             const SizedBox(height: 12),
@@ -156,7 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   backgroundColor: AppColors.secondary,
                 ),
                 onPressed: () => setState(() => _mode = _Mode.join),
-                child: const Text('🚪 Unisciti'),
+                child: const EmojiText('🚪 Unisciti'),
               ),
             ),
           ],
@@ -204,7 +205,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loading ? null : _create,
-                child: Text(_loading ? '⏳ Creando...' : '🎮 Crea Partita'),
+                child: EmojiText(_loading ? '⏳ Creando...' : '🎮 Crea Partita'),
               ),
               TextButton(
                 onPressed: () => setState(() => _mode = _Mode.home),
@@ -223,7 +224,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       Row(
         children: [
           Expanded(
-            child: Text(
+            child: EmojiText(
               label,
               style: bodyFont(
                 fontWeight: FontWeight.w700,
@@ -276,7 +277,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loading ? null : _join,
-                child: Text(_loading ? '⏳ Entrando...' : '🚀 Entra'),
+                child: EmojiText(_loading ? '⏳ Entrando...' : '🚀 Entra'),
               ),
               TextButton(
                 onPressed: () => setState(() => _mode = _Mode.home),

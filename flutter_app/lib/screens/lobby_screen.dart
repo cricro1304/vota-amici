@@ -5,6 +5,7 @@ import '../core/constants.dart';
 import '../core/theme.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
 import '../widgets/player_avatar.dart';
 
@@ -68,7 +69,7 @@ return PopIn(
                 color: AppColors.winner.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Text(
+              child: EmojiText(
                 '🧪 Dev mode attivo — i bot giocheranno da soli',
                 textAlign: TextAlign.center,
                 style: bodyFont(
@@ -135,7 +136,7 @@ return PopIn(
                     children: [
                       PlayerAvatar(name: players[i].name, index: i),
                       const SizedBox(height: 6),
-                      Text(
+                      EmojiText(
                         '${players[i].name}${players[i].isHost ? ' 👑' : ''}',
                         style: bodyFont(
                           fontWeight: FontWeight.w700,
@@ -154,12 +155,13 @@ return PopIn(
           if (isHost)
             ElevatedButton(
               onPressed: () => _start(players.length),
-              child: const Text('🚀 Inizia Partita'),
+              child: const EmojiText('🚀 Inizia Partita'),
             )
           else
             Column(
               children: [
-                const Floater(child: Text('⏳', style: TextStyle(fontSize: 36))),
+                const Floater(
+                    child: EmojiText('⏳', style: TextStyle(fontSize: 36))),
                 const SizedBox(height: 8),
                 Text(
                   "In attesa che l'host inizi la partita...",

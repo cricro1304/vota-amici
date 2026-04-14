@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
+import 'emoji_text.dart';
 
 /// Gradient header + centered content column with max-width, mirroring
 /// the web `GameLayout`.
@@ -18,7 +19,7 @@ class GameLayout extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: const BoxDecoration(gradient: kGameGradient),
-              child: Text(
+              child: EmojiText(
                 '🎉 Chi è il più...?',
                 textAlign: TextAlign.center,
                 style: displayFont(

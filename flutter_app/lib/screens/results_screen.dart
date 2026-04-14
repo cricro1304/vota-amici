@@ -7,6 +7,7 @@ import '../core/theme.dart';
 import '../models/player.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
 import '../widgets/player_avatar.dart';
 
@@ -117,7 +118,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
           // React renders the question plainly (no card wrapper) during
           // intro and suspense. We match that.
           if (_phase == _Phase.intro || _phase == _Phase.suspense)
-            Text(
+            EmojiText(
               '${_stripQuestion(questionText)} è...',
               textAlign: TextAlign.center,
               style: displayFont(
@@ -131,7 +132,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
             const _BouncingDots(),
           ],
           if (_phase == _Phase.reveal) ...[
-            Text(
+            EmojiText(
               '${_stripQuestion(questionText)} è...',
               textAlign: TextAlign.center,
               style: displayFont(
@@ -185,7 +186,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                   const SizedBox(height: 16),
                   // React has no pill background — just muted-foreground
                   // body text at text-lg (18px).
-                  Text(
+                  EmojiText(
                     winners.length > 1
                         ? '🏆 $maxVotes voti a testa!'
                         : '🏆 con $maxVotes vot${maxVotes == 1 ? 'o' : 'i'}!',
@@ -227,7 +228,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                         // On success the round stream will transition the
                         // screen away, so we don't need to reset _advancing.
                       },
-                child: Text(_advancing ? '…' : '➡️ Prossimo Round'),
+                child: EmojiText(_advancing ? '…' : '➡️ Prossimo Round'),
               ),
             ),
             const SizedBox(height: 10),
@@ -258,7 +259,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                           if (mounted) setState(() => _ending = false);
                         }
                       },
-                child: Text(_ending ? '…' : '🏁 Fine Partita'),
+                child: EmojiText(_ending ? '…' : '🏁 Fine Partita'),
               ),
             ),
           ],

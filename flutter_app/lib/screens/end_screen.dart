@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../models/round.dart';
 import '../models/vote.dart';
 import '../state/providers.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
 
 /// Shows the final scoreboard. Unlike the web version, we fetch historic
@@ -60,9 +61,10 @@ class EndScreen extends ConsumerWidget {
           child: Column(
             children: [
               // Static trophy + title — matches React (no floater, no stagger).
-              // Use bodyFont so the emoji-fallback chain kicks in and 🏆
-              // renders as a color glyph on Flutter Web instead of tofu.
-              Text('🏆', style: bodyFont(fontSize: 48)),
+              // EmojiText swaps 🏆 for the Twemoji PNG, so every platform shows
+              // the same Apple-ish trophy instead of whatever glyph the
+              // browser/OS happens to have.
+              EmojiText('🏆', style: bodyFont(fontSize: 48)),
               const SizedBox(height: 8),
               Text(
                 'Classifica Finale',
@@ -95,7 +97,7 @@ class EndScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
+                          EmojiText(
                             r.question,
                             style: displayFont(
                               fontWeight: FontWeight.w700,
@@ -122,7 +124,7 @@ class EndScreen extends ConsumerWidget {
                 width: 320,
                 child: ElevatedButton(
                   onPressed: () => context.go('/'),
-                  child: const Text('🎮 Nuova Partita'),
+                  child: const EmojiText('🎮 Nuova Partita'),
                 ),
               ),
             ],

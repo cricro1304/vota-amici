@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../models/room.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
 import 'lobby_screen.dart';
 import 'voting_screen.dart';
@@ -86,7 +87,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
   @override
   Widget build(BuildContext context) {
     if (_resolving) {
-      return const GameLayout(child: Center(child: Text('🎲', style: TextStyle(fontSize: 32))));
+      return const GameLayout(child: Center(child: EmojiText('🎲', style: TextStyle(fontSize: 32))));
     }
 
     final playerId = _playerId;
@@ -95,7 +96,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
     final roomAsync = ref.watch(roomProvider(_roomId!));
     final room = roomAsync.valueOrNull;
     if (room == null) {
-      return const GameLayout(child: Center(child: Text('🎲', style: TextStyle(fontSize: 32))));
+      return const GameLayout(child: Center(child: EmojiText('🎲', style: TextStyle(fontSize: 32))));
     }
 
     return GameLayout(
@@ -116,7 +117,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('🔄', style: TextStyle(fontSize: 50)),
+            const EmojiText('🔄', style: TextStyle(fontSize: 50)),
             const SizedBox(height: 16),
             const Text(
               'Rientra nella stanza',
@@ -148,7 +149,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
               width: 280,
               child: ElevatedButton(
                 onPressed: _rejoining ? null : _rejoin,
-                child: Text(_rejoining ? '⏳ Entrando...' : '🚀 Entra'),
+                child: EmojiText(_rejoining ? '⏳ Entrando...' : '🚀 Entra'),
               ),
             ),
           ],

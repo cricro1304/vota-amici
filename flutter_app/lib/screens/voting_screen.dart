@@ -7,6 +7,7 @@ import '../core/theme.dart';
 import '../models/player.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
 import '../widgets/player_avatar.dart';
 
@@ -197,7 +198,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Floater(child: Text('✅', style: bodyFont(fontSize: 48))),
+          Floater(child: EmojiText('✅', style: bodyFont(fontSize: 48))),
           const SizedBox(height: 16),
           Text(
             'Voto registrato!',
@@ -250,7 +251,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
+                EmojiText(
                   question,
                   textAlign: TextAlign.center,
                   style: displayFont(
@@ -261,7 +262,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                 ),
                 if (_timeLeft != null) ...[
                   const SizedBox(height: 12),
-                  Text(
+                  EmojiText(
                     '⏱️ ${_timeLeft}s',
                     style: displayFont(
                       fontSize: 28,
