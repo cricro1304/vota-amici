@@ -9,7 +9,7 @@ import '../services/game_service.dart';
 import '../state/providers.dart';
 import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
-import '../widgets/player_avatar.dart';
+import '../widgets/landing_widgets.dart';
 
 enum _Phase { intro, suspense, reveal }
 
@@ -55,6 +55,12 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     _introTimer?.cancel();
     _suspenseTimer?.cancel();
     super.dispose();
+  }
+
+  String _initialsOf(String name) {
+    final t = name.trim();
+    if (t.isEmpty) return '??';
+    return t.substring(0, t.length >= 2 ? 2 : 1).toUpperCase();
   }
 
   String _stripQuestion(String q) {
@@ -162,12 +168,16 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                       for (final w in winners)
                         Column(
                           children: [
-                            PlayerAvatar(
-                              name: w.name,
-                              index:
-                                  players.indexWhere((p) => p.id == w.id),
-                              size: AvatarSize.lg,
-                              isWinner: true,
+                            // Landing's .result-winner-ring — gradient halo
+                            // with a pink inner circle showing the initials.
+                            // We feed it the player's palette colour rather
+                            // than hard-coding pink so the 2nd / 3rd winners
+                            // (on a tie) still look distinct.
+                            WinnerRing(
+                              initials: _initialsOf(w.name),
+                              size: 110,
+                              innerColor: playerColor(
+                                  players.indexWhere((p) => p.id == w.id)),
                             ),
                             const SizedBox(height: 8),
                             // React uses text-3xl (30px) for the winner name.

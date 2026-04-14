@@ -9,6 +9,7 @@ import '../services/game_service.dart';
 import '../state/providers.dart';
 import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
+import '../widgets/landing_widgets.dart';
 import '../widgets/player_avatar.dart';
 
 class VotingScreen extends ConsumerStatefulWidget {
@@ -241,16 +242,9 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
           SoftCard(
             child: Column(
               children: [
-                Text(
-                  'ROUND $roundNumber',
-                  style: bodyFont(
-                    color: AppColors.mutedFg,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2,
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(height: 8),
+                // Pink pill badge — "ROUND N" — matching landing's .q-badge.
+                QuestionBadge(label: 'Round $roundNumber'),
+                const SizedBox(height: 12),
                 EmojiText(
                   question,
                   textAlign: TextAlign.center,

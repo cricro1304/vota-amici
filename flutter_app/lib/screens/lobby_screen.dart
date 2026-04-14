@@ -7,7 +7,7 @@ import '../services/game_service.dart';
 import '../state/providers.dart';
 import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
-import '../widgets/player_avatar.dart';
+import '../widgets/landing_widgets.dart';
 
 class LobbyScreen extends ConsumerStatefulWidget {
   const LobbyScreen({
@@ -79,38 +79,15 @@ return PopIn(
                 ),
               ),
             ),
-          SoftCard(
-            child: Column(
-              children: [
-                Text(
-                  'CODICE STANZA',
-                  style: bodyFont(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2,
-                    color: AppColors.mutedFg,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  room.code,
-                  style: displayFont(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 14,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Condividi questo codice con i tuoi amici!',
-                  style: bodyFont(
-                    fontSize: 12,
-                    color: AppColors.mutedFg,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+          RoomCodeCard(code: room.code, label: 'CODICE STANZA'),
+          const SizedBox(height: 10),
+          Text(
+            'Condividi questo codice con i tuoi amici!',
+            textAlign: TextAlign.center,
+            style: bodyFont(
+              fontSize: 13,
+              color: AppColors.mutedFg,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 28),
@@ -123,35 +100,23 @@ return PopIn(
               color: AppColors.foreground,
             ),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 20,
-            runSpacing: 16,
-            children: [
-              for (var i = 0; i < players.length; i++)
-                PopIn(
-                  delay: Duration(milliseconds: 50 * i),
-                  child: Column(
-                    children: [
-                      PlayerAvatar(name: players[i].name, index: i),
-                      const SizedBox(height: 6),
-                      EmojiText(
-                        '${players[i].name}${players[i].isHost ? ' 👑' : ''}',
-                        style: bodyFont(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: players[i].id == widget.playerId
-                              ? AppColors.primary
-                              : AppColors.foreground,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 14),
+          // Vertical player list like the lobby mockup in landing-page.html.
+          // Staggered PopIn so rows fade in one after the other (mirrors the
+          // `tutPlayerJoin` keyframes).
+          for (var i = 0; i < players.length; i++) ...[
+            PopIn(
+              delay: Duration(milliseconds: 80 * i),
+              child: PlayerRow(
+                name: players[i].name,
+                index: i,
+                isHost: players[i].isHost,
+                isSelf: players[i].id == widget.playerId,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const SizedBox(height: 24),
           if (isHost)
             ElevatedButton(
               onPressed: () => _start(players.length),
