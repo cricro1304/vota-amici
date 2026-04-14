@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Exact translations of the web app's CSS HSL tokens.
+/// Exact translations of the landing's CSS tokens
+/// (see `public/assets/css/shared.css` — these MUST stay in sync 1:1).
 class AppColors {
-  static const background = Color(0xFFFFFBE8); // hsl(45, 100%, 96%)
-  static const foreground = Color(0xFF20203D); // hsl(240, 20%, 15%)
-  static const card = Colors.white;
-  static const primary = Color(0xFFE63E5C); // hsl(350, 80%, 55%)
-  static const primaryLight = Color(0xFFF57991); // hsl(350, 90%, 65%)
-  static const secondary = Color(0xFF3D8CE6); // hsl(210, 70%, 55%)
-  static const accent = Color(0xFF2EB87A); // hsl(160, 60%, 45%)
-  static const muted = Color(0xFFEAE5DC); // hsl(40, 30%, 90%)
-  static const mutedFg = Color(0xFF696675); // hsl(240, 10%, 45%)
-  static const destructive = Color(0xFFEF4444); // hsl(0, 84%, 60%)
-  static const winner = Color(0xFFFFC400); // hsl(45, 100%, 50%)
-  static const cardShadowTint = Color(0x26E63E5C); // primary @ ~15%
+  static const background = Color(0xFFFFF8ED); // --bg
+  static const foreground = Color(0xFF2B2640); // --text
+  static const card = Color(0xFFFFFFFF); // --bg-card
+  // --pink
+  static const primary = Color(0xFFE6366E);
+  static const primaryLight = Color(0xFFF06292); // mid-stop in nav/header gradient
+  static const primaryTint = Color(0xFFF9D1DC); // --pink-light
+  // --cyan
+  static const secondary = Color(0xFF3BA3D0);
+  static const secondaryLight = Color(0xFFC4E8F7); // --cyan-light
+  // --teal
+  static const accent = Color(0xFF2DB88A);
+  static const yellow = Color(0xFFF5C518); // --yellow
+  static const purple = Color(0xFF9B59B6); // --purple
+  static const orange = Color(0xFFF0883E); // --orange
+  static const muted = Color(0xFFEEE8DD); // bg-adjacent chip bg
+  static const mutedFg = Color(0xFF8A8494); // --text-muted
+  static const destructive = Color(0xFFEF4444);
+  static const winner = Color(0xFFF5C518); // --yellow (used for winner rings)
+  // --pink-glow: rgba(230, 54, 110, 0.25) → 0x40 alpha
+  static const pinkGlow = Color(0x40E6366E);
+  // --shadow first layer: rgba(230, 54, 110, 0.15) → 0x26 alpha
+  static const cardShadowTint = Color(0x26E6366E);
 }
 
 /// System color-emoji fonts. Flutter Web otherwise falls back to a
@@ -186,56 +198,86 @@ ThemeData buildAppTheme() {
   );
 }
 
-/// Palette for player avatars (same as web).
+/// Player-avatar palette — mirrors the landing's `--pink / --cyan / --teal /
+/// --yellow / --purple / --orange` tokens so a "Marco" avatar looks identical
+/// on the marketing page and inside the app.
 const List<Color> kPlayerColors = [
-  Color(0xFFE63E5C), // primary pink
-  Color(0xFF3D8CE6), // blue
-  Color(0xFF2EB87A), // green
-  Color(0xFFFFC400), // yellow
-  Color(0xFFA64DD9), // purple
-  Color(0xFFF57A1F), // orange
-  Color(0xFF26A5C2), // cyan
-  Color(0xFFCC3374), // magenta
+  AppColors.primary, // --pink
+  AppColors.secondary, // --cyan
+  AppColors.accent, // --teal
+  AppColors.yellow, // --yellow
+  AppColors.purple, // --purple
+  AppColors.orange, // --orange
+  Color(0xFF26A5C2), // extra cyan (8+ player fallback)
+  Color(0xFFCC3374), // extra magenta
 ];
 
 Color playerColor(int index) => kPlayerColors[index % kPlayerColors.length];
 
-/// The "game-gradient" from the web — used in the header.
+/// The nav / header gradient from the landing:
+/// `linear-gradient(135deg, var(--pink) 0%, #f06292 50%, var(--cyan) 100%)`.
 const LinearGradient kGameGradient = LinearGradient(
+  // 135deg in CSS = diagonal top-left → bottom-right.
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    AppColors.primary,
-    AppColors.primaryLight,
-    AppColors.secondary,
+    AppColors.primary, // --pink
+    AppColors.primaryLight, // #f06292
+    AppColors.secondary, // --cyan
   ],
   stops: [0.0, 0.5, 1.0],
 );
 
-/// Soft shadow matching `card-shadow` utility.
+/// Winner ring gradient (landing `.result-winner-ring`):
+/// `linear-gradient(135deg, var(--yellow), var(--orange))`.
+const LinearGradient kWinnerRingGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [AppColors.yellow, AppColors.orange],
+);
+
+/// Footer gradient: `linear-gradient(135deg, #f9d1dc 0%, #e8c4d4 100%)`.
+const LinearGradient kFooterGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [Color(0xFFF9D1DC), Color(0xFFE8C4D4)],
+);
+
+/// Shared `--shadow` token from the landing:
+/// `0 4px 20px -4px rgba(230,54,110,0.15), 0 2px 8px -2px rgba(0,0,0,0.08)`.
 const List<BoxShadow> kCardShadow = [
   BoxShadow(
-    color: AppColors.cardShadowTint,
+    color: AppColors.cardShadowTint, // pink @ 0.15
     blurRadius: 20,
     offset: Offset(0, 4),
     spreadRadius: -4,
   ),
   BoxShadow(
-    color: Color(0x14000000),
+    color: Color(0x14000000), // black @ 0.08
     blurRadius: 8,
     offset: Offset(0, 2),
     spreadRadius: -2,
   ),
 ];
 
-/// Winner glow — warm amber halo.
+/// Winner halo mirroring the `winnerPulse` box-shadow on the landing:
+/// `box-shadow: 0 0 30px rgba(245, 197, 24, 0.4)`.
 const List<BoxShadow> kWinnerGlow = [
   BoxShadow(
-    color: Color(0x80FFC400),
+    color: Color(0x66F5C518), // yellow @ 0.4
     blurRadius: 30,
   ),
   BoxShadow(
-    color: Color(0x33FFC400),
+    color: Color(0x33F5C518),
     blurRadius: 60,
+  ),
+];
+
+/// Pink CTA glow: `box-shadow: 0 3px 12px rgba(230,54,110,0.25)`.
+const List<BoxShadow> kPinkGlow = [
+  BoxShadow(
+    color: AppColors.pinkGlow,
+    blurRadius: 12,
+    offset: Offset(0, 3),
   ),
 ];
