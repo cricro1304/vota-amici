@@ -12,14 +12,14 @@ window.LANDING_TRANSLATIONS = {
 
     // Hero
     hero_title: '<span class="line1">Vi siete mai chiesti</span><span class="highlight">chi sia il più...?</span>',
-    hero_sub: 'Il più pigro? Il più drammatico? Il più probabile a diventare famoso?<br/>Ora puoi scoprirlo. E no, non sei pronto per le risposte. 👀',
+    hero_sub: '<span class="slot-prefix">Chi è il più</span><span class="slot-machine"><span class="slot-track"><span class="slot-word">pigro? 😴</span><span class="slot-word">drammatico? 🎭</span><span class="slot-word">pettegolo? 🤫</span><span class="slot-word">testardo? 💪</span><span class="slot-word">ritardatario? ⏰</span><span class="slot-word">goloso? 🍕</span><span class="slot-word">pigro? 😴</span></span></span><br/>Ora lo decidono i tuoi amici. In segreto. 👀',
     hero_tagline: 'Il party game che svela cosa pensano davvero i tuoi amici',
     hero_cta: '🎮 Gioca Ora — È Gratis!',
-    hero_free: 'Nessun download. Nessuna registrazione. Solo verità scomode.',
+    hero_free: 'Niente download, niente account. Solo voti, drama, e qualche amicizia in bilico.',
 
     // How it works
-    how_title: 'Come funziona? Facilissimo 🤌',
-    how_sub: 'Tre passi e siete dentro. Servono almeno 3 amici e un po\' di coraggio.',
+    how_title: 'Come funziona? Facilissimo <span class="hand-gesture">🤌</span>',
+    how_sub: 'Tre passi, almeno 3 amici, zero filtri. Il resto viene da solo.',
     step1_title: 'Crea una stanza',
     step1_desc: 'Un tap e hai il tuo codice. Condividilo con i tuoi amici e aspetta che entrino.',
     step2_title: 'Vota in segreto',
@@ -38,11 +38,11 @@ window.LANDING_TRANSLATIONS = {
 
     // Question carousel section
     q_title: 'Le domande che non osavi fare 😏',
-    q_sub: '100+ domande tra tutti i pack. Quante amicizie sopravviveranno?',
+    q_sub: '100+ verità in attesa di un voto. Le amicizie? Si vedrà.',
 
     // Packs section
-    packs_title: 'Per ogni occasione 🎲',
-    packs_sub: 'Il Classico è gratis. Per tutto il resto... ci stiamo lavorando.',
+    packs_title: 'Un pack per ogni tipo di drama 🎲',
+    packs_sub: 'Il Classico è gratis, ora e per sempre. Il resto sta arrivando.',
     pack_classic_title: 'Classico — 100+ domande',
     pack_classic_desc: 'Le domande essenziali per qualsiasi serata tra amici. Il punto di partenza perfetto.',
     pack_free_badge: '✅ Gratis per sempre',
@@ -95,8 +95,8 @@ window.LANDING_TRANSLATIONS = {
     tile_count: '+50 domande',
 
     // Social proof chat
-    social_title: 'Cosa succede quando ci giochi 😂',
-    social_sub: 'Un gruppo WhatsApp qualunque, dopo una partita.',
+    social_title: 'La chat di gruppo dopo la partita 😂',
+    social_sub: 'Gli screenshot non mentono. (Le persone sì.)',
     chat_1: 'Marco eletto "il più pigro" all\'unanimità 💀 non ha nemmeno protestato perché gli sembrava faticoso',
     chat_2: 'non ho le energie per rispondere a questa cosa',
     chat_3: 'Io pensavo di essere il più simpatico del gruppo. A quanto pare no. Devo ripensare tutta la mia vita.',
@@ -106,8 +106,8 @@ window.LANDING_TRANSLATIONS = {
     wa_input: 'Scrivi un messaggio...',
 
     // Final CTA
-    cta_title: 'Pronto a scoprire cosa pensano di te? 👀',
-    cta_sub: 'Crea una stanza, invita i tuoi amici, e che il giudizio abbia inizio.',
+    cta_title: 'Pronto a sapere cosa pensano davvero? 👀',
+    cta_sub: 'Apri una stanza, chiama gli amici, lascia parlare i voti.',
     cta_btn: '🚀 Gioca Ora — È Gratis!',
     cta_note: 'Funziona su qualsiasi telefono. Basta un browser.',
 
@@ -144,14 +144,14 @@ window.LANDING_TRANSLATIONS = {
 
     // Hero
     hero_title: '<span class="line1">Ever wondered</span><span class="highlight">who\'s the most...?</span>',
-    hero_sub: 'The laziest? The most dramatic? Most likely to become famous?<br/>Now you can find out. And no, you\'re not ready for the answers. 👀',
+    hero_sub: '<span class="slot-prefix">Who\'s the</span><span class="slot-machine"><span class="slot-track"><span class="slot-word">laziest? 😴</span><span class="slot-word">most dramatic? 🎭</span><span class="slot-word">biggest gossip? 🤫</span><span class="slot-word">most stubborn? 💪</span><span class="slot-word">always-late one? ⏰</span><span class="slot-word">hungriest? 🍕</span><span class="slot-word">laziest? 😴</span></span></span><br/>Your friends decide. In secret. 👀',
     hero_tagline: 'The party game that reveals what your friends really think',
     hero_cta: '🎮 Play Now — It\'s Free!',
-    hero_free: 'No download. No sign-up. Just uncomfortable truths.',
+    hero_free: 'No download, no sign-up. Just votes, drama, and a few friendships on the line.',
 
     // How it works
-    how_title: 'How does it work? Easy 🤌',
-    how_sub: 'Three steps and you\'re in. You need at least 3 friends and a bit of courage.',
+    how_title: 'How does it work? Easy <span class="hand-gesture">🤌</span>',
+    how_sub: 'Three steps, at least 3 friends, zero filters. The rest takes care of itself.',
     step1_title: 'Create a room',
     step1_desc: 'One tap and you\'ve got your code. Share it with friends and wait for them to join.',
     step2_title: 'Vote in secret',
@@ -170,11 +170,11 @@ window.LANDING_TRANSLATIONS = {
 
     // Question carousel section
     q_title: 'Questions you never dared to ask 😏',
-    q_sub: '100+ questions across all packs. How many friendships will survive?',
+    q_sub: '100+ truths waiting for a vote. Friendships? We\'ll see.',
 
     // Packs section
-    packs_title: 'For every occasion 🎲',
-    packs_sub: 'The Classic is free. For everything else... we\'re working on it.',
+    packs_title: 'A pack for every flavor of drama 🎲',
+    packs_sub: 'The Classic is free — now and forever. The rest is on its way.',
     pack_classic_title: 'Classic — 100+ questions',
     pack_classic_desc: 'The essential questions for any night with friends. The perfect starting point.',
     pack_free_badge: '✅ Free forever',
@@ -227,8 +227,8 @@ window.LANDING_TRANSLATIONS = {
     tile_count: '+50 questions',
 
     // Social proof chat
-    social_title: 'What happens when you play 😂',
-    social_sub: 'A random WhatsApp group, after a game.',
+    social_title: 'The group chat after the game 😂',
+    social_sub: 'Screenshots don\'t lie. (People do.)',
     chat_1: 'Marco voted "the laziest" unanimously 💀 he didn\'t even protest because it seemed like too much effort',
     chat_2: 'I don\'t have the energy to respond to this',
     chat_3: 'I thought I was the funniest in the group. Apparently not. I need to rethink my entire life.',
@@ -238,8 +238,8 @@ window.LANDING_TRANSLATIONS = {
     wa_input: 'Type a message...',
 
     // Final CTA
-    cta_title: 'Ready to find out what they think of you? 👀',
-    cta_sub: 'Create a room, invite your friends, and let the judgment begin.',
+    cta_title: 'Ready to find out what they really think? 👀',
+    cta_sub: 'Open a room, gather your friends, let the votes do the talking.',
     cta_btn: '🚀 Play Now — It\'s Free!',
     cta_note: 'Works on any phone. Just a browser.',
 

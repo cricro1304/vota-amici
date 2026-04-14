@@ -13,4 +13,7 @@
   window.setLang = function (lang) {
     window.I18n.applyTranslations(lang, translations[lang]);
   };
+
+  // Boot with the user's stored/preferred language.
+  window.setLang(window.I18n.getStoredLang());
 })();

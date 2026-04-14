@@ -45,7 +45,7 @@
 
 
   /* ── 2. Phone carousel (hero demo) ──────────────────────────────────── */
-  var currentLang = 'it';
+  var currentLang = (window.I18n && window.I18n.getStoredLang) ? window.I18n.getStoredLang() : 'it';
   var roundIndex = 0;
   var screens = document.querySelectorAll('.app-screen');
   var currentScreen = 0;
@@ -341,32 +341,87 @@
 
 
   /* ── 6. Chat bubble scroll-in animations ────────────────────────────── */
-  var chatSection = document.querySelector('.social-section');
-  var chatMsgs    = document.querySelectorAll('.chat-msg');
-  var chatAnimated = false;
+  // Each bubble fades/slides in individually as it scrolls into view, so the
+  // chat feels like it's being read in real time as the user scrolls down.
+  var chatMsgs = document.querySelectorAll('.chat-msg');
 
-  if (chatSection && chatMsgs.length > 0) {
-    // Stagger each message by 0.18s.
-    chatMsgs.forEach(function (msg, i) {
-      msg.style.setProperty('--chat-delay', (i * 0.18) + 's');
+  if (chatMsgs.length > 0) {
+    chatMsgs.forEach(function (msg) {
+      // Reset any previous staggered delay — per-bubble timing is its own arrival.
+      msg.style.setProperty('--chat-delay', '0s');
     });
 
     var chatObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (!entry.isIntersecting || chatAnimated) return;
-        chatAnimated = true;
-        chatMsgs.forEach(function (msg) { msg.classList.add('chat-visible'); });
-        chatObserver.disconnect();
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('chat-visible');
+        chatObserver.unobserve(entry.target); // play only once per bubble
       });
-    }, { threshold: 0.45 });
+    }, {
+      threshold: 0.35,
+      // Trigger slightly before the bubble fully enters so it doesn't pop in
+      // at the very edge of the viewport.
+      rootMargin: '0px 0px -8% 0px'
+    });
 
-    chatObserver.observe(chatSection);
+    chatMsgs.forEach(function (msg) { chatObserver.observe(msg); });
   }
 
 
+  /* ── 6b. Hand-gesture animation ─────────────────────────────────────── */
+  // Fires the 🤌 "ma che vuoi" wiggle the first time the title enters the
+  // viewport, then re-fires every 60s as long as the hand is still on screen
+  // (so it stays a subtle background flourish rather than a constant loop).
+  // Re-armed on language change since data-i18n innerHTML rewrite swaps the node.
+  var handObserver  = null;
+  var handInterval  = null;
+  var handVisible   = false;
+
+  function playHandGesture() {
+    var hand = document.querySelector('.hand-gesture');
+    if (!hand) return;
+    hand.classList.remove('play');
+    void hand.offsetWidth; // force reflow so the keyframes restart
+    hand.classList.add('play');
+  }
+
+  function armHandGesture() {
+    var hand = document.querySelector('.hand-gesture');
+    if (!hand) return;
+    hand.classList.remove('play');
+    handVisible = false;
+
+    if (handObserver) handObserver.disconnect();
+    if (handInterval) { clearInterval(handInterval); handInterval = null; }
+
+    handObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        handVisible = entry.isIntersecting;
+        if (handVisible && !handInterval) {
+          // First time in view → play immediately, then every 60s.
+          playHandGesture();
+          handInterval = setInterval(function () {
+            if (handVisible) playHandGesture();
+          }, 60000);
+        }
+      });
+    }, { threshold: 0.4 });
+    handObserver.observe(hand);
+  }
+
+  // Re-arm whenever language changes (innerHTML rewrite swaps the node).
+  var _origSetLang = window.setLang;
+  window.setLang = function (lang) {
+    _origSetLang(lang);
+    armHandGesture();
+  };
+
+
   /* ── 7. Boot ────────────────────────────────────────────────────────── */
-  applyRound();
-  buildCarousel();
+  // Apply the stored/preferred language on boot so the page renders in the
+  // user's last choice rather than the HTML defaults. The wrapped setLang
+  // also (re-)arms the hand-gesture observer.
+  window.setLang(currentLang);
   startCarousel();
 
   tutSteps.forEach(function (s) { s.classList.remove('active'); });

@@ -124,6 +124,100 @@
   line-height: 1.6;
 }
 
+/* Slot-machine rolling adjective in the hero subtitle.
+   Both prefix and rolling words share the same font + line-box so the
+   slot stays vertically locked to the surrounding text baseline. */
+.hero-sub .slot-prefix {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  color: var(--text-dark, #222);
+  line-height: 1.6;
+  vertical-align: baseline;
+  margin-right: 0.35ch;
+}
+
+.hero-sub .slot-machine {
+  display: inline-block;
+  height: 1.6em;          /* matches .hero-sub line-height */
+  line-height: 1.6em;
+  overflow: hidden;
+  vertical-align: top;    /* align top of slot with top of line box */
+  position: relative;
+  /* Soft fade on top/bottom edges so the roll doesn't feel like a hard cut */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+          mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+}
+
+.hero-sub .slot-track {
+  display: block;
+  animation: slot-roll 13s cubic-bezier(0.85, 0.05, 0.2, 1) infinite;
+}
+
+.hero-sub .slot-word {
+  display: block;
+  height: 1.6em;
+  line-height: 1.6em;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  color: var(--pink);
+  white-space: nowrap;
+  text-align: left;       /* keep words flush-left so centered layouts don't leave a gap before the word */
+  padding-right: 0.2ch;
+}
+
+@keyframes slot-roll {
+  0%,    13%    { transform: translateY(0); }
+  16.66%, 30%   { transform: translateY(-1.6em); }
+  33.33%, 47%   { transform: translateY(-3.2em); }
+  50%,    63%   { transform: translateY(-4.8em); }
+  66.66%, 80%   { transform: translateY(-6.4em); }
+  83.33%, 96%   { transform: translateY(-8em); }
+  100%          { transform: translateY(-9.6em); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-sub .slot-track { animation: none; }
+}
+
+/* "Ma che vuoi" hand gesture — fires once when the section scrolls in.
+   Animation toggled by .play class added via IntersectionObserver in landing.js */
+.hand-gesture {
+  display: inline-block;
+  transform-origin: 50% 80%;
+  will-change: transform;
+}
+
+.hand-gesture.play {
+  animation: hand-pinch 1.4s cubic-bezier(0.4, 0, 0.2, 1) 1;
+}
+
+@keyframes hand-pinch {
+  0%   { transform: rotate(0deg)   translateY(0); }
+  12%  { transform: rotate(-14deg) translateY(-2px); }
+  24%  { transform: rotate(8deg)   translateY(2px); }
+  38%  { transform: rotate(-12deg) translateY(-3px); }
+  52%  { transform: rotate(8deg)   translateY(2px); }
+  66%  { transform: rotate(-10deg) translateY(-2px); }
+  80%  { transform: rotate(6deg)   translateY(1px); }
+  100% { transform: rotate(0deg)   translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hand-gesture.play { animation: none; }
+}
+
 .hero-tagline {
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(0.95rem, 1.8vw, 1.1rem);
