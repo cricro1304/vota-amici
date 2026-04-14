@@ -28,14 +28,16 @@ class PlayerAvatar extends StatelessWidget {
 
   double get _fontSize => switch (size) {
         AvatarSize.sm => 14,
-        AvatarSize.md => 18,
-        AvatarSize.lg => 26,
+        AvatarSize.md => 20,
+        AvatarSize.lg => 28,
       };
 
   String get _initials {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return '??';
-    return trimmed.substring(0, trimmed.length >= 2 ? 2 : 1).toUpperCase();
+    return trimmed
+        .substring(0, trimmed.length >= 2 ? 2 : 1)
+        .toUpperCase();
   }
 
   @override
@@ -43,33 +45,31 @@ class PlayerAvatar extends StatelessWidget {
     final bg = playerColor(index);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
       width: _dim,
       height: _dim,
       decoration: BoxDecoration(
         color: bg,
         shape: BoxShape.circle,
         border: selected
-            ? Border.all(
-                color: Theme.of(context).colorScheme.primary,
-                width: 4,
-              )
+            ? Border.all(color: Colors.white, width: 4)
             : null,
         boxShadow: isWinner
-            ? [
+            ? kWinnerGlow
+            : [
                 BoxShadow(
-                  color: Colors.amber.withValues(alpha: 0.7),
-                  blurRadius: 20,
-                  spreadRadius: 2,
+                  color: bg.withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-              ]
-            : null,
+              ],
       ),
       alignment: Alignment.center,
       child: Text(
         _initials,
-        style: TextStyle(
+        style: displayFont(
           color: Colors.white,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           fontSize: _fontSize,
         ),
       ),

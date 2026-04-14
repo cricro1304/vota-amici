@@ -23,6 +23,19 @@ class GameRepository {
         .map((rows) => rows.map(Round.fromJson).toList());
   }
 
+  /// One-shot fetch of every round in a room. Used for idempotency checks
+   /// in startGame/nextRound so we never insert a duplicate `round_number`.
+  Future<List<Round>> fetchRoundsForRoom(String roomId) async {
+    final rows = await _client
+        .from('rounds')
+        .select()
+        .eq('room_id', roomId)
+        .order('round_number');
+    return (rows as List)
+        .map((r) => Round.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<Round> createRound({
     required String roomId,
     required String questionId,

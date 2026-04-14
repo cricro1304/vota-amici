@@ -8,6 +8,7 @@ import '../models/round.dart';
 import '../models/vote.dart';
 import '../repositories/game_repository.dart';
 import '../repositories/room_repository.dart';
+import '../services/dev_bot_service.dart';
 import '../services/game_service.dart';
 import '../services/session_service.dart';
 
@@ -21,6 +22,8 @@ final gameServiceProvider =
     Provider<GameService>((_) => locator<GameService>());
 final sessionServiceProvider =
     Provider<SessionService>((_) => locator<SessionService>());
+final devBotServiceProvider =
+    Provider<DevBotService>((_) => locator<DevBotService>());
 
 // --- Reactive streams: room, players, rounds -----------------------------
 
@@ -65,13 +68,17 @@ final currentRoundVotesProvider =
 
 // --- Question cache -------------------------------------------------------
 
-/// Questions are fetched once per app session and cached in GameService.
-/// This provider just re-exposes that cache for the UI.
-final questionsByIdProvider =
-    FutureProvider.family<Map<String, Question>, Set<String>>((ref, ids) async {
-  if (ids.isEmpty) return const {};
+/// Fetches ALL questions in the default pack ONCE per app session.
+/// Keyed by nothing — so Riverpod reuses the same future forever.
+///
+/// We intentionally avoid `.family` with a `Set<String>` here: Dart Set
+/// literals don't have structural equality, so `{id}` would produce a fresh
+/// provider instance on every rebuild and the UI would see a perpetual
+/// loading state — which caused the "question text doesn't show" bug.
+final allQuestionsByIdProvider =
+    FutureProvider<Map<String, Question>>((ref) async {
   final service = ref.watch(gameServiceProvider);
-  final qs = await service.questionsForIds(ids);
+  final qs = await service.allQuestions();
   return {for (final q in qs) q.id: q};
 });
 
@@ -79,7 +86,6 @@ final currentQuestionTextProvider =
     Provider.family<String?, String>((ref, roomId) {
   final round = ref.watch(currentRoundProvider(roomId));
   if (round == null) return null;
-  final map =
-      ref.watch(questionsByIdProvider({round.questionId})).valueOrNull ?? {};
+  final map = ref.watch(allQuestionsByIdProvider).valueOrNull ?? const {};
   return map[round.questionId]?.text;
 });

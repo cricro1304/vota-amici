@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/theme.dart';
 import '../models/round.dart';
 import '../models/vote.dart';
 import '../state/providers.dart';
+import '../widgets/game_layout.dart';
 
 /// Shows the final scoreboard. Unlike the web version, we fetch historic
 /// votes ONCE here (via FutureProvider) rather than reactively streaming
@@ -19,14 +21,16 @@ class EndScreen extends ConsumerWidget {
         ref.watch(playersProvider(roomId)).valueOrNull ?? const [];
     final rounds = ref.watch(roundsProvider(roomId)).valueOrNull ?? const [];
 
-    final summaryAsync = ref.watch(_summaryProvider((
-      roomId: roomId,
-      roundIds: rounds.map((r) => r.id).toList(),
-    )));
+    final summaryAsync = ref.watch(_summaryProvider(roomId));
 
     return summaryAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Errore: $e')),
+      error: (e, _) => Center(
+        child: Text(
+          'Errore: $e',
+          style: bodyFont(color: AppColors.destructive),
+        ),
+      ),
       data: (summary) {
         final playerNames = {for (final p in players) p.id: p.name};
         final questionMap = summary.questions;
@@ -39,7 +43,8 @@ class EndScreen extends ConsumerWidget {
           for (final v in summary.votes.where((v) => v.roundId == r.id)) {
             voteCounts[v.votedForId] = (voteCounts[v.votedForId] ?? 0) + 1;
           }
-          final maxV = voteCounts.values.fold<int>(0, (a, b) => b > a ? b : a);
+          final maxV =
+              voteCounts.values.fold<int>(0, (a, b) => b > a ? b : a);
           final winners = voteCounts.entries
               .where((e) => e.value == maxV && e.value > 0)
               .map((e) => '${playerNames[e.key] ?? '?'} (${e.value})')
@@ -47,62 +52,81 @@ class EndScreen extends ConsumerWidget {
           results.add(_RoundResult(
             number: r.roundNumber,
             question: questionMap[r.questionId] ?? '',
-            summary:
-                winners.isEmpty ? 'Nessun voto' : winners.join(', '),
+            summary: winners.isEmpty ? 'Nessun voto' : winners.join(', '),
           ));
         }
 
-        return Column(
-          children: [
-            const Text('🏆', style: TextStyle(fontSize: 50)),
-            const SizedBox(height: 6),
-            const Text(
-              'Classifica Finale',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.separated(
-                itemCount: results.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) {
-                  final r = results[i];
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
+        return PopIn(
+          child: Column(
+            children: [
+              // Static trophy + title — matches React (no floater, no stagger).
+              // Use bodyFont so the emoji-fallback chain kicks in and 🏆
+              // renders as a color glyph on Flutter Web instead of tofu.
+              Text('🏆', style: bodyFont(fontSize: 48)),
+              const SizedBox(height: 8),
+              Text(
+                'Classifica Finale',
+                style: displayFont(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.foreground,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: results.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) {
+                    final r = results[i];
+                    return SoftCard(
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Round ${r.number})',
-                              style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 2),
-                          Text(r.question,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w800)),
+                          // React label: "Round N)" — mixed case, trailing
+                          // paren, no letterSpacing.
+                          Text(
+                            'Round ${r.number})',
+                            style: bodyFont(
+                              color: AppColors.mutedFg,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            r.question,
+                            style: displayFont(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: AppColors.foreground,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             r.summary,
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w700),
+                            style: bodyFont(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-            SizedBox(
-              width: 280,
-              child: ElevatedButton(
-                onPressed: () => context.go('/'),
-                child: const Text('🎮 Nuova Partita'),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: 320,
+                child: ElevatedButton(
+                  onPressed: () => context.go('/'),
+                  child: const Text('🎮 Nuova Partita'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -120,24 +144,25 @@ class _RoundResult {
   final String summary;
 }
 
-typedef _SummaryKey = ({String roomId, List<String> roundIds});
-
 class _EndSummary {
   _EndSummary({required this.votes, required this.questions});
   final List<Vote> votes;
   final Map<String, String> questions;
 }
 
-final _summaryProvider =
-    FutureProvider.autoDispose.family<_EndSummary, _SummaryKey>((ref, key) async {
+/// Keyed by [roomId] only — lists / sets in provider families break caching
+/// because they don't have structural equality. We read the round list from
+/// the already-streaming `roundsProvider` instead.
+final _summaryProvider = FutureProvider.autoDispose
+    .family<_EndSummary, String>((ref, roomId) async {
   final gameRepo = ref.watch(gameRepositoryProvider);
   final gameService = ref.watch(gameServiceProvider);
-  if (key.roundIds.isEmpty) {
+  final rounds =
+      ref.watch(roundsProvider(roomId)).valueOrNull ?? const <Round>[];
+  if (rounds.isEmpty) {
     return _EndSummary(votes: const [], questions: const {});
   }
-  final votes = await gameRepo.fetchAllVotes(key.roundIds);
-  // Need to resolve question texts for the rounds we have.
-  final rounds = ref.read(roundsProvider(key.roomId)).valueOrNull ?? const <Round>[];
+  final votes = await gameRepo.fetchAllVotes(rounds.map((r) => r.id).toList());
   final qIds = rounds.map((r) => r.questionId).toSet();
   final questions = await gameService.questionsForIds(qIds);
   return _EndSummary(

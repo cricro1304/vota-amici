@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/constants.dart';
@@ -108,14 +110,12 @@ class RoomRepository {
   }
 }
 
+final _rng = Random.secure();
+
 String generateRoomCode() {
-  final chars = kRoomCodeChars;
-  final rnd = DateTime.now().microsecondsSinceEpoch;
   final buffer = StringBuffer();
-  var seed = rnd;
   for (var i = 0; i < kRoomCodeLength; i++) {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    buffer.write(chars[seed % chars.length]);
+    buffer.write(kRoomCodeChars[_rng.nextInt(kRoomCodeChars.length)]);
   }
   return buffer.toString();
 }

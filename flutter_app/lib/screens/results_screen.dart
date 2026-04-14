@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/theme.dart';
 import '../models/player.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
+import '../widgets/game_layout.dart';
 import '../widgets/player_avatar.dart';
 
 enum _Phase { intro, suspense, reveal }
@@ -29,6 +31,8 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   String? _roundId;
   Timer? _introTimer;
   Timer? _suspenseTimer;
+  bool _advancing = false;
+  bool _ending = false;
 
   void _beginReveal(String roundId) {
     _roundId = roundId;
@@ -70,8 +74,10 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final players =
         ref.watch(playersProvider(widget.roomId)).valueOrNull ?? const [];
     final votes =
-        ref.watch(currentRoundVotesProvider(widget.roomId)).valueOrNull ?? const [];
-    final questionText = ref.watch(currentQuestionTextProvider(widget.roomId)) ?? '';
+        ref.watch(currentRoundVotesProvider(widget.roomId)).valueOrNull ??
+            const [];
+    final questionText =
+        ref.watch(currentQuestionTextProvider(widget.roomId)) ?? '';
 
     if (room == null || round == null) return const SizedBox.shrink();
     final isHost = room.hostPlayerId == widget.playerId;
@@ -82,7 +88,6 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
       });
     }
 
-    // Tally
     final counts = <String, int>{};
     for (final p in players) {
       counts[p.id] = 0;
@@ -95,116 +100,170 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         ? players.where((p) => counts[p.id] == maxVotes).toList()
         : const <Player>[];
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'ROUND ${room.currentRound}',
-          style: const TextStyle(
-            color: Colors.grey,
-            letterSpacing: 2,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (_phase == _Phase.intro || _phase == _Phase.suspense)
+    return PopIn(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           Text(
-            '${_stripQuestion(questionText)} è...',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-          ),
-        if (_phase == _Phase.suspense) ...[
-          const SizedBox(height: 20),
-          const _BouncingDots(),
-        ],
-        if (_phase == _Phase.reveal) ...[
-          const SizedBox(height: 12),
-          Text(
-            '${_stripQuestion(questionText)} è...',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 18, color: Colors.grey),
-          ),
-          const SizedBox(height: 20),
-          if (winners.isEmpty)
-            const Text(
-              'Nessun voto!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-            )
-          else
-            Column(
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 24,
-                  runSpacing: 12,
-                  children: [
-                    for (final w in winners)
-                      Column(
-                        children: [
-                          PlayerAvatar(
-                            name: w.name,
-                            index: players.indexWhere((p) => p.id == w.id),
-                            size: AvatarSize.lg,
-                            isWinner: true,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            w.name,
-                            style: const TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.w800),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  winners.length > 1
-                      ? '🏆 $maxVotes voti a testa!'
-                      : '🏆 con $maxVotes vot${maxVotes == 1 ? 'o' : 'i'}!',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-        ],
-        const Spacer(),
-        if (isHost && _phase == _Phase.reveal) ...[
-          SizedBox(
-            width: 280,
-            child: ElevatedButton(
-              onPressed: () async {
-                final rounds =
-                    ref.read(roundsProvider(widget.roomId)).valueOrNull ?? [];
-                try {
-                  await ref.read(gameServiceProvider).nextRound(
-                        roomId: widget.roomId,
-                        currentRoundNumber: room.currentRound,
-                        existingRounds: rounds,
-                      );
-                } on GameException catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text(e.message)));
-                  }
-                }
-              },
-              child: const Text('➡️ Prossimo Round'),
+            'ROUND ${room.currentRound}',
+            style: bodyFont(
+              color: AppColors.mutedFg,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
             ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 280,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.secondary,
+          const SizedBox(height: 24),
+          // React renders the question plainly (no card wrapper) during
+          // intro and suspense. We match that.
+          if (_phase == _Phase.intro || _phase == _Phase.suspense)
+            Text(
+              '${_stripQuestion(questionText)} è...',
+              textAlign: TextAlign.center,
+              style: displayFont(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
               ),
-              onPressed: () =>
-                  ref.read(gameServiceProvider).endGame(widget.roomId),
-              child: const Text('🏁 Fine Partita'),
             ),
-          ),
+          if (_phase == _Phase.suspense) ...[
+            const SizedBox(height: 24),
+            const _BouncingDots(),
+          ],
+          if (_phase == _Phase.reveal) ...[
+            Text(
+              '${_stripQuestion(questionText)} è...',
+              textAlign: TextAlign.center,
+              style: displayFont(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.mutedFg,
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (winners.isEmpty)
+              Text(
+                'Nessun voto!',
+                style: displayFont(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.foreground,
+                ),
+              )
+            else
+              Column(
+                children: [
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 24,
+                    runSpacing: 16,
+                    children: [
+                      for (final w in winners)
+                        Column(
+                          children: [
+                            PlayerAvatar(
+                              name: w.name,
+                              index:
+                                  players.indexWhere((p) => p.id == w.id),
+                              size: AvatarSize.lg,
+                              isWinner: true,
+                            ),
+                            const SizedBox(height: 8),
+                            // React uses text-3xl (30px) for the winner name.
+                            Text(
+                              w.name,
+                              style: displayFont(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.foreground,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // React has no pill background — just muted-foreground
+                  // body text at text-lg (18px).
+                  Text(
+                    winners.length > 1
+                        ? '🏆 $maxVotes voti a testa!'
+                        : '🏆 con $maxVotes vot${maxVotes == 1 ? 'o' : 'i'}!',
+                    textAlign: TextAlign.center,
+                    style: bodyFont(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.mutedFg,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+          const Spacer(),
+          if (isHost && _phase == _Phase.reveal) ...[
+            SizedBox(
+              width: 280,
+              child: ElevatedButton(
+                onPressed: _advancing
+                    ? null
+                    : () async {
+                        setState(() => _advancing = true);
+                        final rounds =
+                            ref.read(roundsProvider(widget.roomId)).valueOrNull ??
+                                [];
+                        try {
+                          await ref.read(gameServiceProvider).nextRound(
+                                roomId: widget.roomId,
+                                currentRoundNumber: room.currentRound,
+                                existingRounds: rounds,
+                              );
+                        } on GameException catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(SnackBar(content: Text(e.message)));
+                          }
+                          if (mounted) setState(() => _advancing = false);
+                        }
+                        // On success the round stream will transition the
+                        // screen away, so we don't need to reset _advancing.
+                      },
+                child: Text(_advancing ? '…' : '➡️ Prossimo Round'),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: 280,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondary,
+                ),
+                onPressed: _ending
+                    ? null
+                    : () async {
+                        setState(() => _ending = true);
+                        try {
+                          await ref
+                              .read(gameServiceProvider)
+                              .endGame(widget.roomId);
+                        } catch (e) {
+                          debugPrint('[results] endGame failed: $e');
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Errore: $e'),
+                                duration: const Duration(seconds: 6),
+                              ),
+                            );
+                          }
+                          if (mounted) setState(() => _ending = false);
+                        }
+                      },
+                child: Text(_ending ? '…' : '🏁 Fine Partita'),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -239,10 +298,9 @@ class _BouncingDotsState extends State<_BouncingDots>
       builder: (_, __) {
         double offset(int i) {
           final t = (_c.value + i * 0.15) % 1.0;
-          return (t < 0.5 ? t : 1 - t) * 12;
+          return (t < 0.5 ? t : 1 - t) * 16;
         }
 
-        final color = Theme.of(context).colorScheme.primary;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -250,10 +308,12 @@ class _BouncingDotsState extends State<_BouncingDots>
               Transform.translate(
                 offset: Offset(0, -offset(i)),
                 child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration:
-                      BoxDecoration(color: color, shape: BoxShape.circle),
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
               if (i < 2) const SizedBox(width: 8),

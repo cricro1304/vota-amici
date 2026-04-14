@@ -82,6 +82,22 @@ class GameService {
     if (questions.isEmpty) {
       throw GameException('Nessuna domanda disponibile');
     }
+    // Idempotent: if a round already exists for this room (because the lobby
+    // auto-start fired alongside a manual click, or a second tab raced us),
+    // just make sure the room's status is in_round and bail — do NOT insert
+    // a duplicate round_number=1. This is what produced the "ghost Round 1"
+    // cards on the end screen.
+    final existing = await gameRepository.fetchRoundsForRoom(roomId);
+    if (existing.isNotEmpty) {
+      await roomRepository.updateRoomStatus(
+        roomId,
+        status: RoomStatus.inRound,
+        currentRound: existing
+            .map((r) => r.roundNumber)
+            .fold<int>(1, (a, b) => b > a ? b : a),
+      );
+      return;
+    }
     final first = questions[_random.nextInt(questions.length)];
     await gameRepository.createRound(
       roomId: roomId,
@@ -130,11 +146,26 @@ class GameService {
       return;
     }
 
-    final next = available[_random.nextInt(available.length)];
     final nextNumber = currentRoundNumber + 1;
 
-    final current = existingRounds
-        .firstWhere((r) => r.roundNumber == currentRoundNumber);
+    // Idempotent: re-fetch rounds from the DB (not the stale list passed in)
+    // and bail if round `nextNumber` already exists. Without this, a
+    // double-tap on "Prossimo Round" — or two clients racing — inserts two
+    // rows with the same `round_number`, showing as ghost rounds on the
+    // end screen.
+    final fresh = await gameRepository.fetchRoundsForRoom(roomId);
+    if (fresh.any((r) => r.roundNumber == nextNumber)) {
+      await roomRepository.updateRoomStatus(
+        roomId,
+        status: RoomStatus.inRound,
+        currentRound: nextNumber,
+      );
+      return;
+    }
+
+    final next = available[_random.nextInt(available.length)];
+    final current =
+        fresh.firstWhere((r) => r.roundNumber == currentRoundNumber);
     await gameRepository.updateRoundStatus(current.id, RoundStatus.closed);
 
     await gameRepository.createRound(
@@ -153,6 +184,10 @@ class GameService {
   Future<void> endGame(String roomId) async {
     await roomRepository.updateRoomStatus(roomId, status: RoomStatus.finished);
   }
+
+  /// All questions in the default pack — cached after first call.
+  /// Used by the UI's `allQuestionsByIdProvider` to resolve current question text.
+  Future<List<Question>> allQuestions() => _questions();
 
   /// Used by the end screen. Fetches historic votes once, not reactively.
   Future<List<Question>> questionsForIds(Set<String> ids) async {

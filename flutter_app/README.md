@@ -86,10 +86,32 @@ Test stubs to add:
 - `test/state/providers_test.dart` — `createContainer(overrides: [...])`
 - `test/screens/lobby_screen_test.dart` — widget test with provider overrides
 
+## Dev mode (solo testing with bots)
+
+Testing a voting game alone is painful — you need 3+ players. Toggle **🧪 Dev mode** on the create-room screen: right after the room is created, 3 bot players (`Bot Alice`, `Bot Bruno`, `Bot Chiara`) are inserted into the `players` table via `DevBotService`. The lobby auto-starts the game once it sees them, and each bot picks a random target and submits a real vote 0.8–3s after the round begins.
+
+The bots go through the same Supabase tables and Realtime streams as humans — no mocking — so this exercises the actual flow. Bots are regular `players` rows and will show up for anyone else in the same room.
+
+Clean up: bots are per-room; end the game (or let it finish naturally) and the `_BotSession` disposes itself.
+
+## Troubleshooting
+
+**"Can't create a room" / nothing happens when I press Crea:** the create-room handler now surfaces the full error in a SnackBar (6s). Likeliest causes:
+
+1. `.env` not loaded. It must live at `flutter_app/.env` AND be declared as an asset in `pubspec.yaml`:
+   ```yaml
+   flutter:
+     assets:
+       - .env
+   ```
+2. Wrong variable names. The Flutter app reads `SUPABASE_URL` and `SUPABASE_ANON_KEY`. The web app's `.env` uses `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` — copy the values, rename the keys.
+3. Supabase RLS blocking anon inserts. Run the web app alongside and compare — if creating a room works there but not here, it's auth/headers, not RLS.
+4. On web, CORS from a non-Vercel origin. Add `http://localhost:xxxx` to Supabase Auth → URL Configuration if needed.
+
+**"Peer voting doesn't show up":** check `votes` RLS policy allows anon select, and that Realtime is enabled for `rooms`, `players`, `rounds`, `votes` in Supabase dashboard → Database → Replication.
+
 ## Known differences vs. the React app
 
-- Font families are not yet pulled into the Flutter bundle — uses Roboto default. Add `fonts:` section in `pubspec.yaml` and bundle the same fonts as the web app for exact visual parity.
-- Animations are simpler placeholders (bouncing dots, fade-ins). The web's `animate-pop-in` / `animate-float` Tailwind animations have equivalent Flutter implementations but are not all ported yet.
 - Toast notifications use `SnackBar` instead of sonner. Behavior is equivalent.
 - No marketing pages ported (`landing-page.html`, `packs.html`). Those should stay as static HTML on Vercel — not worth porting to Flutter.
 
