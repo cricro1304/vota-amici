@@ -1419,6 +1419,36 @@ section { padding: 5rem 1.5rem; }
   .hero-block      { padding-top: 5rem; }
 }
 
+/* Layout collapse: any device narrower than a true desktop (incl. landscape
+   phones up to ~932px and portrait tablets) stacks hero → phone → tutorial in
+   a single column, so the tutorial pink no longer reserves an empty band on
+   the right where the desktop iPhone column would have lived. Mobile-specific
+   typography / nav overrides stay at 768px below. */
+@media (max-width: 1024px) {
+  .flow-grid {
+    grid-template-columns: 1fr;
+    padding: 0 1.25rem;
+  }
+  .flow-content { display: contents; }
+  .hero-block { order: 1; }
+  .flow-phone { order: 2; }
+  .tut-block  { order: 3; }
+
+  .flow-phone-inner {
+    position: relative;
+    top: auto;
+    display: flex;
+    justify-content: center;
+    padding: 0 0 1rem;
+  }
+
+  /* In single-column mode the tutorial-screen overlays inside the phone aren't
+     scroll-driven anymore, so just show the hero carousel. */
+  .tut-app-screen        { display: none !important; }
+  .screen-carousel       { opacity: 1 !important; }
+  .screen-carousel.faded { opacity: 1 !important; }
+}
+
 @media (max-width: 768px) {
   /* Landing-page-specific mobile nav: hide Home / Pacchetti links. */
   .nav-link { display: none !important; }
