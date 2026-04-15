@@ -73,21 +73,35 @@ class GameService {
     return filtered.isEmpty ? all : filtered;
   }
 
+  /// Joins [roomCode] as [playerName].
+  ///
+  /// If [existingPlayerId] is supplied (typically from the browser's
+  /// SessionService cache — i.e. "this browser already joined this room
+  /// before and we have its playerId in localStorage") and the referenced
+  /// player still exists in the same room, we reuse it. This is the
+  /// refresh-to-rejoin path and it works even after the game has started.
+  ///
+  /// Otherwise we always create a brand-new player row. Identity is tied to
+  /// the browser session, NOT to the name — so two different browsers
+  /// entering the same name correctly become two distinct players.
   Future<({Room room, Player player})> joinRoom({
     required String roomCode,
     required String playerName,
+    String? existingPlayerId,
   }) async {
     final room = await roomRepository.findRoomByCode(roomCode);
     if (room == null) {
       throw GameException('Stanza non trovata');
     }
 
-    final existing = await roomRepository.findPlayerByName(
-      roomId: room.id,
-      name: playerName,
-    );
-    if (existing != null) {
-      return (room: room, player: existing);
+    // Same-browser rejoin: trust the cached playerId iff it still points to
+    // a player in this room. We do NOT gate this on RoomStatus.lobby — a
+    // user who got disconnected mid-game needs to reconnect.
+    if (existingPlayerId != null && existingPlayerId.isNotEmpty) {
+      final cached = await roomRepository.findPlayerById(existingPlayerId);
+      if (cached != null && cached.roomId == room.id) {
+        return (room: room, player: cached);
+      }
     }
 
     if (room.status != RoomStatus.lobby) {

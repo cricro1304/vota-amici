@@ -137,6 +137,11 @@
   }
 
   // Exposed globally so the inline onclick="setLang('it')" handlers work.
+  // applyTranslations defers its data-i18n bulk to rAF for snappier toggle
+  // feedback. buildCarousel + applyRound stay synchronous because the
+  // question-track marquee animation needs its content present on the
+  // same frame the .question-track element exists, otherwise the CSS
+  // animation runs against an empty element and visibly stalls.
   window.setLang = function (lang) {
     currentLang = lang;
     window.I18n.applyTranslations(lang, translations[lang]);
@@ -298,7 +303,12 @@
 
   function onScrollUpdate() {
     rafScheduled = false;
-    var defaultTrigger = window.innerHeight * 0.65;
+    // Trigger line at 0.55 of viewport — step activates once its top has
+    // crossed past the middle of the screen, i.e. the user's eyes are on
+    // the step copy. 0.82 was too eager (phone flipped before the user
+    // could read the current step); 0.65 was slightly laggy; 0.55 lines
+    // activation up with reading position without feeling "early".
+    var defaultTrigger = window.innerHeight * 0.55;
     var vh = window.innerHeight;
 
     // Snapshot step positions. A step may override the default trigger
@@ -348,31 +358,66 @@
   }
 
 
-  /* ── 6. Chat bubble scroll-in animations ────────────────────────────── */
-  // Each bubble fades/slides in individually as it scrolls into view, so the
-  // chat feels like it's being read in real time as the user scrolls down.
-  var chatMsgs = document.querySelectorAll('.chat-msg');
+  /* ── 6. Verdict reaction easter egg ─────────────────────────────────── */
+  // Each reaction chip on a verdict card is clickable. Tapping it bumps
+  // the trailing number ("😂 12" → "😂 13"), plays a small pop, and
+  // floats a "+1" upwards. Pure local fun — nothing is persisted. Event
+  // delegation on .verdicts-board means it survives i18n re-renders that
+  // swap child nodes.
+  var verdictsBoardEl = document.querySelector('.verdicts-board');
+  if (verdictsBoardEl) {
+    // Match either "<emoji> 12" or plain "12" — we only care about the
+    // trailing integer and preserve whatever prefix the chip carries.
+    var REACT_NUM_RE = /(\d+)\s*$/;
 
-  if (chatMsgs.length > 0) {
-    chatMsgs.forEach(function (msg) {
-      // Reset any previous staggered delay — per-bubble timing is its own arrival.
-      msg.style.setProperty('--chat-delay', '0s');
+    var bumpReaction = function (chip) {
+      // Read text directly; innerHTML may contain our transient .float span.
+      var raw = chip.firstChild && chip.firstChild.nodeType === 3
+        ? chip.firstChild.nodeValue
+        : chip.textContent;
+      var m = raw.match(REACT_NUM_RE);
+      if (!m) return;
+      var next = parseInt(m[1], 10) + 1;
+      var prefix = raw.slice(0, m.index); // emoji + space
+      // Replace only the text node so the floating "+1" span (if any) stays.
+      if (chip.firstChild && chip.firstChild.nodeType === 3) {
+        chip.firstChild.nodeValue = prefix + next;
+      } else {
+        chip.textContent = prefix + next;
+      }
+
+      // Pop animation — re-trigger by removing + re-adding the class.
+      chip.classList.remove('bump');
+      // Force a reflow so the removal lands before we re-add.
+      void chip.offsetWidth;
+      chip.classList.add('bump');
+
+      // Floating "+1" indicator.
+      var floater = document.createElement('span');
+      floater.className = 'verdict-react-float';
+      floater.textContent = '+1';
+      chip.appendChild(floater);
+      // Clean up after the animation completes (0.9s from CSS).
+      setTimeout(function () {
+        if (floater.parentNode) floater.parentNode.removeChild(floater);
+      }, 950);
+    };
+
+    verdictsBoardEl.addEventListener('click', function (e) {
+      // Walk up from the event target to find a reaction chip. Chips are
+      // <span> elements inside .verdict-reactions. This also catches
+      // clicks on the floating "+1" child and attributes them to parent.
+      var node = e.target;
+      while (node && node !== verdictsBoardEl) {
+        if (node.parentNode
+            && node.parentNode.classList
+            && node.parentNode.classList.contains('verdict-reactions')) {
+          bumpReaction(node);
+          return;
+        }
+        node = node.parentNode;
+      }
     });
-
-    var chatObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('chat-visible');
-        chatObserver.unobserve(entry.target); // play only once per bubble
-      });
-    }, {
-      threshold: 0.35,
-      // Trigger slightly before the bubble fully enters so it doesn't pop in
-      // at the very edge of the viewport.
-      rootMargin: '0px 0px -8% 0px'
-    });
-
-    chatMsgs.forEach(function (msg) { chatObserver.observe(msg); });
   }
 
 

@@ -136,7 +136,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             const SizedBox(height: 12),
             Text(
               hasError
-                  ? 'Connessione persa — riprovo…'
+                  ? 'Connessione persa, riprovo…'
                   : 'Caricamento stanza…',
               textAlign: TextAlign.center,
               style: bodyFont(
@@ -177,7 +177,7 @@ return PopIn(
                 borderRadius: BorderRadius.circular(14),
               ),
               child: EmojiText(
-                '🧪 Dev mode attivo — i bot giocheranno da soli',
+                '🧪 Dev mode attivo: i bot giocheranno da soli',
                 textAlign: TextAlign.center,
                 style: bodyFont(
                   fontWeight: FontWeight.w700,

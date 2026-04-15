@@ -46,3 +46,5 @@ _flutter/
 *.njsproj
 *.sln
 *.sw?
+.env*.local
+.fuse_hidden*

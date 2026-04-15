@@ -92,6 +92,27 @@ class RoomRepository {
         .map((rows) => rows.map(Player.fromJson).toList());
   }
 
+  /// Looks up a player by its primary-key id.
+  ///
+  /// Used on rejoin: when the browser has a cached playerId in
+  /// SharedPreferences (via SessionService) we verify that player still
+  /// exists before reusing it. Identity is per-browser-session, *not* per
+  /// name — two different browsers typing the same name must create two
+  /// distinct player rows.
+  Future<Player?> findPlayerById(String playerId) async {
+    final data = await _client
+        .from('players')
+        .select()
+        .eq('id', playerId)
+        .maybeSingle();
+    return data == null ? null : Player.fromJson(data);
+  }
+
+  /// Legacy: match a player by (room, name). No longer used by joinRoom —
+  /// it caused a bug where two different browsers with the same name got
+  /// collapsed into one player. Kept in case callers appear later; prefer
+  /// [findPlayerById] + a cached sessionService playerId for rejoin.
+  @Deprecated('Use findPlayerById with a cached SessionService playerId')
   Future<Player?> findPlayerByName({
     required String roomId,
     required String name,

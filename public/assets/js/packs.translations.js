@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Packs page translations — Chi è il più...?
+   Packs page translations. Chi è il più...?
    Exposes window.PACKS_TRANSLATIONS = { it: {...}, en: {...} }.
    ========================================================================== */
 
@@ -11,10 +11,10 @@ window.PACKS_TRANSLATIONS = {
 
     // Page header
     page_title: 'Tutti i Pacchetti 🎲',
-    page_sub: '100+ domande per ogni situazione. Il Classico è gratis, gli altri stanno arrivando.',
+    page_sub: '100+ domande per ogni situazione. L\'Originale è gratis, gli altri stanno arrivando.',
 
     // Classic pack (free)
-    p_classic_title: 'Classico — 100+ domande',
+    p_classic_title: 'Originale. 100+ domande',
     p_classic_tag: '✅ Gratis',
     p_classic_desc: 'Le domande essenziali per qualsiasi serata tra amici. Il punto di partenza perfetto per scoprire cosa pensano davvero di te.',
     play_btn: '🎮 Gioca Ora',
@@ -27,6 +27,7 @@ window.PACKS_TRANSLATIONS = {
 
     // Coming-soon tag (shared across non-free packs)
     soon_tag: '🔜 In arrivo',
+    spicy_18_tag: '🔞',
 
     // Coppie
     p_coppie_title: 'Coppie',
@@ -85,7 +86,7 @@ window.PACKS_TRANSLATIONS = {
     ck4: '🌙 chi è più nottambulo',
 
     // Spicy
-    p_spicy_title: 'Versione Spicy',
+    p_spicy_title: 'Spicy',
     p_spicy_desc: 'Le domande che nessuno osa fare a voce alta. Flirt, segreti e confessioni imbarazzanti. Solo per i più coraggiosi. 18+',
     cs1: '💋 chi flirta di più',
     cs2: '🔥 chi è il più passionale',
@@ -107,10 +108,10 @@ window.PACKS_TRANSLATIONS = {
 
     // Page header
     page_title: 'All Packs 🎲',
-    page_sub: '100+ questions for every occasion. Classic is free, the rest are on their way.',
+    page_sub: '100+ questions for every occasion. The Original is free, the rest are on their way.',
 
     // Classic pack (free)
-    p_classic_title: 'Classic — 100+ questions',
+    p_classic_title: 'Original. 100+ questions',
     p_classic_tag: '✅ Free',
     p_classic_desc: 'The essential questions for any night with friends. The perfect starting point to find out what they really think of you.',
     play_btn: '🎮 Play Now',
@@ -123,6 +124,7 @@ window.PACKS_TRANSLATIONS = {
 
     // Coming-soon tag
     soon_tag: '🔜 Coming soon',
+    spicy_18_tag: '🔞',
 
     // Couples
     p_coppie_title: 'Couples',
@@ -181,7 +183,7 @@ window.PACKS_TRANSLATIONS = {
     ck4: '🌙 who\'s the biggest night owl',
 
     // Spicy Edition
-    p_spicy_title: 'Spicy Edition',
+    p_spicy_title: 'Spicy',
     p_spicy_desc: 'The questions nobody dares ask out loud. Flirting, secrets and embarrassing confessions. Only for the brave. 18+',
     cs1: '💋 who flirts the most',
     cs2: '🔥 who is the most passionate',

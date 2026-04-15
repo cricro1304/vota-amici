@@ -38,8 +38,10 @@ void main() {
     });
 
     test(
-        'Given existing player with same name, When joinRoom called, '
-        'Then returns existing without creating', () async {
+        'Given cached existingPlayerId still in room, When joinRoom called, '
+        'Then reuses that player without creating a new one '
+        '(same-browser refresh-to-rejoin path, works even mid-game)',
+        () async {
       final room = Room(
         id: 'r1',
         code: 'ABCDE',
@@ -49,7 +51,7 @@ void main() {
         timerSeconds: null,
         createdAt: DateTime.now(),
       );
-      final existing = Player(
+      final cached = Player(
         id: 'p1',
         roomId: 'r1',
         name: 'Ale',
@@ -57,17 +59,101 @@ void main() {
         createdAt: DateTime.now(),
       );
       when(roomRepo.findRoomByCode('ABCDE')).thenAnswer((_) async => room);
-      when(roomRepo.findPlayerByName(roomId: 'r1', name: 'Ale'))
-          .thenAnswer((_) async => existing);
+      when(roomRepo.findPlayerById('p1')).thenAnswer((_) async => cached);
 
-      final result =
-          await service.joinRoom(roomCode: 'ABCDE', playerName: 'Ale');
+      final result = await service.joinRoom(
+        roomCode: 'ABCDE',
+        playerName: 'Ale',
+        existingPlayerId: 'p1',
+      );
 
       expect(result.player.id, 'p1');
       verifyNever(roomRepo.createPlayer(
         roomId: anyNamed('roomId'),
         name: anyNamed('name'),
       ));
+    });
+
+    test(
+        'Given two browsers join with the same name (no cached id), '
+        'When joinRoom called, Then each call creates a distinct player '
+        '(regression: same-name collision bug)', () async {
+      final room = Room(
+        id: 'r1',
+        code: 'ABCDE',
+        hostPlayerId: 'p1',
+        status: RoomStatus.lobby,
+        currentRound: 0,
+        timerSeconds: null,
+        createdAt: DateTime.now(),
+      );
+      final newPlayer = Player(
+        id: 'p2',
+        roomId: 'r1',
+        name: 'Ale',
+        isHost: false,
+        createdAt: DateTime.now(),
+      );
+      when(roomRepo.findRoomByCode('ABCDE')).thenAnswer((_) async => room);
+      when(roomRepo.createPlayer(roomId: 'r1', name: 'Ale'))
+          .thenAnswer((_) async => newPlayer);
+
+      // No existingPlayerId → must create a fresh player even though the
+      // name 'Ale' may already exist in the room from another browser.
+      final result =
+          await service.joinRoom(roomCode: 'ABCDE', playerName: 'Ale');
+
+      expect(result.player.id, 'p2');
+      verify(roomRepo.createPlayer(roomId: 'r1', name: 'Ale')).called(1);
+      // Critically: no lookup by name — that was the old dedup that caused
+      // the cross-browser-same-name bug.
+      verifyNever(roomRepo.findPlayerByName(
+        roomId: anyNamed('roomId'),
+        name: anyNamed('name'),
+      ));
+    });
+
+    test(
+        'Given cached existingPlayerId points to a player in a DIFFERENT room, '
+        'When joinRoom called, Then ignores the stale id and creates new',
+        () async {
+      final room = Room(
+        id: 'r1',
+        code: 'ABCDE',
+        hostPlayerId: 'pX',
+        status: RoomStatus.lobby,
+        currentRound: 0,
+        timerSeconds: null,
+        createdAt: DateTime.now(),
+      );
+      final staleFromOtherRoom = Player(
+        id: 'p9',
+        roomId: 'r9', // <- different room
+        name: 'Ale',
+        isHost: false,
+        createdAt: DateTime.now(),
+      );
+      final fresh = Player(
+        id: 'pNew',
+        roomId: 'r1',
+        name: 'Ale',
+        isHost: false,
+        createdAt: DateTime.now(),
+      );
+      when(roomRepo.findRoomByCode('ABCDE')).thenAnswer((_) async => room);
+      when(roomRepo.findPlayerById('p9'))
+          .thenAnswer((_) async => staleFromOtherRoom);
+      when(roomRepo.createPlayer(roomId: 'r1', name: 'Ale'))
+          .thenAnswer((_) async => fresh);
+
+      final result = await service.joinRoom(
+        roomCode: 'ABCDE',
+        playerName: 'Ale',
+        existingPlayerId: 'p9',
+      );
+
+      expect(result.player.id, 'pNew');
+      verify(roomRepo.createPlayer(roomId: 'r1', name: 'Ale')).called(1);
     });
   });
 }

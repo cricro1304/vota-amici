@@ -7,7 +7,7 @@ import 'emoji_text.dart';
 
 /// Gradient header + centered content column with max-width, mirroring
 /// the web `GameLayout`. Also shows a connectivity banner at the top when
-/// the device goes offline — so the host never sees a silently-dead lobby.
+/// the device goes offline. so the host never sees a silently-dead lobby.
 class GameLayout extends ConsumerWidget {
   const GameLayout({super.key, required this.child});
   final Widget child;
@@ -69,7 +69,7 @@ class _OfflineBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       color: AppColors.destructive,
       child: const EmojiText(
-        '📡 Connessione persa — tentativo di riconnessione…',
+        '📡 Connessione persa, tentativo di riconnessione…',
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white,

@@ -349,7 +349,7 @@
 .screen-carousel {
   width: 100%; height: 100%;
   position: relative;
-  transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.08s;
 }
 .screen-carousel.faded { opacity: 0; pointer-events: none; }
 
@@ -598,16 +598,22 @@ section { padding: 5rem 1.5rem; }
   flex-direction: column;
   padding: 40px 16px 16px;
   opacity: 0;
-  transform: translateY(10px) scale(0.98);
+  transform: translateY(4px) scale(0.995);
+  /* Outgoing screen: fade out a touch faster than incoming fades in, so
+     there's no mid-transition "both half-visible" flash that reads as
+     loading. Incoming overrides this in the .active rule below. */
   transition:
-    opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity 0.12s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 .tut-app-screen.active {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
+  transition:
+    opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -1011,18 +1017,15 @@ section { padding: 5rem 1.5rem; }
 }
 
 .tutorial-step {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.92);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   border: 1px solid rgba(230, 54, 110, 0.08);
   padding: 1.5rem;
   position: relative;
-  opacity: 0.5;
-  transition: transform 0.3s, opacity 0.4s, box-shadow 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 .tutorial-step.active {
-  opacity: 1;
   transform: translateX(4px);
   box-shadow:
     0 8px 28px -6px rgba(230, 54, 110, 0.18),
@@ -1082,8 +1085,10 @@ section { padding: 5rem 1.5rem; }
 .questions-section .section-subtitle { color: rgba(255, 255, 255, 0.8); }
 
 .question-carousel {
+  /* Flex container so the track sits on a proper baseline and the
+     marquee animation has a measurable width to translate against.
+     `overflow: hidden` + the gradient mask give the fade edges. */
   display: flex;
-  gap: 1rem;
   overflow: hidden;
   margin-bottom: 1.5rem;
   mask-image:         linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
@@ -1093,7 +1098,13 @@ section { padding: 5rem 1.5rem; }
 .question-track {
   display: flex;
   gap: 1rem;
+  flex-wrap: nowrap;
+  /* flex-shrink:0 stops the track from being squeezed down to the
+     carousel's own width — it must stay wider than its container so
+     translateX(-50%) actually moves something visible. */
+  flex-shrink: 0;
   animation: scroll-left 30s linear infinite;
+  will-change: transform;
 }
 .question-track-2 { animation: scroll-right 28s linear infinite; }
 
@@ -1209,22 +1220,27 @@ section { padding: 5rem 1.5rem; }
 .mode-deco-1 { top: 16px;  left: 16px;  transform: rotate(-18deg); }
 .mode-deco-2 { bottom: 20px; right: 16px; transform: rotate(22deg); font-size: 20px; }
 
-/* --- "Soon" badge on spicy ----------------------------------------------- */
+/* --- 18+ badge on brutal ------------------------------------------------- */
 .mode-badge {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 12px;
+  right: 12px;
   background: #111;
   color: #fff;
   font-family: 'Fredoka', sans-serif;
   font-weight: 700;
-  font-size: 0.72rem;
-  padding: 4px 10px;
+  font-size: 1.35rem;        /* 🔞 emoji reads as an icon, needs to be big */
+  line-height: 1;
+  padding: 6px 9px;
   border-radius: 999px;
   transform: rotate(8deg);
   z-index: 3;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+/* Hide the badge entirely when the i18n value is empty (e.g. Brutale
+   no longer carries the 🔞 — that label moved to the spicy pack). */
+.mode-badge:empty { display: none; }
 
 /* --- Heat meter ---------------------------------------------------------- */
 .mode-meter {
@@ -1299,102 +1315,221 @@ section { padding: 5rem 1.5rem; }
 
 .mode-chip-locked {
   background: rgba(255, 255, 255, 0.55);
-  color: #9ca3af;
-  filter: blur(0.4px);
+  color: transparent;
+  text-shadow: 0 0 5px rgba(75, 85, 99, 0.75);
+  filter: blur(1.4px);
   position: relative;
 }
 
 
 /* ── 6. Packs showcase ──────────────────────────────────────────────────── */
-.packs-section { background: var(--bg); }
-.packs-wrapper { perspective: 800px; }
+/* Packs section — distinct warm-pink canvas that flows out of the cream
+   modes-section above. Soft radial blobs + a dotted grain give it texture
+   without competing with the vivid tiles. A wavy top divider softens the
+   seam with the previous section. */
+.packs-section {
+  position: relative;
+  padding: 5rem 0 5.5rem;
+  background:
+    radial-gradient(ellipse 70% 55% at 15% 10%, rgba(230, 54, 110, 0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 85%, rgba(59, 163, 208, 0.08) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 50% 45%, rgba(245, 197, 24, 0.05) 0%, transparent 70%),
+    linear-gradient(180deg, #fff3e6 0%, #fff1f6 40%, #fde8ef 100%);
+  overflow: hidden;
+  isolation: isolate;
+}
+/* Wavy divider on top — blends the cream modes-section into the pink canvas. */
+.packs-section::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: var(--bg);
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 48' preserveAspectRatio='none'><path d='M0,0 L1200,0 L1200,20 C1000,48 800,10 600,28 C400,46 200,14 0,36 Z' fill='black'/></svg>") no-repeat center/100% 100%;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 48' preserveAspectRatio='none'><path d='M0,0 L1200,0 L1200,20 C1000,48 800,10 600,28 C400,46 200,14 0,36 Z' fill='black'/></svg>") no-repeat center/100% 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+/* Subtle dotted grain overlay */
+.packs-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(230, 54, 110, 0.09) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  opacity: 0.55;
+  z-index: 0;
+  pointer-events: none;
+}
+.packs-section .section-inner { position: relative; z-index: 2; }
+.packs-section .section-title { position: relative; z-index: 2; }
+.packs-section .section-subtitle { position: relative; z-index: 2; }
+
+.packs-wrapper { perspective: 800px; position: relative; z-index: 2; }
 
 .packs-link-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   font-family: 'Fredoka', sans-serif;
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--pink);
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: white;
   text-decoration: none;
-  padding: 0.6rem 1.5rem;
-  border: 2px solid var(--pink);
+  padding: 0.95rem 2rem;
+  border: none;
   border-radius: 2rem;
-  transition: background 0.2s, color 0.2s, transform 0.2s;
+  background: linear-gradient(135deg, #f17ca0 0%, #f5a3bd 50%, #8ec9e3 100%);
+  box-shadow:
+    0 12px 26px -8px var(--pink-glow),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-top: 2rem;
+  letter-spacing: 0.01em;
 }
 .packs-link-btn:hover {
-  background: var(--pink);
-  color: white;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow:
+    0 18px 34px -8px var(--pink-glow),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.45);
 }
 
 
-/* Free pack — stays prominent */
+/* Free pack — hero card with energy (kept light: single linear gradient) */
 .pack-hero {
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 2rem;
+  position: relative;
+  background: linear-gradient(135deg, #f17ca0 0%, #f5a3bd 50%, #8ec9e3 100%);
+  border-radius: 26px;
+  box-shadow:
+    0 20px 42px -14px var(--pink-glow),
+    0 8px 16px -6px rgba(59, 163, 208, 0.25),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+  padding: 1.75rem 1.75rem 1.6rem;
   text-align: center;
-  border: 3px solid var(--teal);
-  max-width: 420px;
-  margin: 0 auto 2.5rem;
-  transition: transform 0.3s;
+  max-width: 380px;
+  margin: 0.5rem auto 3rem;
+  color: white;
+  transform: rotate(-1deg);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
 }
-.pack-hero:hover { transform: translateY(-4px); }
+.pack-hero::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle, rgba(255,255,255,0.22) 0%, transparent 60%);
+  transform: translate(-20%, -30%);
+  pointer-events: none;
+}
+.pack-hero > * { position: relative; z-index: 1; }
+.pack-hero:hover {
+  transform: rotate(-1deg) translateY(-5px);
+  box-shadow:
+    0 28px 52px -14px var(--pink-glow),
+    0 12px 22px -6px rgba(59, 163, 208, 0.3),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
 
-.pack-hero-emoji { font-size: 3rem; margin-bottom: 0.5rem; }
+.pack-hero-emoji {
+  font-size: 2.7rem;
+  margin: 0 auto 0.4rem;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+}
 .pack-hero h3 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.35rem;
+  color: white;
+  letter-spacing: -0.01em;
 }
 .pack-hero p {
-  font-size: 0.95rem;
-  color: var(--text-muted);
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.92);
   font-weight: 600;
   line-height: 1.5;
+  max-width: 32ch;
+  margin: 0 auto;
 }
 
 .pack-hero .pack-badge {
   display: inline-block;
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
   font-family: 'Fredoka', sans-serif;
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-weight: 800;
+  font-size: 0.78rem;
   padding: 0.35rem 1rem;
   border-radius: 2rem;
-  background: var(--teal);
-  color: white;
+  background: white;
+  color: var(--pink);
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
+.pack-hero .pack-play-btn { color: var(--pink); }
 
 .pack-play-btn {
   display: inline-block;
-  margin-top: 0.75rem;
-  background: var(--pink);
-  color: white;
+  margin-top: 0.85rem;
+  background: white;
+  color: var(--pink);
   font-family: 'Fredoka', sans-serif;
-  font-weight: 700;
-  font-size: 1.05rem;
+  font-weight: 800;
+  font-size: 1rem;
   padding: 0.6rem 1.5rem;
   border-radius: 2rem;
   text-decoration: none;
   transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 16px rgba(230, 54, 110, 0.25);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 }
 .pack-play-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 24px rgba(230, 54, 110, 0.35);
+  transform: scale(1.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
 }
 
 
 /* Premium tiles grid */
 .packs-coming-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   text-align: center;
   font-family: 'Fredoka', sans-serif;
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: var(--text-muted);
-  margin-bottom: 1.25rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pink);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 0.55rem 1.25rem;
+  border-radius: 999px;
+  border: 1.5px dashed rgba(230, 54, 110, 0.35);
+  box-shadow: 0 6px 18px -8px var(--pink-glow);
+  margin: 0 auto 1.75rem;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.packs-coming-label::before,
+.packs-coming-label::after {
+  content: '✨';
+  font-size: 0.85rem;
+  filter: saturate(1.2);
+  animation: packsSparkle 2.2s ease-in-out infinite;
+}
+.packs-coming-label::after { animation-delay: 1.1s; }
+
+@keyframes packsSparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+  50%      { transform: scale(1.2) rotate(12deg); opacity: 1; }
 }
 
 .packs-grid {
@@ -1407,12 +1542,14 @@ section { padding: 5rem 1.5rem; }
   padding: 0 0.5rem;
 }
 
-/* --- Clean pack tile ---------------------------------------------------- */
+/* --- Vivid pack tile (kept light: flat fills, no filters) --------------- */
 .pack-tile {
   --pack-color: #e6366e;
   --pack-bg: #ffe7f0;
+  --pack-bg-2: #ffc6dc;
   position: relative;
-  background: var(--pack-bg);
+  background:
+    linear-gradient(160deg, var(--pack-bg) 0%, var(--pack-bg-2) 100%);
   border-radius: 20px;
   padding: 1.5rem 1rem 1.25rem;
   text-align: center;
@@ -1420,7 +1557,9 @@ section { padding: 5rem 1.5rem; }
   width: auto;
   z-index: 1;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 6px 16px -6px rgba(0, 0, 0, 0.10),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.45);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1429,22 +1568,30 @@ section { padding: 5rem 1.5rem; }
 
 .pack-tile:hover,
 .pack-tile.touched {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 28px -8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-5px);
   z-index: 10;
+  box-shadow:
+    0 14px 28px -10px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.6);
 }
 
 .pack-tile-emoji {
-  font-size: 44px;
+  font-size: 38px;
   line-height: 1;
   margin: 0;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
 }
 
 .pack-tile h4 {
   font-family: 'Fredoka', sans-serif;
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
   margin: 0;
   color: var(--pack-color);
   letter-spacing: -0.01em;
@@ -1453,54 +1600,61 @@ section { padding: 5rem 1.5rem; }
 /* Sample preview kept in markup for popup; hidden on the tile face. */
 .pack-tile-preview { display: none; }
 
-/* Simple tag */
+/* Vivid tag */
 .pack-tile .pack-tile-tag {
   display: inline-block;
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 3px 10px;
-  color: var(--pack-color);
-  background: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.1em;
+  padding: 4px 11px;
+  color: white;
+  background: var(--pack-color);
   border-radius: 999px;
-  opacity: 0.9;
 }
 
 /* --- Per-pack color theming (matches emoji order in the grid) ----------- */
 .packs-grid .pack-tile:nth-child(1) {  /* Coppie 💑 — rose */
   --pack-color: #e6366e;
   --pack-bg: #ffe3ee;
+  --pack-bg-2: #ffc6dc;
 }
 .packs-grid .pack-tile:nth-child(2) {  /* Fratelli 👫 — sun */
   --pack-color: #d97706;
   --pack-bg: #fff1ca;
+  --pack-bg-2: #ffe199;
 }
 .packs-grid .pack-tile:nth-child(3) {  /* Famiglia 👨‍👩‍👧‍👦 — terracotta */
   --pack-color: #c2410c;
   --pack-bg: #fde0cc;
+  --pack-bg-2: #fcc09a;
 }
 .packs-grid .pack-tile:nth-child(4) {  /* Colleghi 💼 — indigo */
   --pack-color: #4f46e5;
   --pack-bg: #e0e3ff;
+  --pack-bg-2: #c4caff;
 }
 .packs-grid .pack-tile:nth-child(5) {  /* Coinquilini 🏠 — mint */
   --pack-color: #059669;
   --pack-bg: #d1f5e4;
+  --pack-bg-2: #a7eccb;
 }
 .packs-grid .pack-tile:nth-child(6) {  /* Viaggi ✈️ — sky */
   --pack-color: #0284c7;
   --pack-bg: #d6eefc;
+  --pack-bg-2: #aedcf7;
 }
 .packs-grid .pack-tile:nth-child(7) {  /* Conoscersi 🤝 — lavender */
   --pack-color: #7c3aed;
   --pack-bg: #e9ddff;
+  --pack-bg-2: #d4baff;
 }
 .packs-grid .pack-tile:nth-child(8) {  /* Spicy 🌶️ — chili red */
   --pack-color: #dc2626;
   --pack-bg: #fed7d7;
+  --pack-bg-2: #fcb1b1;
 }
 
 
@@ -1519,7 +1673,9 @@ section { padding: 5rem 1.5rem; }
   opacity: 0;
   pointer-events: none;
   z-index: 20;
-  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+  transition-delay: 0s;
+  will-change: opacity, transform;
   box-shadow:
     0 20px 48px -12px rgba(230, 54, 110, 0.22),
     0 8px 16px  -4px rgba(0, 0, 0, 0.08);
@@ -1638,135 +1794,357 @@ section { padding: 5rem 1.5rem; }
 }
 
 
-/* ── 7. Social proof — chat bubbles ──────────────────────────────────────── */
+/* ── 7. Social proof — Hall of Fame polaroid board ────────────────────────── */
 .social-section {
-  background: linear-gradient(135deg, #fce8ef 0%, #f9d1dc 50%, #fce4ec 100%);
+  background:
+    radial-gradient(ellipse 50% 40% at 15% 20%, rgba(255, 214, 227, 0.75) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 35% at 85% 75%, rgba(196, 232, 247, 0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 35% 30% at 50% 100%, rgba(245, 197, 24, 0.18) 0%, transparent 60%),
+    linear-gradient(180deg, #fff5ea 0%, #fde8ef 100%);
+  position: relative;
   overflow: hidden;
 }
 
-.chat-canvas {
-  max-width: 640px;
-  margin: 0 auto;
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(10px);
-  border-radius: 28px;
-  padding: 2.5rem 2.5rem 2rem;
+/* Drifting confetti emojis in the background. */
+.social-section::before,
+.social-section::after {
+  content: '✨';
+  position: absolute;
+  font-size: 4rem;
+  opacity: 0.22;
+  animation: verdictFloat 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.social-section::before { top: 8%;    left: 4%; }
+.social-section::after  { content: '🏆'; bottom: 6%; right: 5%; animation-delay: -4s; font-size: 3.5rem; }
+
+.social-section .section-inner { position: relative; z-index: 1; }
+
+.verdicts-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--yellow) 0%, var(--orange) 100%);
+  color: var(--text);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   box-shadow:
-    0 12px 40px rgba(230, 54, 110, 0.07),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-}
-.chat-canvas .chat-feed {
-  max-width: 100%;
-  gap: 1.25rem;
+    0 6px 18px -6px rgba(240, 136, 62, 0.55),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+  margin-bottom: 0.85rem;
 }
 
-.chat-feed {
-  max-width: 520px;
-  margin: 0 auto;
+.verdicts-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.5rem 1.75rem;
+  max-width: 1040px;
+  margin: 3rem auto 0;
+  padding: 1rem 0.5rem;
+  position: relative;
+}
+
+/* Individual polaroid / verdict card — static on load, no entrance pop.
+   Tilt is applied immediately; hover still reacts for tactility. */
+.verdict-card {
+  --tilt: 0deg;
+  --accent: var(--pink);
+  --accent-rgb: 230, 54, 110;
+  position: relative;
+  background: #fffdf7;
+  border-radius: 18px;
+  padding: 2rem 1.4rem 1.35rem;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 18px 38px -14px rgba(43, 38, 64, 0.22),
+    0 6px 14px -6px rgba(43, 38, 64, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  transform: rotate(var(--tilt));
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s ease;
+}
+.verdict-card:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.03);
+  box-shadow:
+    0 28px 56px -18px rgba(var(--accent-rgb), 0.45),
+    0 10px 24px -10px rgba(43, 38, 64, 0.18);
+  z-index: 3;
+}
+
+/* Washi tape decoration on top of each card */
+.verdict-tape {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 96px;
+  height: 24px;
+  transform: translateX(-50%) rotate(-3deg);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(var(--accent-rgb), 0.55) 0 7px,
+      rgba(var(--accent-rgb), 0.35) 7px 14px
+    );
+  border-radius: 3px;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+/* Floating crown / trophy emoji top-right */
+.verdict-crown {
+  position: absolute;
+  top: -14px;
+  right: -10px;
+  font-size: 2rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
+  animation: verdictCrownWobble 3s ease-in-out infinite;
+  transform-origin: bottom center;
+  z-index: 2;
+}
+
+/* "VOTATO" red ink stamp — tilted, partly transparent */
+.verdict-stamp {
+  position: absolute;
+  top: 1rem;
+  right: 0.9rem;
+  transform: rotate(-14deg);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: rgba(230, 54, 110, 0.75);
+  border: 2px solid rgba(230, 54, 110, 0.55);
+  border-radius: 4px;
+  padding: 3px 8px;
+  opacity: 0.85;
+  text-transform: uppercase;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.verdict-title {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0.2rem 0 0.9rem;
+  position: relative;
+  display: inline-block;
+}
+.verdict-title::after {
+  content: '';
+  position: absolute;
+  left: -2px; right: -2px; bottom: -2px;
+  height: 8px;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.35) 0%, rgba(var(--accent-rgb), 0) 100%);
+  border-radius: 4px;
+  z-index: -1;
+}
+
+.verdict-person {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
 }
-
-.chat-msg {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
-  opacity: 0;
-  transform: translateX(-30px) translateY(10px);
-}
-.chat-msg.right {
-  flex-direction: row-reverse;
-  transform: translateX(30px) translateY(10px);
-}
-
-/* Scroll-triggered entrance animations */
-.chat-msg.chat-visible {
-  animation: chatSlideLeft 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: var(--chat-delay, 0s);
-}
-.chat-msg.right.chat-visible {
-  animation: chatSlideRight 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: var(--chat-delay, 0s);
-}
-
-.chat-avatar {
-  width: 40px; height: 40px;
+.verdict-avatar {
+  width: 34px; height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  color: white;
   font-weight: 800;
-  color: white;
-  flex-shrink: 0;
+  font-size: 0.8rem;
   font-family: 'Fredoka', sans-serif;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid white;
+  flex-shrink: 0;
+}
+.verdict-name {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
 }
 
-.chat-bubble {
-  background: white;
-  border-radius: 18px;
-  padding: 0.85rem 1.1rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  max-width: 340px;
+.verdict-quote {
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text);
+  font-style: italic;
+  margin: 0 0 1rem;
   position: relative;
+  padding-left: 0.75rem;
+  border-left: 3px solid rgba(var(--accent-rgb), 0.4);
 }
-.chat-msg.right .chat-bubble {
-  background: var(--pink);
-  color: white;
-  border-bottom-right-radius: 6px;
-}
-.chat-msg:not(.right) .chat-bubble {
-  border-bottom-left-radius: 6px;
+.verdict-quote::before {
+  content: '"';
+  position: absolute;
+  left: -0.1rem;
+  top: -0.6rem;
+  font-family: Georgia, serif;
+  font-size: 2.2rem;
+  color: rgba(var(--accent-rgb), 0.25);
+  line-height: 1;
 }
 
-.chat-bubble .chat-name {
+.verdict-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+.verdict-reactions span {
+  background: white;
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  /* Easter egg: chips are clickable and bump their counter */
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.verdict-card:hover .verdict-reactions span {
+  transform: translateY(-2px);
+}
+.verdict-card:hover .verdict-reactions span:nth-child(1) { transition-delay: 0s; }
+.verdict-card:hover .verdict-reactions span:nth-child(2) { transition-delay: 0.05s; }
+.verdict-card:hover .verdict-reactions span:nth-child(3) { transition-delay: 0.1s; }
+.verdict-reactions span:hover {
+  background: rgba(var(--accent-rgb), 0.08);
+  border-color: rgba(var(--accent-rgb), 0.45);
+}
+.verdict-reactions span:active {
+  transform: translateY(0) scale(0.94);
+  transition-duration: 0.08s;
+}
+/* Click bump: JS toggles .bump; CSS plays a brief pop. */
+.verdict-reactions span.bump {
+  animation: verdictReactBump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes verdictReactBump {
+  0%   { transform: translateY(-2px) scale(1); }
+  40%  { transform: translateY(-8px) scale(1.22); }
+  100% { transform: translateY(-2px) scale(1); }
+}
+/* Floating +1 that drifts up and fades out on click. */
+.verdict-reactions span .verdict-react-float {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  transform: translate(-50%, 0);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent);
+  pointer-events: none;
+  opacity: 0;
+  animation: verdictReactFloat 0.9s ease-out forwards;
+}
+.verdict-reactions span { position: relative; }
+@keyframes verdictReactFloat {
+  0%   { opacity: 0; transform: translate(-50%, 4px); }
+  15%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -28px); }
+}
+
+.verdict-votes {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+/* Special last card: the "play now" call-to-action polaroid */
+.verdict-card-cta {
+  background: linear-gradient(155deg, #fffdf7 0%, rgba(255, 214, 227, 0.6) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1.25rem 1.75rem;
+}
+.verdict-card-cta .verdict-cta-emoji {
+  font-size: 2.8rem;
+  animation: verdictCrownWobble 2.4s ease-in-out infinite;
+}
+.verdict-card-cta .verdict-cta-title {
   font-family: 'Fredoka', sans-serif;
   font-weight: 700;
-  font-size: 0.75rem;
-  margin-bottom: 0.2rem;
-  opacity: 0.6;
+  font-size: 1.3rem;
+  color: var(--text);
+  line-height: 1.1;
 }
-.chat-msg.right .chat-bubble .chat-name { opacity: 0.8; }
-
-.chat-bubble .chat-text {
+.verdict-card-cta .verdict-cta-sub {
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text);
+  margin: 0 0 0.6rem;
+  max-width: 22ch;
+}
+.verdict-card-cta .verdict-cta-sub em {
+  font-style: italic;
+  color: var(--pink);
+  font-weight: 700;
+}
+.verdict-card-cta .verdict-cta-btn {
+  background: linear-gradient(135deg, var(--pink) 0%, #f06292 100%);
+  color: white;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
   font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.45;
+  padding: 0.65rem 1.4rem;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow:
+    0 8px 20px -6px var(--pink-glow),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.verdict-card-cta .verdict-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 26px -6px var(--pink-glow),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.15);
 }
 
-.chat-bubble .chat-reaction {
-  position: absolute;
-  bottom: -8px;
-  right: 8px;
-  background: white;
-  border-radius: 10px;
-  padding: 1px 6px;
-  font-size: 0.75rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+/* ── Animations (idle decoration only — cards themselves are static) ──── */
+@keyframes verdictFloat {
+  0%, 100% { transform: translateY(0)    rotate(0deg); }
+  50%      { transform: translateY(-14px) rotate(8deg); }
 }
-
-/* Reactions pop in after the bubble */
-.chat-reaction {
-  opacity: 0;
-  transform: scale(0);
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+@keyframes verdictCrownWobble {
+  0%, 100% { transform: rotate(-8deg); }
+  50%      { transform: rotate(10deg); }
 }
-.chat-msg.chat-visible .chat-reaction {
-  opacity: 1;
-  transform: scale(1);
-  transition-delay: calc(var(--chat-delay, 0s) + 0.4s);
-}
-
-@keyframes chatSlideLeft {
-  0%   { opacity: 0; transform: translateX(-30px) translateY(10px) scale(0.95); }
-  100% { opacity: 1; transform: translateX(0)    translateY(0)    scale(1); }
-}
-@keyframes chatSlideRight {
-  0%   { opacity: 0; transform: translateX(30px)  translateY(10px) scale(0.95); }
-  100% { opacity: 1; transform: translateX(0)    translateY(0)    scale(1); }
+@media (prefers-reduced-motion: reduce) {
+  .verdict-crown,
+  .social-section::before,
+  .social-section::after,
+  .verdict-card-cta .verdict-cta-emoji,
+  .verdict-reactions span.bump,
+  .verdict-reactions span .verdict-react-float {
+    animation: none !important;
+  }
 }
 
 
@@ -1936,20 +2314,75 @@ section { padding: 5rem 1.5rem; }
     padding: 0 0.25rem;
   }
   .pack-tile {
-    padding: 1rem 0.5rem 0.85rem;
-    border-radius: 16px;
-    gap: 0.4rem;
+    padding: 1.1rem 0.55rem 1rem;
+    border-radius: 18px;
+    gap: 0.5rem;
   }
-  .pack-tile-emoji { font-size: 34px; }
+  .pack-tile-emoji {
+    font-size: 28px;
+    width: 52px;
+    height: 52px;
+  }
   .pack-tile h4    { font-size: 0.95rem; }
   .pack-tile .pack-tile-tag {
-    font-size: 0.58rem;
-    padding: 2px 8px;
-    letter-spacing: 0.06em;
+    font-size: 0.6rem;
+    padding: 3px 9px;
+    letter-spacing: 0.08em;
+  }
+  .pack-hero {
+    padding: 1.25rem 1rem 1.1rem;
+    border-radius: 20px;
+    margin-bottom: 1.75rem;
+    max-width: 300px;
+  }
+  .pack-hero-emoji {
+    font-size: 2rem;
+    width: 54px;
+    height: 54px;
+    margin-bottom: 0.3rem;
+  }
+  .pack-hero h3 { font-size: 1.05rem; margin-bottom: 0.25rem; }
+  .pack-hero p  { font-size: 0.82rem; line-height: 1.4; }
+  .pack-hero .pack-badge {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.85rem;
+    margin-top: 0.65rem;
+  }
+  .pack-hero .pack-play-btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 1.25rem;
+    margin-top: 0.7rem;
+  }
+  .packs-coming-label {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.95rem;
   }
 
   /* Vibe cards: single column, tighter padding, smaller typography */
   .modes-section { padding: 3rem 0 3.5rem; }
+  /* Restore horizontal breathing room on mobile so the title and cards
+     don't touch the viewport edge (modes-section zeros the horizontal
+     section padding to let the cards go wide on desktop). */
+  .modes-section .section-inner { padding-inline: 1.75rem; }
+  /* Title gets a touch more left breathing room than the right so it
+     doesn't feel jammed against the viewport edge on phones. */
+  .modes-section .modes-title { padding-left: 0.25rem; }
+  /* The subtitle was reading as filler at the default mobile size — bump
+     it so the line "scegli tu il danno" actually lands as a punchline.
+     Same treatment is shared with packs + social so the three sections
+     read at the same weight. */
+  .modes-section .section-subtitle,
+  .packs-section .section-subtitle,
+  .social-section .section-subtitle {
+    font-size: 1.05rem;
+    line-height: 1.45;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 34ch;
+    margin-left: auto;
+    margin-right: auto;
+    padding-inline: 0.5rem;
+  }
   .modes-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -1967,6 +2400,17 @@ section { padding: 5rem 1.5rem; }
   .mode-meter-label { font-size: 0.65rem; }
 
   .mode-chip      { font-size: 0.75rem; padding: 5px 10px; }
+  /* Mobile: the desktop 0.4px blur is invisible at 0.75rem, so locked
+     chips ended up looking unlocked. Use the color:transparent +
+     text-shadow trick which renders as a real blurred glyph regardless
+     of font-size, and combine with a stronger filter for the emoji and
+     the lock icon. */
+  .mode-chip-locked {
+    color: transparent;
+    text-shadow: 0 0 3.5px rgba(75, 85, 99, 0.85);
+    filter: blur(0.5px);
+    background: rgba(255, 255, 255, 0.45);
+  }
   .mode-examples  { gap: 6px; }
 
   /* Corner decoration emojis — smaller and pulled in */
@@ -1974,14 +2418,34 @@ section { padding: 5rem 1.5rem; }
   .mode-deco-1    { top: 10px; left: 10px; }
   .mode-deco-2    { bottom: 10px; right: 10px; font-size: 16px; }
   .mode-badge {
-    font-size: 0.62rem;
+    font-size: 1.2rem;       /* 🔞 reads as an icon — keep it big on mobile */
+    line-height: 1;
     top: 10px;
     right: 10px;
-    padding: 3px 8px;
+    padding: 5px 8px;
   }
 
-  .chat-canvas {
-    padding: 1.5rem 1.2rem 1.2rem;
-    border-radius: 20px;
+  /* Verdict board collapses to 1 column on phone, 2 on small tablet */
+  .verdicts-board {
+    grid-template-columns: 1fr;
+    gap: 2rem 0;
+    max-width: 360px;
+    margin-top: 2.25rem;
+  }
+  .verdict-card {
+    padding: 1.85rem 1.15rem 1.15rem;
+  }
+  .verdict-card-cta {
+    padding: 2.25rem 1.15rem 1.5rem;
+  }
+  .social-section::before,
+  .social-section::after {
+    font-size: 2.5rem;
+    opacity: 0.18;
+  }
+}
+@media (min-width: 641px) and (max-width: 900px) {
+  .verdicts-board {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

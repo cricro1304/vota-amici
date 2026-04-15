@@ -93,12 +93,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (code.isEmpty) return _err(GameException('Inserisci il codice!'));
     setState(() => _loading = true);
     try {
-      final res = await ref
-          .read(gameServiceProvider)
-          .joinRoom(roomCode: code, playerName: name);
-      await ref
-          .read(sessionServiceProvider)
-          .setPlayerId(res.room.code, res.player.id);
+      // Refresh-to-rejoin: if this browser already has a playerId cached
+      // for this room code, pass it so joinRoom can reuse it. Without this,
+      // the user would get a brand-new player row every time they re-enter
+      // the code from the home screen.
+      //
+      // This is ALSO what fixes the cross-browser-same-name bug: identity
+      // now lives in SharedPreferences per browser, not in the name — so a
+      // second browser typing the same name has no cached id and correctly
+      // creates a distinct player.
+      final session = ref.read(sessionServiceProvider);
+      final cachedId = session.getPlayerId(code); // sync — reads from prefs
+      final res = await ref.read(gameServiceProvider).joinRoom(
+            roomCode: code,
+            playerName: name,
+            existingPlayerId: cachedId,
+          );
+      await session.setPlayerId(res.room.code, res.player.id);
       if (mounted) context.go('/room/${res.room.code}');
     } catch (e) {
       _err(e);
