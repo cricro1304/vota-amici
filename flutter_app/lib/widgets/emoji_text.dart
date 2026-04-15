@@ -172,27 +172,24 @@ class _TwemojiImage extends StatelessWidget {
   final String fallback;
   final TextStyle fallbackStyle;
 
-  /// Twemoji's filename convention: each codepoint in lowercase hex, joined
-  /// by dashes, variation selector `FE0F` omitted (unless the sequence is
-  /// JUST `something + FE0F`, in which case it's kept — but jdecked/twemoji's
-  /// assets follow the strip-FE0F rule uniformly, so we always strip).
+  /// Noto's filename convention: `emoji_u` + each codepoint as lowercase hex,
+  /// joined by *underscores*, with variation-selector `FE0F` stripped.
   String get _slug {
     final parts = <String>[];
     for (final cp in codepoints) {
       if (cp == _vs16) continue;
       parts.add(cp.toRadixString(16));
     }
-    return parts.join('-');
+    return 'emoji_u${parts.join('_')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    // iamcal/emoji-data — the Apple PNG sprite set Slack/Discord/etc. have
-    // used for years. Same slug convention as Twemoji (lowercase hex, dashed,
-    // FE0F stripped), just a different path. Legally grey: Apple owns the
-    // artwork. Fine for local testing; revisit before shipping publicly.
+    // Google's Noto Color Emoji — open-source (OFL 1.1), so no licensing
+    // grey area. 128px PNGs are the smallest Noto publishes and still sharp
+    // on retina. Served from jsdelivr's mirror of googlefonts/noto-emoji.
     final url =
-        'https://cdn.jsdelivr.net/gh/iamcal/emoji-data@master/img-apple-64/$_slug.png';
+        'https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/png/128/$_slug.png';
     return SizedBox(
       width: size,
       height: size,
