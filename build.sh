@@ -27,6 +27,8 @@ EOF
 
 echo "==> Building Flutter web (release, base-href=/play/)..."
 pushd flutter_app >/dev/null
+# Ensure the web platform is registered (idempotent; preserves existing web/ files)
+flutter create . --platforms web --project-name vota_amici >/dev/null
 flutter pub get
 flutter build web --release --base-href /play/
 popd >/dev/null
