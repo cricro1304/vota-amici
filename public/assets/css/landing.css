@@ -611,6 +611,63 @@ section { padding: 5rem 1.5rem; }
 }
 
 
+/* Tutorial screen 5: Pack picker */
+.tut-pack-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+.tut-pack-row-selected {
+  border-color: var(--pink);
+  background: linear-gradient(135deg, #fff1f6, #fff);
+  box-shadow: 0 4px 14px rgba(230, 54, 110, 0.18);
+}
+.tut-pack-emoji { font-size: 22px; line-height: 1; }
+.tut-pack-info { flex: 1; min-width: 0; text-align: left; }
+.tut-pack-name {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: #111;
+  line-height: 1.1;
+}
+.tut-pack-sub {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.tut-pack-check {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--pink);
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.tut-pack-soon {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: #f3f4f6;
+  padding: 3px 8px;
+  border-radius: 999px;
+  flex: none;
+}
+
 /* Tutorial screen 1: Lobby */
 .tut-lobby { align-items: center; }
 
@@ -1054,6 +1111,200 @@ section { padding: 5rem 1.5rem; }
 }
 
 
+/* ── 5b. Game modes ─────────────────────────────────────────────────────── */
+.modes-section {
+  background: var(--bg);
+  padding: 4rem 0 5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.modes-title { position: relative; display: inline-block; }
+.modes-title-highlight {
+  background: linear-gradient(135deg, var(--pink), var(--cyan));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  transform: rotate(-2deg);
+  font-size: 1.15em;
+}
+
+.modes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 2.5rem auto 0;
+  padding: 0 1rem;
+}
+
+/* --- Card shell ---------------------------------------------------------- */
+.mode-card {
+  position: relative;
+  border-radius: 28px;
+  padding: 1.75rem 1.5rem 1.75rem;
+  text-align: center;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.35s ease;
+  isolation: isolate;
+}
+.mode-card > * { position: relative; z-index: 2; }
+
+.mode-card:hover {
+  transform: translateY(-6px);
+}
+
+/* Saturated per-mode backgrounds */
+.mode-card.mode-light {
+  background:
+    radial-gradient(circle at 20% 10%, #ffd8e6 0%, transparent 55%),
+    radial-gradient(circle at 90% 90%, #ffe9c7 0%, transparent 60%),
+    linear-gradient(160deg, #fff1f6, #ffe1ec);
+  box-shadow: 0 14px 40px rgba(230, 54, 110, 0.22),
+              inset 0 0 0 2px rgba(230, 54, 110, 0.12);
+}
+.mode-card.mode-light:hover { box-shadow: 0 22px 48px rgba(230, 54, 110, 0.32); }
+
+.mode-card.mode-neutro {
+  background:
+    radial-gradient(circle at 85% 15%, #c7f0fb 0%, transparent 55%),
+    radial-gradient(circle at 10% 90%, #d8ffe9 0%, transparent 60%),
+    linear-gradient(160deg, #eefaff, #daf3fb);
+  box-shadow: 0 14px 40px rgba(6, 182, 212, 0.22),
+              inset 0 0 0 2px rgba(6, 182, 212, 0.14);
+}
+.mode-card.mode-neutro:hover { box-shadow: 0 22px 48px rgba(6, 182, 212, 0.32); }
+
+.mode-card.mode-spicy {
+  background:
+    radial-gradient(circle at 50% 0%, #ffb199 0%, transparent 55%),
+    radial-gradient(circle at 20% 100%, #ffd0b0 0%, transparent 55%),
+    linear-gradient(160deg, #fff1e6, #ffdcc4);
+  box-shadow: 0 14px 40px rgba(249, 115, 22, 0.22),
+              inset 0 0 0 2px rgba(249, 115, 22, 0.18);
+}
+.mode-card.mode-spicy:hover { box-shadow: 0 22px 48px rgba(249, 115, 22, 0.32); }
+
+/* --- Sticker emoji ------------------------------------------------------- */
+.mode-sticker {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.18));
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mode-card:hover .mode-sticker { transform: scale(1.06); }
+
+/* --- Decorative floating emojis ----------------------------------------- */
+.mode-deco {
+  position: absolute;
+  font-size: 26px;
+  opacity: 0.45;
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.1));
+}
+.mode-deco-1 { top: 16px;  left: 16px;  transform: rotate(-18deg); }
+.mode-deco-2 { bottom: 20px; right: 16px; transform: rotate(22deg); font-size: 20px; }
+
+/* --- "Soon" badge on spicy ----------------------------------------------- */
+.mode-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: #111;
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  transform: rotate(8deg);
+  z-index: 3;
+  letter-spacing: 0.02em;
+}
+
+/* --- Heat meter ---------------------------------------------------------- */
+.mode-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  margin-bottom: 0.9rem;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.mode-meter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.12);
+}
+.mode-card.mode-light  .mode-meter-dot.on { background: var(--pink); }
+.mode-card.mode-neutro .mode-meter-dot.on { background: var(--cyan); }
+.mode-card.mode-spicy  .mode-meter-dot.on { background: #f97316; }
+.mode-meter-label {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* --- Title + copy -------------------------------------------------------- */
+.mode-card h3 {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 1.9rem;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.01em;
+}
+.mode-card.mode-light  h3 { color: #e6366e; }
+.mode-card.mode-neutro h3 { color: #0891b2; }
+.mode-card.mode-spicy  h3 { color: #ea580c; }
+
+.mode-desc {
+  font-size: 0.95rem;
+  color: #4b5563;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 1.1rem;
+}
+
+/* --- Sticky-note chips --------------------------------------------------- */
+.mode-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  justify-content: center;
+}
+.mode-chip {
+  background: #fff;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #374151;
+  font-family: 'Fredoka', sans-serif;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08),
+              0 6px 14px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease;
+}
+
+.mode-chip-locked {
+  background: rgba(255, 255, 255, 0.55);
+  color: #9ca3af;
+  filter: blur(0.4px);
+  position: relative;
+}
+
+
 /* ── 6. Packs showcase ──────────────────────────────────────────────────── */
 .packs-section { background: var(--bg); }
 .packs-wrapper { perspective: 800px; }
@@ -1147,45 +1398,109 @@ section { padding: 5rem 1.5rem; }
 }
 
 .packs-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1.25rem 1rem;
   justify-content: center;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 0.5rem;
 }
 
+/* --- Clean pack tile ---------------------------------------------------- */
 .pack-tile {
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 2px solid rgba(230, 54, 110, 0.1);
-  padding: 1.25rem 0.75rem;
+  --pack-color: #e6366e;
+  --pack-bg: #ffe7f0;
+  position: relative;
+  background: var(--pack-bg);
+  border-radius: 20px;
+  padding: 1.5rem 1rem 1.25rem;
   text-align: center;
   cursor: pointer;
-  width: 150px;
-  position: relative;
+  width: auto;
   z-index: 1;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
 }
+
 .pack-tile:hover,
 .pack-tile.touched {
-  border-color: var(--pink);
-  box-shadow: 0 8px 24px -6px rgba(230, 54, 110, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 14px 28px -8px rgba(0, 0, 0, 0.12);
   z-index: 10;
 }
 
-.pack-tile-emoji { font-size: 2.2rem; margin-bottom: 0.4rem; }
-.pack-tile h4 {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  color: var(--text);
+.pack-tile-emoji {
+  font-size: 44px;
+  line-height: 1;
+  margin: 0;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
 }
-.pack-tile .pack-tile-tag {
+
+.pack-tile h4 {
   font-family: 'Fredoka', sans-serif;
-  font-weight: 600;
-  font-size: 0.7rem;
-  color: var(--pink);
-  opacity: 0.8;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--pack-color);
+  letter-spacing: -0.01em;
+}
+
+/* Sample preview kept in markup for popup; hidden on the tile face. */
+.pack-tile-preview { display: none; }
+
+/* Simple tag */
+.pack-tile .pack-tile-tag {
+  display: inline-block;
+  margin: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  color: var(--pack-color);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  opacity: 0.9;
+}
+
+/* --- Per-pack color theming (matches emoji order in the grid) ----------- */
+.packs-grid .pack-tile:nth-child(1) {  /* Coppie 💑 — rose */
+  --pack-color: #e6366e;
+  --pack-bg: #ffe3ee;
+}
+.packs-grid .pack-tile:nth-child(2) {  /* Fratelli 👫 — sun */
+  --pack-color: #d97706;
+  --pack-bg: #fff1ca;
+}
+.packs-grid .pack-tile:nth-child(3) {  /* Famiglia 👨‍👩‍👧‍👦 — terracotta */
+  --pack-color: #c2410c;
+  --pack-bg: #fde0cc;
+}
+.packs-grid .pack-tile:nth-child(4) {  /* Colleghi 💼 — indigo */
+  --pack-color: #4f46e5;
+  --pack-bg: #e0e3ff;
+}
+.packs-grid .pack-tile:nth-child(5) {  /* Coinquilini 🏠 — mint */
+  --pack-color: #059669;
+  --pack-bg: #d1f5e4;
+}
+.packs-grid .pack-tile:nth-child(6) {  /* Viaggi ✈️ — sky */
+  --pack-color: #0284c7;
+  --pack-bg: #d6eefc;
+}
+.packs-grid .pack-tile:nth-child(7) {  /* Conoscersi 🤝 — lavender */
+  --pack-color: #7c3aed;
+  --pack-bg: #e9ddff;
+}
+.packs-grid .pack-tile:nth-child(8) {  /* Spicy 🌶️ — chili red */
+  --pack-color: #dc2626;
+  --pack-bg: #fed7d7;
 }
 
 
@@ -1613,8 +1928,57 @@ section { padding: 5rem 1.5rem; }
 
 @media (max-width: 600px) {
   .pack-tile-popup { display: none !important; }
-  .packs-grid      { gap: 0.75rem; }
-  .pack-tile       { width: 140px; padding: 1rem 0.5rem; }
+
+  /* Packs: tighter 2-col grid, compact tiles */
+  .packs-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+    padding: 0 0.25rem;
+  }
+  .pack-tile {
+    padding: 1rem 0.5rem 0.85rem;
+    border-radius: 16px;
+    gap: 0.4rem;
+  }
+  .pack-tile-emoji { font-size: 34px; }
+  .pack-tile h4    { font-size: 0.95rem; }
+  .pack-tile .pack-tile-tag {
+    font-size: 0.58rem;
+    padding: 2px 8px;
+    letter-spacing: 0.06em;
+  }
+
+  /* Vibe cards: single column, tighter padding, smaller typography */
+  .modes-section { padding: 3rem 0 3.5rem; }
+  .modes-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .mode-card {
+    padding: 1.25rem 1rem 1.25rem;
+    border-radius: 22px;
+  }
+  .mode-sticker   { font-size: 48px; margin-bottom: 0.25rem; }
+  .mode-card h3   { font-size: 1.5rem; margin-bottom: 0.3rem; }
+  .mode-desc      { font-size: 0.85rem; margin-bottom: 0.75rem; }
+  .mode-meter     { margin-bottom: 0.6rem; padding: 3px 10px; }
+  .mode-meter-dot { width: 7px; height: 7px; }
+  .mode-meter-label { font-size: 0.65rem; }
+
+  .mode-chip      { font-size: 0.75rem; padding: 5px 10px; }
+  .mode-examples  { gap: 6px; }
+
+  /* Corner decoration emojis — smaller and pulled in */
+  .mode-deco      { font-size: 20px; opacity: 0.35; }
+  .mode-deco-1    { top: 10px; left: 10px; }
+  .mode-deco-2    { bottom: 10px; right: 10px; font-size: 16px; }
+  .mode-badge {
+    font-size: 0.62rem;
+    top: 10px;
+    right: 10px;
+    padding: 3px 8px;
+  }
 
   .chat-canvas {
     padding: 1.5rem 1.2rem 1.2rem;

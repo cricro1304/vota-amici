@@ -298,23 +298,31 @@
 
   function onScrollUpdate() {
     rafScheduled = false;
-    var triggerY = window.innerHeight * 0.65;
+    var defaultTrigger = window.innerHeight * 0.65;
+    var vh = window.innerHeight;
 
-    // Snapshot step positions.
+    // Snapshot step positions. A step may override the default trigger
+    // point via `data-tut-start-at` (a fraction of viewport height) — this
+    // is how the "🎲 Scegli il pack" step gets to start earlier, since its
+    // phone mockup is the user's first impression of the tutorial and it
+    // was activating too late / getting skipped past on fast scrolls.
     var stepRects = [];
     tutSteps.forEach(function (step) {
       var rect = step.getBoundingClientRect();
+      var startAt = parseFloat(step.getAttribute('data-tut-start-at'));
+      var trigger = isNaN(startAt) ? defaultTrigger : vh * startAt;
       stepRects.push({
         top: rect.top,
         bottom: rect.bottom,
+        trigger: trigger,
         screen: parseInt(step.getAttribute('data-tut-screen'), 10)
       });
     });
 
-    // Latest step whose top is above the trigger line wins.
+    // Latest step whose top is above its own trigger line wins.
     var activeScreen = 0;
     for (var i = stepRects.length - 1; i >= 0; i--) {
-      if (stepRects[i].top <= triggerY) {
+      if (stepRects[i].top <= stepRects[i].trigger) {
         activeScreen = stepRects[i].screen;
         break;
       }

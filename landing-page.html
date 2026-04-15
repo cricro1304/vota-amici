@@ -11,7 +11,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="assets/css/shared.css" />
   <link rel="stylesheet" href="assets/css/landing.css" />
@@ -69,18 +69,36 @@
         <p class="section-subtitle" data-i18n="how_sub">Tre passi, almeno 3 amici, zero filtri. Il resto viene da solo.</p>
 
         <div class="tutorial-steps-list">
-          <div class="tutorial-step active" data-tut-screen="1">
+          <div class="tutorial-step active" data-tut-screen="5" data-tut-start-at="0.95">
             <div class="tut-step-top">
               <div class="tut-step-number">1</div>
+              <span class="tut-step-emoji">🎲</span>
+              <h3 data-i18n="step_pack_title">Scegli il pack</h3>
+            </div>
+            <p data-i18n="step_pack_desc">Classico, Coppie, Fratelli, Colleghi... il mazzo di domande giusto per il tuo gruppo.</p>
+          </div>
+
+          <div class="tutorial-step" data-tut-screen="1">
+            <div class="tut-step-top">
+              <div class="tut-step-number">2</div>
               <span class="tut-step-emoji">🏠</span>
               <h3 data-i18n="step1_title">Crea una stanza</h3>
             </div>
             <p data-i18n="step1_desc">Un tap e hai il tuo codice. Condividilo con i tuoi amici e aspetta che entrino.</p>
           </div>
 
+          <div class="tutorial-step" data-tut-screen="4">
+            <div class="tut-step-top">
+              <div class="tut-step-number">3</div>
+              <span class="tut-step-emoji">🌶️</span>
+              <h3 data-i18n="step_modes_title">Scegli il vibe</h3>
+            </div>
+            <p data-i18n="step_modes_desc">Light, Neutro o Spicy? Decidi tu il tono delle domande. Si combinano tra loro.</p>
+          </div>
+
           <div class="tutorial-step" data-tut-screen="2">
             <div class="tut-step-top">
-              <div class="tut-step-number">2</div>
+              <div class="tut-step-number">4</div>
               <span class="tut-step-emoji">🗳️</span>
               <h3 data-i18n="step2_title">Vota in segreto</h3>
             </div>
@@ -89,7 +107,7 @@
 
           <div class="tutorial-step" data-tut-screen="3">
             <div class="tut-step-top">
-              <div class="tut-step-number">3</div>
+              <div class="tut-step-number">5</div>
               <span class="tut-step-emoji">🏆</span>
               <h3 data-i18n="step3_title">Scopri il vincitore</h3>
             </div>
@@ -220,6 +238,63 @@
               </div>
             </div>
 
+            <!-- Phone Screen 5: Pack picker -->
+            <div class="tut-app-screen" id="tutScreen5">
+              <div class="tut-lobby-title" data-i18n="demo_header">🎉 Chi è il più...?</div>
+              <div style="display:flex; flex-direction:column; gap:8px; padding:4px 2px;">
+                <div style="font-family:'Fredoka',sans-serif; font-weight:700; font-size:13px; color:var(--text-muted); text-align:center;" data-i18n="tut_pack_card_title">🎲 Scegli un pack</div>
+                <div style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:-4px;" data-i18n="tut_pack_card_sub">Il mazzo giusto per il tuo gruppo</div>
+                <div class="tut-pack-row tut-pack-row-selected">
+                  <span class="tut-pack-emoji">🎭</span>
+                  <div class="tut-pack-info">
+                    <div class="tut-pack-name" data-i18n="tut_pack_classico">Classico</div>
+                    <div class="tut-pack-sub" data-i18n="tut_pack_classico_sub">100+ domande · Gratis</div>
+                  </div>
+                  <span class="tut-pack-check">✓</span>
+                </div>
+                <div class="tut-pack-row">
+                  <span class="tut-pack-emoji">💑</span>
+                  <div class="tut-pack-info">
+                    <div class="tut-pack-name" data-i18n="tut_pack_coppie">Coppie</div>
+                    <div class="tut-pack-sub" data-i18n="tut_pack_coppie_sub">Per chi si conosce davvero</div>
+                  </div>
+                  <span class="tut-pack-soon" data-i18n="tut_pack_soon">Soon</span>
+                </div>
+                <div class="tut-pack-row">
+                  <span class="tut-pack-emoji">👫</span>
+                  <div class="tut-pack-info">
+                    <div class="tut-pack-name" data-i18n="tut_pack_fratelli">Fratelli</div>
+                    <div class="tut-pack-sub" data-i18n="tut_pack_fratelli_sub">Regolamenti di conti</div>
+                  </div>
+                  <span class="tut-pack-soon" data-i18n="tut_pack_soon">Soon</span>
+                </div>
+                <div class="tut-pack-row">
+                  <span class="tut-pack-emoji">💼</span>
+                  <div class="tut-pack-info">
+                    <div class="tut-pack-name" data-i18n="tut_pack_colleghi">Colleghi</div>
+                    <div class="tut-pack-sub" data-i18n="tut_pack_colleghi_sub">L'ufficio si confessa</div>
+                  </div>
+                  <span class="tut-pack-soon" data-i18n="tut_pack_soon">Soon</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phone Screen 4: Modes picker -->
+            <div class="tut-app-screen" id="tutScreen4">
+              <div class="tut-lobby-title" data-i18n="demo_header">🎉 Chi è il più...?</div>
+              <div style="display:flex; flex-direction:column; gap:10px; padding:6px 4px;">
+                <div style="font-family:'Fredoka',sans-serif; font-weight:700; font-size:13px; color:var(--text-muted); text-align:center;" data-i18n="tut_modes_card_title">🎲 Modalità di gioco</div>
+                <div style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:-4px;" data-i18n="tut_modes_card_sub">Scegli quali domande includere</div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:6px;">
+                  <span style="background:var(--pink); color:#fff; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700;">🌸 Light</span>
+                  <span style="background:var(--cyan); color:#fff; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700;">🎯 Neutro</span>
+                  <span style="background:#eee; color:var(--text-muted); padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700;">🌶️ Spicy</span>
+                </div>
+                <div style="margin-top:8px; background:var(--bg-muted,#f5f5f7); border-radius:10px; padding:10px 12px; font-size:11px; color:var(--text-muted); text-align:center; line-height:1.4;" data-i18n="tut_modes_example">Es: "Chi è il più romantico?" 💘<br/>(Light)</div>
+                <button class="tut-start-btn" style="margin-top:6px;" data-i18n="tut_modes_btn">🎮 Crea Partita</button>
+              </div>
+            </div>
+
             <!-- Phone Screen 3: Winner Reveal (matches hero screen 2) -->
             <div class="tut-app-screen" id="tutScreen3">
               <div class="app-header" data-i18n="demo_header">🎉 Chi è il più...?</div>
@@ -257,6 +332,73 @@
   </div>
 </section>
 
+<!-- GAME MODES -->
+<section class="modes-section" id="modes">
+  <div class="section-inner">
+    <h2 class="section-title modes-title" data-i18n="modes_title">Scegli il <span class="modes-title-highlight">vibe</span> della serata</h2>
+    <p class="section-subtitle" data-i18n="modes_sub">Dolce, classico o piccante — mescola come vuoi tu. Il tuo gruppo, le tue regole 🤌</p>
+
+    <div class="modes-grid">
+      <div class="mode-card mode-light">
+        <div class="mode-sticker">🌸</div>
+        <div class="mode-deco mode-deco-1">💖</div>
+        <div class="mode-deco mode-deco-2">✨</div>
+        <div class="mode-meter">
+          <span class="mode-meter-dot on"></span>
+          <span class="mode-meter-dot"></span>
+          <span class="mode-meter-dot"></span>
+          <span class="mode-meter-label" data-i18n="mode_light_meter">dolcezza</span>
+        </div>
+        <h3 data-i18n="mode_light_title">Light</h3>
+        <p class="mode-desc" data-i18n="mode_light_desc">Complimenti travestiti da domande. Coccole e buone vibrazioni.</p>
+        <div class="mode-examples">
+          <span class="mode-chip" data-i18n="mode_light_q1">💝 chi è il più generoso</span>
+          <span class="mode-chip" data-i18n="mode_light_q2">💘 chi è il più romantico</span>
+          <span class="mode-chip" data-i18n="mode_light_q3">🤝 chi è il più affidabile</span>
+        </div>
+      </div>
+
+      <div class="mode-card mode-neutro">
+        <div class="mode-sticker">🎯</div>
+        <div class="mode-deco mode-deco-1">🎲</div>
+        <div class="mode-deco mode-deco-2">🎭</div>
+        <div class="mode-meter">
+          <span class="mode-meter-dot on"></span>
+          <span class="mode-meter-dot on"></span>
+          <span class="mode-meter-dot"></span>
+          <span class="mode-meter-label" data-i18n="mode_neutro_meter">equilibrio</span>
+        </div>
+        <h3 data-i18n="mode_neutro_title">Neutro</h3>
+        <p class="mode-desc" data-i18n="mode_neutro_desc">Il classico. Né troppo dolce né troppo piccante. Perfetto per tutti.</p>
+        <div class="mode-examples">
+          <span class="mode-chip" data-i18n="mode_neutro_q1">😴 chi è il più pigro</span>
+          <span class="mode-chip" data-i18n="mode_neutro_q2">🎭 chi è il più drammatico</span>
+          <span class="mode-chip" data-i18n="mode_neutro_q3">⏰ chi è il più ritardatario</span>
+        </div>
+      </div>
+
+      <div class="mode-card mode-spicy">
+        <span class="mode-badge" data-i18n="mode_spicy_badge">🔜 soon</span>
+        <div class="mode-sticker">🌶️</div>
+        <div class="mode-deco mode-deco-1">🔥</div>
+        <div class="mode-deco mode-deco-2">💥</div>
+        <div class="mode-meter">
+          <span class="mode-meter-dot on"></span>
+          <span class="mode-meter-dot on"></span>
+          <span class="mode-meter-dot on"></span>
+          <span class="mode-meter-label" data-i18n="mode_spicy_meter">piccante</span>
+        </div>
+        <h3 data-i18n="mode_spicy_title">Spicy</h3>
+        <p class="mode-desc" data-i18n="mode_spicy_desc">Per chi non ha paura. Domande taglienti, risposte imbarazzate. 18+</p>
+        <div class="mode-examples">
+          <span class="mode-chip mode-chip-locked">🔒 <span data-i18n="mode_spicy_q1">chi ha fatto la cosa peggiore?</span></span>
+          <span class="mode-chip mode-chip-locked">🔒 <span data-i18n="mode_spicy_q2">chi bacerebbe chi?</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- PACKS -->
 <section class="packs-section" id="packs">
   <div class="section-inner">
@@ -279,6 +421,7 @@
         <div class="pack-tile">
           <div class="pack-tile-emoji">💑</div>
           <h4 data-i18n="tile_coppie">Coppie</h4>
+          <p class="pack-tile-preview" data-i18n="tile_coppie_q1">💤 chi russa di più</p>
           <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
           <div class="pack-tile-popup">
             <p class="pack-tile-desc" data-i18n="tile_coppie_desc">Quanto vi conoscete davvero? Le domande che mettono alla prova anche le coppie più solide.</p>
@@ -293,6 +436,7 @@
         <div class="pack-tile">
           <div class="pack-tile-emoji">👫</div>
           <h4 data-i18n="tile_fratelli">Fratelli</h4>
+          <p class="pack-tile-preview" data-i18n="tile_fratelli_q1">👶 chi piangeva di più</p>
           <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
           <div class="pack-tile-popup">
             <p class="pack-tile-desc" data-i18n="tile_fratelli_desc">Chi era il preferito della mamma? Chi rompeva sempre tutto? Regolamenti di conti.</p>
@@ -307,6 +451,7 @@
         <div class="pack-tile">
           <div class="pack-tile-emoji">👨‍👩‍👧‍👦</div>
           <h4 data-i18n="tile_famiglia">Famiglia</h4>
+          <p class="pack-tile-preview" data-i18n="tile_famiglia_q1">🛋️ chi occupa il divano</p>
           <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
           <div class="pack-tile-popup">
             <p class="pack-tile-desc" data-i18n="tile_famiglia_desc">Da nonni a nipoti, tutti votano. Scopri chi è il vero capofamiglia e chi è la pecora nera.</p>
@@ -321,6 +466,7 @@
         <div class="pack-tile">
           <div class="pack-tile-emoji">💼</div>
           <h4 data-i18n="tile_colleghi">Colleghi</h4>
+          <p class="pack-tile-preview" data-i18n="tile_colleghi_q1">☕ chi beve più caffè</p>
           <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
           <div class="pack-tile-popup">
             <p class="pack-tile-desc" data-i18n="tile_colleghi_desc">Chi sparisce in pausa pranzo? Chi risponde alle mail a mezzanotte? L'ufficio si confessa.</p>
@@ -335,6 +481,7 @@
         <div class="pack-tile">
           <div class="pack-tile-emoji">🏠</div>
           <h4 data-i18n="tile_coinquilini">Coinquilini</h4>
+          <p class="pack-tile-preview" data-i18n="tile_coinquilini_q1">🍳 chi non cucina mai</p>
           <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
           <div class="pack-tile-popup">
             <p class="pack-tile-desc" data-i18n="tile_coinquilini_desc">Chi lascia i piatti nel lavandino? Chi ruba il cibo? La convivenza non avrà più segreti.</p>
@@ -349,6 +496,7 @@
         <div class="pack-tile">
           <div class="pack-tile-emoji">✈️</div>
           <h4 data-i18n="tile_viaggi">Viaggi</h4>
+          <p class="pack-tile-preview" data-i18n="tile_viaggi_q1">🗺️ chi si perde sempre</p>
           <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
           <div class="pack-tile-popup">
             <p class="pack-tile-desc" data-i18n="tile_viaggi_desc">Chi perderebbe il passaporto? Chi si lamenterebbe di tutto? Per il gruppo viaggi.</p>
@@ -363,6 +511,7 @@
         <div class="pack-tile">
           <div class="pack-tile-emoji">🤝</div>
           <h4 data-i18n="tile_conoscersi">Per conoscersi</h4>
+          <p class="pack-tile-preview" data-i18n="tile_conoscersi_q1">🌍 chi viaggerebbe di più</p>
           <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
           <div class="pack-tile-popup">
             <p class="pack-tile-desc" data-i18n="tile_conoscersi_desc">Perfetto per rompere il ghiaccio. Le domande giuste per scoprire chi hai davvero davanti.</p>
@@ -377,7 +526,8 @@
         <div class="pack-tile">
           <div class="pack-tile-emoji">🌶️</div>
           <h4 data-i18n="tile_spicy">Spicy</h4>
-          <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
+          <p class="pack-tile-preview" data-i18n="tile_spicy_q1">💋 chi flirta di più</p>
+          <span class="pack-tile-tag" data-i18n="tile_spicy_tag_18">18+ only</span>
           <div class="pack-tile-popup">
             <p class="pack-tile-desc" data-i18n="tile_spicy_desc">Le domande che nessuno osa fare a voce alta. Solo per i più coraggiosi. 18+</p>
             <div class="pack-tile-examples">

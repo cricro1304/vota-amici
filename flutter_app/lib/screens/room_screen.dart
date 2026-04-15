@@ -26,6 +26,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
   String? _roomId;
   String? _playerId;
   bool _resolving = true;
+  String? _resolveError;
   final _rejoinCtrl = TextEditingController();
   bool _rejoining = false;
 
@@ -44,21 +45,37 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
   }
 
   Future<void> _resolve() async {
+    if (!mounted) return;
+    setState(() {
+      _resolving = true;
+      _resolveError = null;
+    });
     final session = ref.read(sessionServiceProvider);
     final existingPlayerId = session.getPlayerId(_normalized);
 
-    final room =
-        await ref.read(roomRepositoryProvider).findRoomByCode(_normalized);
-    if (!mounted) return;
-    if (room == null) {
-      context.go('/');
-      return;
+    try {
+      final room =
+          await ref.read(roomRepositoryProvider).findRoomByCode(_normalized);
+      if (!mounted) return;
+      if (room == null) {
+        context.go('/');
+        return;
+      }
+      setState(() {
+        _roomId = room.id;
+        _playerId = existingPlayerId;
+        _resolving = false;
+      });
+    } catch (e) {
+      // Network error on initial room lookup (e.g. host's wifi dropped right
+      // as they landed on the room URL). Don't redirect to home — just show
+      // a retryable error state so they can recover without losing the URL.
+      if (!mounted) return;
+      setState(() {
+        _resolving = false;
+        _resolveError = e.toString();
+      });
     }
-    setState(() {
-      _roomId = room.id;
-      _playerId = existingPlayerId;
-      _resolving = false;
-    });
   }
 
   Future<void> _rejoin() async {
@@ -88,6 +105,34 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
   Widget build(BuildContext context) {
     if (_resolving) {
       return const GameLayout(child: Center(child: EmojiText('🎲', style: TextStyle(fontSize: 32))));
+    }
+
+    if (_resolveError != null) {
+      return GameLayout(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const EmojiText('📡', style: TextStyle(fontSize: 44)),
+              const SizedBox(height: 12),
+              const Text(
+                'Connessione persa',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Non riesco a caricare la stanza.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _resolve,
+                child: const Text('Riprova'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     final playerId = _playerId;

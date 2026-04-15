@@ -34,6 +34,7 @@ class Room {
   final RoomStatus status;
   final int currentRound;
   final int? timerSeconds;
+  final List<String> modes;
   final DateTime createdAt;
 
   const Room({
@@ -43,6 +44,7 @@ class Room {
     required this.status,
     required this.currentRound,
     required this.timerSeconds,
+    required this.modes,
     required this.createdAt,
   });
 
@@ -53,6 +55,13 @@ class Room {
         status: _parseStatus(json['status'] as String),
         currentRound: json['current_round'] as int? ?? 0,
         timerSeconds: json['timer_seconds'] as int?,
+        // Default to all three modes for backwards compatibility with rooms
+        // created before the migration ran (and rooms created with no
+        // explicit selection).
+        modes: (json['modes'] as List?)
+                ?.map((e) => e.toString())
+                .toList(growable: false) ??
+            const ['light', 'neutro', 'spicy'],
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 }

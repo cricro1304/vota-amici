@@ -23,6 +23,17 @@ class RoomRepository {
     return data == null ? null : Room.fromJson(data);
   }
 
+  /// One-shot lookup by id. Used by `GameService.nextRound` to read the
+  /// host's `modes` selection without subscribing to the realtime stream.
+  Future<Room?> findRoomById(String roomId) async {
+    final data = await _client
+        .from('rooms')
+        .select()
+        .eq('id', roomId)
+        .maybeSingle();
+    return data == null ? null : Room.fromJson(data);
+  }
+
   /// Stream of a single room's current state. Supabase pushes incremental
   /// updates — we never refetch on change.
   Stream<Room?> watchRoom(String roomId) {
@@ -36,6 +47,7 @@ class RoomRepository {
   Future<Room> createRoom({
     required String code,
     required int? timerSeconds,
+    required List<String> modes,
   }) async {
     final data = await _client
         .from('rooms')
@@ -43,6 +55,7 @@ class RoomRepository {
           'code': code,
           'status': 'lobby',
           'timer_seconds': timerSeconds,
+          'modes': modes,
         })
         .select()
         .single();

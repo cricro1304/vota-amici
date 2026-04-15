@@ -32,6 +32,15 @@ dependencies:
   # Fonts matching the web app
   google_fonts: ^6.2.1
 
+  # Native share sheet (iOS AirDrop, Android share, Web Share API).
+  # Used in the lobby to invite friends by link.
+  share_plus: ^10.1.2
+
+  # Live network connectivity status. On web this maps to
+  # `navigator.onLine` (which DevTools' Offline toggle flips), so we can show
+  # a reconnecting banner even while Riverpod still has cached room data.
+  connectivity_plus: ^6.0.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

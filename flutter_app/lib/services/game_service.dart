@@ -34,10 +34,23 @@ class GameService {
   Future<({Room room, Player player})> createRoom({
     required String hostName,
     required int? timerSeconds,
+    List<QuestionMode> modes = const [
+      QuestionMode.light,
+      QuestionMode.neutro,
+      QuestionMode.spicy,
+    ],
   }) async {
+    // Defensive: an empty mode list would mean "no questions ever" — fall
+    // back to the full set so the host doesn't accidentally brick the room.
+    final selected = modes.isEmpty
+        ? const [QuestionMode.light, QuestionMode.neutro, QuestionMode.spicy]
+        : modes;
     final code = generateRoomCode();
-    final room =
-        await roomRepository.createRoom(code: code, timerSeconds: timerSeconds);
+    final room = await roomRepository.createRoom(
+      code: code,
+      timerSeconds: timerSeconds,
+      modes: selected.map(questionModeToString).toList(growable: false),
+    );
     final player = await roomRepository.createPlayer(
       roomId: room.id,
       name: hostName,
@@ -45,6 +58,19 @@ class GameService {
     );
     await roomRepository.setHost(room.id, player.id);
     return (room: room, player: player);
+  }
+
+  /// Returns the subset of cached questions matching the room's selected
+  /// modes. Falls back to the full set if `modes` is empty (legacy rooms).
+  List<Question> _questionsForRoom(List<Question> all, List<String> modes) {
+    if (modes.isEmpty) return all;
+    final allowed = modes.toSet();
+    final filtered = all.where((q) {
+      return allowed.contains(questionModeToString(q.mode));
+    }).toList(growable: false);
+    // If the host selected a mode that has no seeded questions yet (Spicy
+    // before authoring), don't end up with an empty pool.
+    return filtered.isEmpty ? all : filtered;
   }
 
   Future<({Room room, Player player})> joinRoom({
@@ -78,8 +104,8 @@ class GameService {
   // --- Round progression --------------------------------------------------
 
   Future<void> startGame(String roomId) async {
-    final questions = await _questions();
-    if (questions.isEmpty) {
+    final all = await _questions();
+    if (all.isEmpty) {
       throw GameException('Nessuna domanda disponibile');
     }
     // Idempotent: if a round already exists for this room (because the lobby
@@ -98,7 +124,11 @@ class GameService {
       );
       return;
     }
-    final first = questions[_random.nextInt(questions.length)];
+    // Filter to the host's selected modes so the very first round respects
+    // the room's settings (not just rounds 2+).
+    final room = await roomRepository.findRoomById(roomId);
+    final pool = _questionsForRoom(all, room?.modes ?? const []);
+    final first = pool[_random.nextInt(pool.length)];
     await gameRepository.createRound(
       roomId: roomId,
       questionId: first.id,
@@ -136,10 +166,15 @@ class GameService {
     required int currentRoundNumber,
     required List<Round> existingRounds,
   }) async {
-    final questions = await _questions();
+    final all = await _questions();
+    // Filter by mode FIRST, then by already-used question ids — this matches
+    // the React `nextRound` semantics ("no more questions" means no more
+    // questions *in scope*, not in the global pool).
+    final room = await roomRepository.findRoomById(roomId);
+    final scoped = _questionsForRoom(all, room?.modes ?? const []);
     final usedIds = existingRounds.map((r) => r.questionId).toSet();
     final available =
-        questions.where((q) => !usedIds.contains(q.id)).toList(growable: false);
+        scoped.where((q) => !usedIds.contains(q.id)).toList(growable: false);
 
     if (available.isEmpty || currentRoundNumber >= kMaxRounds) {
       await roomRepository.updateRoomStatus(roomId, status: RoomStatus.finished);

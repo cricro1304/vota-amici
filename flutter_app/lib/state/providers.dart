@@ -11,6 +11,7 @@ import '../repositories/room_repository.dart';
 import '../services/dev_bot_service.dart';
 import '../services/game_service.dart';
 import '../services/session_service.dart';
+import '../services/share_service.dart';
 
 // --- Service providers (thin wrappers over GetIt) -------------------------
 
@@ -24,6 +25,8 @@ final sessionServiceProvider =
     Provider<SessionService>((_) => locator<SessionService>());
 final devBotServiceProvider =
     Provider<DevBotService>((_) => locator<DevBotService>());
+final shareServiceProvider =
+    Provider<ShareService>((_) => locator<ShareService>());
 
 // --- Reactive streams: room, players, rounds -----------------------------
 
@@ -88,4 +91,15 @@ final currentQuestionTextProvider =
   if (round == null) return null;
   final map = ref.watch(allQuestionsByIdProvider).valueOrNull ?? const {};
   return map[round.questionId]?.text;
+});
+
+/// Full question object for the round currently in play. Used by the voting
+/// screen to style the question card differently for light / neutro / spicy
+/// prompts (so a 🌶️ question is visually obvious before the vote).
+final currentQuestionProvider =
+    Provider.family<Question?, String>((ref, roomId) {
+  final round = ref.watch(currentRoundProvider(roomId));
+  if (round == null) return null;
+  final map = ref.watch(allQuestionsByIdProvider).valueOrNull ?? const {};
+  return map[round.questionId];
 });

@@ -34,13 +34,13 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Nunito', 'Noto Color Emoji', sans-serif;
   background: var(--bg);
   color: var(--text);
   overflow-x: clip;
 }
 
-h1, h2, h3, h4, .fredoka { font-family: 'Fredoka', sans-serif; }
+h1, h2, h3, h4, .fredoka { font-family: 'Fredoka', 'Noto Color Emoji', sans-serif; }
 
 
 /* ── Nav ────────────────────────────────────────────────────────────────── */

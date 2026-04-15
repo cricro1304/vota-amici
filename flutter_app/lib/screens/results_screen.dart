@@ -86,7 +86,28 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final questionText =
         ref.watch(currentQuestionTextProvider(widget.roomId)) ?? '';
 
-    if (room == null || round == null) return const SizedBox.shrink();
+    // Don't render a blank screen during stream reconnects — show a waiting
+    // placeholder so the user never sees a white page.
+    if (room == null || round == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Floater(
+                child: EmojiText('⏳', style: TextStyle(fontSize: 40))),
+            const SizedBox(height: 12),
+            Text(
+              'Attendere…',
+              textAlign: TextAlign.center,
+              style: bodyFont(
+                color: AppColors.mutedFg,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final isHost = room.hostPlayerId == widget.playerId;
 
     if (_roundId != round.id) {

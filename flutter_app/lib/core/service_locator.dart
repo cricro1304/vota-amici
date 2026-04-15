@@ -7,6 +7,7 @@ import '../repositories/game_repository.dart';
 import '../services/session_service.dart';
 import '../services/game_service.dart';
 import '../services/dev_bot_service.dart';
+import '../services/share_service.dart';
 
 /// GetIt container. Registering concrete implementations here lets us
 /// override them in tests (per flutter-tester skill conventions).
@@ -36,6 +37,7 @@ Future<void> configureDependencies() async {
         gameRepository: locator<GameRepository>(),
       ),
     )
+    ..registerLazySingleton<ShareService>(() => const ShareService())
     ..registerLazySingleton<DevBotService>(
       () => DevBotService(
         roomRepository: locator<RoomRepository>(),

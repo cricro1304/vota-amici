@@ -23,6 +23,70 @@ class LobbyScreen extends ConsumerStatefulWidget {
   ConsumerState<LobbyScreen> createState() => _LobbyScreenState();
 }
 
+/// Invite controls rendered under the room code in the lobby.
+///
+/// "Condividi" opens the native share sheet (covers link share + AirDrop on
+/// iOS, the OS picker on Android, Web Share API on mobile browsers).
+/// "Copia link" is a keyboard-friendly fallback for desktop users that don't
+/// get a share sheet.
+class _ShareRow extends ConsumerWidget {
+  const _ShareRow({required this.code});
+  final String code;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final share = ref.watch(shareServiceProvider);
+
+    Future<void> onShare() async {
+      try {
+        // Anchor the iPad share popover to the button.
+        final box = context.findRenderObject() as RenderBox?;
+        final origin = box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size;
+        await share.shareRoom(code: code, sharePositionOrigin: origin);
+      } catch (_) {
+        // If the share sheet isn't available (rare), fall back to clipboard.
+        await share.copyLink(code);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Link copiato negli appunti')),
+        );
+      }
+    }
+
+    Future<void> onCopy() async {
+      await share.copyLink(code);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Link copiato negli appunti')),
+      );
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: onShare,
+            child: const EmojiText('📤 Condividi link'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+            ),
+            onPressed: onCopy,
+            child: const EmojiText('🔗 Copia'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   bool _starting = false;
 
@@ -48,10 +112,53 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final room = ref.watch(roomProvider(widget.roomId)).valueOrNull;
-    final players =
-        ref.watch(playersProvider(widget.roomId)).valueOrNull ?? const [];
-    if (room == null) return const SizedBox.shrink();
+    final roomAsync = ref.watch(roomProvider(widget.roomId));
+    final playersAsync = ref.watch(playersProvider(widget.roomId));
+    final room = roomAsync.valueOrNull;
+    final players = playersAsync.valueOrNull ?? const [];
+
+    // Don't render a blank screen while the realtime stream is reconnecting
+    // (e.g. the host's wifi blipped while waiting for players). Show a
+    // visible "reconnecting" placeholder instead of SizedBox.shrink so the
+    // user never sees a white page.
+    if (room == null) {
+      final hasError = roomAsync.hasError || playersAsync.hasError;
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Floater(
+              child: EmojiText(
+                hasError ? '📡' : '⏳',
+                style: const TextStyle(fontSize: 40),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              hasError
+                  ? 'Connessione persa — riprovo…'
+                  : 'Caricamento stanza…',
+              textAlign: TextAlign.center,
+              style: bodyFont(
+                color: AppColors.mutedFg,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (hasError) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  // Force both streams to rebuild.
+                  ref.invalidate(roomProvider(widget.roomId));
+                  ref.invalidate(playersProvider(widget.roomId));
+                },
+                child: const Text('Riprova'),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
 
     final isHost = room.hostPlayerId == widget.playerId;
     final hasBots = players.any((p) => p.name.startsWith('Bot '));
@@ -90,6 +197,8 @@ return PopIn(
               fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 12),
+          _ShareRow(code: room.code),
           const SizedBox(height: 28),
           Text(
             'Giocatori (${players.length})',

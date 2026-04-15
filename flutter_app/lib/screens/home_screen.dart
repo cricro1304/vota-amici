@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme.dart';
+import '../models/question.dart';
 import '../services/dev_bot_service.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
@@ -24,6 +26,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _timerEnabled = false;
   bool _devMode = false;
   bool _loading = false;
+  // Default to Light + Neutro. Spicy is opt-in (and currently has no
+  // seeded questions — the picker shows it but users have to actively
+  // toggle it on).
+  final Set<QuestionMode> _selectedModes = {
+    QuestionMode.light,
+    QuestionMode.neutro,
+  };
 
   @override
   void dispose() {
@@ -47,11 +56,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _create() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return _err(GameException('Inserisci il tuo nome!'));
+    if (_selectedModes.isEmpty) {
+      return _err(GameException('Scegli almeno una modalità di gioco!'));
+    }
     setState(() => _loading = true);
     try {
       final res = await ref.read(gameServiceProvider).createRoom(
             hostName: name,
             timerSeconds: _timerEnabled ? 10 : null,
+            modes: _selectedModes.toList(growable: false),
           );
       await ref
           .read(sessionServiceProvider)
@@ -183,6 +196,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              _ModePicker(
+                selected: _selectedModes,
+                onToggle: (mode) => setState(() {
+                  if (_selectedModes.contains(mode)) {
+                    _selectedModes.remove(mode);
+                  } else {
+                    _selectedModes.add(mode);
+                  }
+                }),
+              ),
+              const SizedBox(height: 10),
               SoftCard(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -192,16 +216,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onChanged: (v) => setState(() => _timerEnabled = v),
                 ),
               ),
-              const SizedBox(height: 10),
-              SoftCard(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: _toggleRow(
-                  label: '🧪 Dev mode (test coi bot)',
-                  value: _devMode,
-                  onChanged: (v) => setState(() => _devMode = v),
+              // Dev-only: bot seeding + auto-start. Hidden in release builds
+              // so end users never see the toggle.
+              if (kDebugMode) ...[
+                const SizedBox(height: 10),
+                SoftCard(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: _toggleRow(
+                    label: '🧪 Dev mode (test coi bot)',
+                    value: _devMode,
+                    onChanged: (v) => setState(() => _devMode = v),
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loading ? null : _create,
@@ -287,4 +315,109 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       );
+}
+
+/// Multi-select chip row for choosing question modes when creating a room.
+/// Mirrors the "Modalità di gioco" section on the landing page so the UX
+/// vocabulary is consistent.
+class _ModePicker extends StatelessWidget {
+  const _ModePicker({required this.selected, required this.onToggle});
+
+  final Set<QuestionMode> selected;
+  final ValueChanged<QuestionMode> onToggle;
+
+  static const List<({QuestionMode mode, String emoji, String label})>
+      _options = [
+    (mode: QuestionMode.light, emoji: '🌸', label: 'Light'),
+    (mode: QuestionMode.neutro, emoji: '🎯', label: 'Neutro'),
+    (mode: QuestionMode.spicy, emoji: '🌶️', label: 'Spicy'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          EmojiText(
+            '🎲 Modalità di gioco',
+            style: bodyFont(
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              color: AppColors.foreground,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Scegli quali domande includere',
+            style: bodyFont(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.mutedFg,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final opt in _options)
+                _ModeChip(
+                  emoji: opt.emoji,
+                  label: opt.label,
+                  selected: selected.contains(opt.mode),
+                  onTap: () => onToggle(opt.mode),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeChip extends StatelessWidget {
+  const _ModeChip({
+    required this.emoji,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = selected ? AppColors.primary : AppColors.muted;
+    final fg = selected ? Colors.white : AppColors.mutedFg;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: EmojiText(
+            '$emoji $label',
+            style: bodyFont(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: fg,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

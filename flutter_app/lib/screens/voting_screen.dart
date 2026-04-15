@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
 import '../models/player.dart';
+import '../models/question.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
 import '../widgets/emoji_text.dart';
@@ -130,10 +131,17 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
         ref.watch(playersProvider(widget.roomId)).valueOrNull ?? const [];
     final votesAsync = ref.watch(currentRoundVotesProvider(widget.roomId));
     final rawVotes = votesAsync.valueOrNull ?? const [];
-    final question =
-        ref.watch(currentQuestionTextProvider(widget.roomId)) ?? '';
+    final questionObj = ref.watch(currentQuestionProvider(widget.roomId));
+    final question = questionObj?.text ?? '';
+    final mode = questionObj?.mode ?? QuestionMode.neutro;
 
-    if (room == null || round == null) return const SizedBox.shrink();
+    // Never render a blank widget — if the realtime stream is mid-reconnect
+    // (e.g. the host briefly dropped offline) we'd otherwise show a white
+    // page and the user would think the app froze. Instead show a
+    // lightweight "waiting" placeholder until the stream recovers.
+    if (room == null || round == null) {
+      return const _WaitingForHost();
+    }
 
     // Filter votes by round.id everywhere in build. When the round
     // transitions, Riverpod's StreamProvider keeps exposing the previous
@@ -191,7 +199,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
     }
 
     return _buildBallot(
-        players, room.currentRound, question, room.timerSeconds);
+        players, room.currentRound, question, mode, room.timerSeconds);
   }
 
   Widget _buildWaiting(int voted, int total) {
@@ -235,15 +243,28 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
   }
 
   Widget _buildBallot(List<Player> players, int roundNumber, String question,
-      int? timerSeconds) {
+      QuestionMode mode, int? timerSeconds) {
+    final theme = _modeTheme(mode);
     return PopIn(
+      // Keyed by mode+round so switching tone re-triggers the pop-in animation
+      // — a new vibe card visibly lands on the table.
+      key: ValueKey('q-$roundNumber-${mode.name}'),
       child: Column(
         children: [
-          SoftCard(
+          _QuestionCard(
+            mode: mode,
+            theme: theme,
             child: Column(
               children: [
-                // Pink pill badge — "ROUND N" — matching landing's .q-badge.
-                QuestionBadge(label: 'Round $roundNumber'),
+                // Tone chip (🌸 Light / 🎯 Neutro / 🌶️ Spicy) + round pill.
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _ModeChip(theme: theme),
+                    const SizedBox(width: 8),
+                    QuestionBadge(label: 'Round $roundNumber'),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 EmojiText(
                   question,
@@ -251,7 +272,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                   style: displayFont(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.foreground,
+                    color: theme.textColor,
                   ),
                 ),
                 if (_timeLeft != null) ...[
@@ -305,6 +326,44 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                     onTap: () => _vote(players[i].id, players.length),
                   ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Fallback shown when the realtime stream is briefly empty (reconnecting,
+/// host disconnected, round transition in-flight). Prevents the white-page
+/// bug where the player thought the app had frozen.
+class _WaitingForHost extends StatelessWidget {
+  const _WaitingForHost();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Floater(child: EmojiText('⏳', style: TextStyle(fontSize: 40))),
+          const SizedBox(height: 12),
+          Text(
+            'In attesa della partita…',
+            textAlign: TextAlign.center,
+            style: bodyFont(
+              color: AppColors.mutedFg,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Se lo schermo resta fermo, controlla la connessione.',
+            textAlign: TextAlign.center,
+            style: bodyFont(
+              color: AppColors.mutedFg,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -384,6 +443,203 @@ class _VoteTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mode-aware question card styling.
+//
+// Neutro keeps the existing plain white SoftCard feel so the majority of
+// questions look calm. Light tilts toward pastel pink/cyan; Spicy uses a hot
+// red/orange gradient + a pulsing glow so "🌶️ questions" are instantly
+// readable without reading the text.
+// ---------------------------------------------------------------------------
+
+class _ModeVisual {
+  const _ModeVisual({
+    required this.emoji,
+    required this.label,
+    required this.chipBg,
+    required this.chipFg,
+    required this.cardGradient,
+    required this.borderColor,
+    required this.glow,
+    required this.textColor,
+    required this.pulse,
+  });
+
+  final String emoji;
+  final String label;
+  final Color chipBg;
+  final Color chipFg;
+  final Gradient? cardGradient;
+  final Color borderColor;
+  final Color glow;
+  final Color textColor;
+  final bool pulse;
+}
+
+_ModeVisual _modeTheme(QuestionMode mode) {
+  switch (mode) {
+    case QuestionMode.light:
+      return const _ModeVisual(
+        emoji: '🌸',
+        label: 'Light',
+        chipBg: Color(0xFFC4E8F7), // cyan-light
+        chipFg: Color(0xFF2B6B8A),
+        cardGradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFF5FA), Color(0xFFEAF7FD)],
+        ),
+        borderColor: Color(0xFF7FC6E3),
+        glow: Color(0x333BA3D0),
+        textColor: AppColors.foreground,
+        pulse: false,
+      );
+    case QuestionMode.spicy:
+      return const _ModeVisual(
+        emoji: '🌶️',
+        label: 'Spicy',
+        chipBg: Color(0xFFE6366E),
+        chipFg: Colors.white,
+        cardGradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE3D6), Color(0xFFFFCBD1)],
+        ),
+        borderColor: Color(0xFFE6366E),
+        glow: Color(0x66E6366E),
+        textColor: Color(0xFF7A1530),
+        pulse: true,
+      );
+    case QuestionMode.neutro:
+      return const _ModeVisual(
+        emoji: '🎯',
+        label: 'Neutro',
+        chipBg: AppColors.muted,
+        chipFg: AppColors.mutedFg,
+        cardGradient: null,
+        borderColor: Colors.transparent,
+        glow: Color(0x00000000),
+        textColor: AppColors.foreground,
+        pulse: false,
+      );
+  }
+}
+
+/// Tone badge rendered above the round pill. Quiet for Neutro, vivid for
+/// Light / Spicy — an at-a-glance signal before reading the question.
+class _ModeChip extends StatelessWidget {
+  const _ModeChip({required this.theme});
+  final _ModeVisual theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.chipBg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: EmojiText(
+        '${theme.emoji} ${theme.label.toUpperCase()}',
+        style: TextStyle(
+          fontFamily: 'Fredoka',
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+          color: theme.chipFg,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+}
+
+/// Card shell that swaps background/border/glow per mode. Spicy additionally
+/// breathes — a slow pulsing glow that draws the eye without being obnoxious.
+class _QuestionCard extends StatefulWidget {
+  const _QuestionCard({
+    required this.mode,
+    required this.theme,
+    required this.child,
+  });
+
+  final QuestionMode mode;
+  final _ModeVisual theme;
+  final Widget child;
+
+  @override
+  State<_QuestionCard> createState() => _QuestionCardState();
+}
+
+class _QuestionCardState extends State<_QuestionCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.theme.pulse) _c.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuestionCard old) {
+    super.didUpdateWidget(old);
+    if (widget.theme.pulse && !_c.isAnimating) {
+      _c.repeat(reverse: true);
+    } else if (!widget.theme.pulse && _c.isAnimating) {
+      _c.stop();
+      _c.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.theme;
+    final isNeutro = widget.mode == QuestionMode.neutro;
+
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) {
+        final pulseT = Curves.easeInOut.transform(_c.value);
+        final glowBlur = isNeutro ? 0.0 : (18.0 + 14.0 * pulseT);
+        final glowColor = t.pulse
+            ? Color.lerp(t.glow, t.glow.withValues(alpha: 0.9), pulseT)!
+            : t.glow;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: isNeutro ? AppColors.card : null,
+            gradient: isNeutro ? null : t.cardGradient,
+            borderRadius: BorderRadius.circular(20),
+            border: isNeutro
+                ? null
+                : Border.all(color: t.borderColor, width: 2),
+            boxShadow: isNeutro
+                ? kCardShadow
+                : [
+                    BoxShadow(
+                      color: glowColor,
+                      blurRadius: glowBlur,
+                      spreadRadius: t.pulse ? 1 + pulseT * 2 : 0,
+                    ),
+                  ],
+          ),
+          padding: const EdgeInsets.all(20),
+          child: widget.child,
+        );
+      },
     );
   }
 }

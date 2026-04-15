@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
+import '../state/connectivity_provider.dart';
 import 'emoji_text.dart';
 
 /// Gradient header + centered content column with max-width, mirroring
-/// the web `GameLayout`.
-class GameLayout extends StatelessWidget {
+/// the web `GameLayout`. Also shows a connectivity banner at the top when
+/// the device goes offline — so the host never sees a silently-dead lobby.
+class GameLayout extends ConsumerWidget {
   const GameLayout({super.key, required this.child});
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final online = ref.watch(isOnlineProvider).valueOrNull ?? true;
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -30,6 +35,7 @@ class GameLayout extends StatelessWidget {
                 ),
               ),
             ),
+            if (!online) const _OfflineBanner(),
             Expanded(
               child: Center(
                 child: ConstrainedBox(
@@ -43,6 +49,32 @@ class GameLayout extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Slim red bar shown at the top of every screen while the device is
+/// offline. Piggybacks on connectivity_plus so it reacts to the real OS-
+/// level state, not the Supabase stream (which may keep serving cached
+/// values for up to ~30s after the socket dies).
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      color: AppColors.destructive,
+      child: const EmojiText(
+        '📡 Connessione persa — tentativo di riconnessione…',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
         ),
       ),
     );
