@@ -1,10 +1,15 @@
 {
+  "buildCommand": "bash build.sh",
+  "outputDirectory": "dist",
+  "installCommand": "echo skip",
+  "framework": null,
   "redirects": [
     { "source": "/", "destination": "/landing-page.html", "statusCode": 302 }
   ],
   "rewrites": [
     { "source": "/packs", "destination": "/packs.html" },
-    { "source": "/play/(.*)", "destination": "/index.html" },
-    { "source": "/play", "destination": "/index.html" }
+    { "source": "/play", "destination": "/play/index.html" },
+    { "source": "/play/(.*)", "destination": "/play/index.html" },
+    { "source": "/room/(.*)", "destination": "/play/index.html" }
   ]
 }
