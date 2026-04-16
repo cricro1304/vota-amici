@@ -97,18 +97,19 @@ class ShareService {
       return;
     }
 
-    final params = ShareParams(
-      text: '$caption\n${siteUrl()}',
-      files: [
+    // share_plus 10.x API — the 11.x `SharePlus.instance.share(ShareParams)`
+    // API does NOT exist in this version, so stick with `Share.shareXFiles`.
+    await Share.shareXFiles(
+      [
         XFile.fromData(
           bytes,
           name: filename,
           mimeType: 'image/png',
         ),
       ],
+      text: '$caption\n${siteUrl()}',
       sharePositionOrigin: sharePositionOrigin,
     );
-    await SharePlus.instance.share(params);
   }
 
   /// Rasterises the subtree attached to [boundaryKey] into PNG bytes.
