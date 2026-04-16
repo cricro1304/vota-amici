@@ -65,7 +65,10 @@ echo "==> Minifying landing CSS/JS with esbuild..."
 if command -v npx >/dev/null 2>&1; then
   for f in dist/assets/css/landing.css dist/assets/css/shared.css dist/assets/css/packs.css; do
     if [ -f "$f" ]; then
-      npx --yes esbuild "$f" --minify --loader=css --log-level=error \
+      # esbuild infers loader from extension when the input is a file path —
+      # passing `--loader=css` triggers "without extension only applies when
+      # reading from stdin". Drop the flag and let inference do its job.
+      npx --yes esbuild "$f" --minify --log-level=error \
         --outfile="$f.min" && mv "$f.min" "$f"
     fi
   done
