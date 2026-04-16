@@ -34,18 +34,23 @@ class ShareService {
   Uri roomUrl(String code) =>
       Uri.parse('$_baseUrl/room/${code.toUpperCase()}');
 
-  /// Opens the native share sheet with an invite message.
+  /// Opens the native share sheet with the invite link.
+  ///
+  /// We share ONLY the bare URL (no prose, no code prefix) so that iOS
+  /// AirDrop recognises it as a link and offers "Open in Safari" straight
+  /// away on the receiving device. When the share payload is a multi-line
+  /// text with extra words around the URL, AirDrop treats it as a .txt
+  /// drop and saves it to Notes instead — which is what we want to avoid.
+  ///
   /// Callers should pass the widget's `RenderBox` origin on iPad (via
   /// [sharePositionOrigin]) so the popover has an anchor.
   Future<void> shareRoom({
     required String code,
     Rect? sharePositionOrigin,
   }) async {
-    final url = roomUrl(code);
-    final text = 'Unisciti alla mia partita di "Chi è il più...?"! '
-        'Codice: ${code.toUpperCase()}\n$url';
+    final url = roomUrl(code).toString();
     await Share.share(
-      text,
+      url,
       subject: 'Partita "Chi è il più...?"',
       sharePositionOrigin: sharePositionOrigin,
     );
