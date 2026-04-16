@@ -25,12 +25,22 @@ SUPABASE_ANON_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
 APP_URL=${APP_URL_VALUE}
 EOF
 
+# Preview / dev-branch Vercel deploys get the bot+auto-start toggle enabled
+# so we can QA a full game alone. Production stays clean — the toggle is
+# gated behind `kEnableDevMode` in the Flutter code (core/constants.dart).
+# VERCEL_ENV is set by Vercel to one of: production | preview | development.
+DEV_MODE_DEFINE=""
+if [ "${VERCEL_ENV:-}" != "production" ]; then
+  DEV_MODE_DEFINE="--dart-define=ENABLE_DEV_MODE=true"
+  echo "==> Non-production deploy (VERCEL_ENV=${VERCEL_ENV:-unset}) — enabling dev/bot toggle"
+fi
+
 echo "==> Building Flutter web (release, base-href=/play/)..."
 pushd flutter_app >/dev/null
 # Ensure the web platform is registered (idempotent; preserves existing web/ files)
 flutter create . --platforms web --project-name vota_amici >/dev/null
 flutter pub get
-flutter build web --release --base-href /play/
+flutter build web --release --base-href /play/ $DEV_MODE_DEFINE
 popd >/dev/null
 
 echo "==> Assembling dist/..."

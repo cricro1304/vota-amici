@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/constants.dart';
 import '../core/theme.dart';
 import '../models/pack.dart';
 import '../models/question.dart';
@@ -328,9 +329,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onChanged: (v) => setState(() => _timerEnabled = v),
               ),
             ),
-            // Dev-only: bot seeding + auto-start. Hidden in release builds
-            // so end users never see the toggle.
-            if (kDebugMode) ...[
+            // Dev-only: bot seeding + auto-start. Shown in local debug runs
+            // AND on Vercel preview deploys (via --dart-define=ENABLE_DEV_MODE)
+            // so we can click through a game alone, but hidden in production.
+            if (kDebugMode || kEnableDevMode) ...[
               const SizedBox(height: 10),
               SoftCard(
                 padding:
