@@ -87,14 +87,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     setState(() => _loading = true);
     try {
+      // Stamp the persistent browser fingerprint on the host row so a
+      // later rejoin from this same browser (after clearing the per-room
+      // cache or coming in via a different URL origin) can recover us
+      // without creating a duplicate host player.
+      final session = ref.read(sessionServiceProvider);
       final res = await ref.read(gameServiceProvider).createRoom(
             hostName: name,
             timerSeconds: _timerEnabled ? 10 : null,
             modes: _selectedModes.toList(growable: false),
+            browserId: session.browserId(),
           );
-      await ref
-          .read(sessionServiceProvider)
-          .setPlayerId(res.room.code, res.player.id);
+      await session.setPlayerId(res.room.code, res.player.id);
 
       if (_devMode) {
         // Spawn bots + auto-start the game.
@@ -119,21 +123,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (code.isEmpty) return _err(GameException('Inserisci il codice!'));
     setState(() => _loading = true);
     try {
-      // Refresh-to-rejoin: if this browser already has a playerId cached
-      // for this room code, pass it so joinRoom can reuse it. Without this,
-      // the user would get a brand-new player row every time they re-enter
-      // the code from the home screen.
-      //
-      // This is ALSO what fixes the cross-browser-same-name bug: identity
-      // now lives in SharedPreferences per browser, not in the name — so a
-      // second browser typing the same name has no cached id and correctly
-      // creates a distinct player.
+      // Rejoin priority in the service layer:
+      //   (1) cached per-room playerId (this branch — fastest)
+      //   (2) browser fingerprint (covers cache-cleared / origin-swap cases)
+      //   (3) fresh create with an auto-suffixed name if someone else in
+      //       the lobby already picked it
+      // We pass both signals here and let joinRoom pick the first that
+      // matches. Distinct-name is handled server-side via (3) — two
+      // browsers both typing "Alex" now produce "Alex" + "Alex (2)" rather
+      // than two indistinguishable lobby chips.
       final session = ref.read(sessionServiceProvider);
       final cachedId = session.getPlayerId(code); // sync — reads from prefs
       final res = await ref.read(gameServiceProvider).joinRoom(
             roomCode: code,
             playerName: name,
             existingPlayerId: cachedId,
+            browserId: session.browserId(),
           );
       await session.setPlayerId(res.room.code, res.player.id);
       if (mounted) context.go('/room/${res.room.code}');

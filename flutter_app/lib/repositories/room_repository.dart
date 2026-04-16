@@ -108,11 +108,15 @@ class RoomRepository {
     return data == null ? null : Player.fromJson(data);
   }
 
-  /// Legacy: match a player by (room, name). No longer used by joinRoom —
-  /// it caused a bug where two different browsers with the same name got
-  /// collapsed into one player. Kept in case callers appear later; prefer
-  /// [findPlayerById] + a cached sessionService playerId for rejoin.
-  @Deprecated('Use findPlayerById with a cached SessionService playerId')
+  /// Match a player by (room, name). Intentionally NOT used as the primary
+  /// rejoin path — identity is per-browser-session, not per name, so two
+  /// different browsers typing the same name correctly become two distinct
+  /// player rows. See [findPlayerByRoomAndBrowser] for the browser-fingerprint
+  /// rejoin-recovery path.
+  ///
+  /// Still exposed because the service layer needs it to detect name
+  /// collisions (to auto-suffix " (2)") when a brand-new player joins a
+  /// room where someone else already picked that name.
   Future<Player?> findPlayerByName({
     required String roomId,
     required String name,
@@ -126,10 +130,31 @@ class RoomRepository {
     return data == null ? null : Player.fromJson(data);
   }
 
+  /// Secondary rejoin lookup: when the per-room `playerId:CODE` cache is
+  /// missing (different browser-but-same-device edge cases, cleared
+  /// storage, Vercel preview ↔ prod origin swap) we still want to
+  /// reconnect the user to their existing player row. Matching on both
+  /// room AND browser_id keeps this safe against impersonation — a
+  /// different browser cannot claim someone else's player just by typing
+  /// the same name.
+  Future<Player?> findPlayerByRoomAndBrowser({
+    required String roomId,
+    required String browserId,
+  }) async {
+    final data = await _client
+        .from('players')
+        .select()
+        .eq('room_id', roomId)
+        .eq('browser_id', browserId)
+        .maybeSingle();
+    return data == null ? null : Player.fromJson(data);
+  }
+
   Future<Player> createPlayer({
     required String roomId,
     required String name,
     bool isHost = false,
+    String? browserId,
   }) async {
     final data = await _client
         .from('players')
@@ -137,6 +162,9 @@ class RoomRepository {
           'room_id': roomId,
           'name': name,
           'is_host': isHost,
+          // Nullable in the schema — omit rather than send null so
+          // bot-seeding (no browser) keeps producing a clean row.
+          if (browserId != null) 'browser_id': browserId,
         })
         .select()
         .single();

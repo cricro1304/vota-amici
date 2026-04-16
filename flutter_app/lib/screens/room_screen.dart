@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/room.dart';
+import '../repositories/room_repository.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
 import '../widgets/emoji_text.dart';
@@ -51,19 +52,54 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
       _resolveError = null;
     });
     final session = ref.read(sessionServiceProvider);
-    final existingPlayerId = session.getPlayerId(_normalized);
+    final cachedPlayerId = session.getPlayerId(_normalized);
 
     try {
-      final room =
-          await ref.read(roomRepositoryProvider).findRoomByCode(_normalized);
+      final roomRepo = ref.read(roomRepositoryProvider);
+      final room = await roomRepo.findRoomByCode(_normalized);
       if (!mounted) return;
       if (room == null) {
         context.go('/');
         return;
       }
+
+      // Two-step rejoin recovery on a page reload:
+      //
+      //   (a) cached playerId — verify it still points to a player in
+      //       THIS room. Silent ghosts used to happen when the same code
+      //       got reused for a different DB row (dev replay, cleanup) and
+      //       we blindly trusted the stale cache entry.
+      //
+      //   (b) browser fingerprint — even if the per-room cache is gone,
+      //       an existing player in the room carrying our browser_id is
+      //       unambiguously us. This is what fixes "sometimes the user
+      //       joins as a new user after reload": previously, losing the
+      //       cache dropped us to the rejoin form and created a dup.
+      var resolvedPlayerId = await _verifyCachedPlayer(
+        roomRepo: roomRepo,
+        cachedPlayerId: cachedPlayerId,
+        roomId: room.id,
+      );
+      if (resolvedPlayerId == null) {
+        final byBrowser = await roomRepo.findPlayerByRoomAndBrowser(
+          roomId: room.id,
+          browserId: session.browserId(),
+        );
+        if (byBrowser != null) {
+          resolvedPlayerId = byBrowser.id;
+          // Heal the per-room cache so the next reload hits the fast path.
+          await session.setPlayerId(room.code, byBrowser.id);
+        } else if (cachedPlayerId != null) {
+          // The cache was stale AND browser fingerprint doesn't match —
+          // clear it so we don't keep re-failing the same lookup.
+          await session.clearPlayerId(room.code);
+        }
+      }
+
+      if (!mounted) return;
       setState(() {
         _roomId = room.id;
-        _playerId = existingPlayerId;
+        _playerId = resolvedPlayerId;
         _resolving = false;
       });
     } catch (e) {
@@ -78,18 +114,37 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
     }
   }
 
+  /// Returns the cached playerId iff it still maps to a real player in
+  /// [roomId]. Anything else (null cache, deleted row, cached id belongs
+  /// to a different room — all scenarios we actually hit in dev replay)
+  /// collapses to null, letting the caller fall through to browser-id
+  /// recovery or the rejoin form.
+  Future<String?> _verifyCachedPlayer({
+    required RoomRepository roomRepo,
+    required String? cachedPlayerId,
+    required String roomId,
+  }) async {
+    if (cachedPlayerId == null || cachedPlayerId.isEmpty) return null;
+    final player = await roomRepo.findPlayerById(cachedPlayerId);
+    if (player == null || player.roomId != roomId) return null;
+    return player.id;
+  }
+
   Future<void> _rejoin() async {
     final name = _rejoinCtrl.text.trim();
     if (name.isEmpty) return;
     setState(() => _rejoining = true);
     try {
+      // Pass the browser fingerprint so joinRoom's recovery path can
+      // reconnect us to an existing player row (same browser, lost cache)
+      // instead of unconditionally creating a new one with a "(2)" suffix.
+      final session = ref.read(sessionServiceProvider);
       final res = await ref.read(gameServiceProvider).joinRoom(
             roomCode: _normalized,
             playerName: name,
+            browserId: session.browserId(),
           );
-      await ref
-          .read(sessionServiceProvider)
-          .setPlayerId(res.room.code, res.player.id);
+      await session.setPlayerId(res.room.code, res.player.id);
       if (mounted) setState(() => _playerId = res.player.id);
     } on GameException catch (e) {
       if (mounted) {

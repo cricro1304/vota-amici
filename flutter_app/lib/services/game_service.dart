@@ -39,6 +39,7 @@ class GameService {
       QuestionMode.neutro,
       QuestionMode.spicy,
     ],
+    String? browserId,
   }) async {
     // Defensive: an empty mode list would mean "no questions ever" — fall
     // back to the full set so the host doesn't accidentally brick the room.
@@ -51,10 +52,15 @@ class GameService {
       timerSeconds: timerSeconds,
       modes: selected.map(questionModeToString).toList(growable: false),
     );
+    // New room ⇒ no existing players ⇒ no name-collision / browser-recovery
+    // to worry about; just stamp the browser id so a later rejoin from this
+    // same browser can reconnect without relying solely on the per-room
+    // SharedPreferences cache.
     final player = await roomRepository.createPlayer(
       roomId: room.id,
-      name: hostName,
+      name: hostName.trim(),
       isHost: true,
+      browserId: browserId,
     );
     await roomRepository.setHost(room.id, player.id);
     return (room: room, player: player);
@@ -75,28 +81,42 @@ class GameService {
 
   /// Joins [roomCode] as [playerName].
   ///
-  /// If [existingPlayerId] is supplied (typically from the browser's
-  /// SessionService cache — i.e. "this browser already joined this room
-  /// before and we have its playerId in localStorage") and the referenced
-  /// player still exists in the same room, we reuse it. This is the
-  /// refresh-to-rejoin path and it works even after the game has started.
+  /// Rejoin priority — we try these in order and stop at the first match:
   ///
-  /// Otherwise we always create a brand-new player row. Identity is tied to
-  /// the browser session, NOT to the name — so two different browsers
-  /// entering the same name correctly become two distinct players.
+  ///   1. **Cached playerId**: If [existingPlayerId] is supplied (typically
+  ///      from the browser's SessionService `playerId:CODE` cache) and it
+  ///      still points to a player in THIS room, reuse it. Fast path for
+  ///      a same-browser page reload mid-game.
+  ///
+  ///   2. **Browser fingerprint**: If [browserId] is supplied and a player
+  ///      in this room already carries that browser_id, reuse it. This
+  ///      covers the "per-room cache got wiped but the browser-wide
+  ///      fingerprint survived" case — e.g. a user closed the tab, the
+  ///      per-room entry fell out of SharedPreferences somehow (cleanup,
+  ///      origin swap between Vercel preview and prod), but this is still
+  ///      the same browser. Matching on both room AND browser_id keeps
+  ///      this safe: a different browser can't impersonate by typing the
+  ///      same name.
+  ///
+  ///   3. **Fresh create**: Only allowed while the room is still in
+  ///      `lobby`. If another player in the lobby already has this
+  ///      trimmed name, we auto-suffix (" (2)", " (3)", …) rather than
+  ///      showing two identical cards in the lobby.
+  ///
+  /// Dev bots (DevBotService) skip this path entirely — they call the
+  /// repository directly — so browser-id logic won't fight bot seeding.
   Future<({Room room, Player player})> joinRoom({
     required String roomCode,
     required String playerName,
     String? existingPlayerId,
+    String? browserId,
   }) async {
     final room = await roomRepository.findRoomByCode(roomCode);
     if (room == null) {
       throw GameException('Stanza non trovata');
     }
 
-    // Same-browser rejoin: trust the cached playerId iff it still points to
-    // a player in this room. We do NOT gate this on RoomStatus.lobby — a
-    // user who got disconnected mid-game needs to reconnect.
+    // (1) Cached playerId — fast path.
     if (existingPlayerId != null && existingPlayerId.isNotEmpty) {
       final cached = await roomRepository.findPlayerById(existingPlayerId);
       if (cached != null && cached.roomId == room.id) {
@@ -104,15 +124,64 @@ class GameService {
       }
     }
 
+    // (2) Browser fingerprint — secondary recovery. Works even mid-game
+    // (not gated on lobby) because a disconnected player needs to come
+    // back as themselves, not as a new row.
+    if (browserId != null && browserId.isNotEmpty) {
+      final byBrowser = await roomRepository.findPlayerByRoomAndBrowser(
+        roomId: room.id,
+        browserId: browserId,
+      );
+      if (byBrowser != null) {
+        return (room: room, player: byBrowser);
+      }
+    }
+
     if (room.status != RoomStatus.lobby) {
       throw GameException('La partita è già iniziata');
     }
 
+    // (3) Fresh create — pick a non-colliding display name so the lobby
+    // doesn't show two identical chips. We read the current player list
+    // once rather than looping SELECTs: the list is small and a single
+    // round-trip is simpler/cheaper than probing name-by-name.
+    final trimmed = playerName.trim();
+    final finalName = await _uniqueNameFor(roomId: room.id, desired: trimmed);
+
     final player = await roomRepository.createPlayer(
       roomId: room.id,
-      name: playerName,
+      name: finalName,
+      browserId: browserId,
     );
     return (room: room, player: player);
+  }
+
+  /// Returns [desired] if no player in the room already has that exact name
+  /// (case-insensitive on the trimmed form); otherwise appends the lowest
+  /// unused `(N)` suffix. Small race window — two simultaneous joins with
+  /// the same name could both land on "Alex (2)" — acceptable for a
+  /// friends' game, and the UI will at worst show the dupe briefly until
+  /// someone rejoins.
+  Future<String> _uniqueNameFor({
+    required String roomId,
+    required String desired,
+  }) async {
+    // Snapshot the current list via the realtime stream's first frame —
+    // cheaper than a bespoke REST call and uses the path we already know
+    // works.
+    final current = await roomRepository.watchPlayers(roomId).first;
+    final taken = current
+        .map((p) => p.name.trim().toLowerCase())
+        .toSet();
+    if (!taken.contains(desired.toLowerCase())) return desired;
+    // Start at 2 — "Alex" + "Alex (2)" reads more naturally than "Alex (1)".
+    for (var i = 2; i < 1000; i++) {
+      final candidate = '$desired ($i)';
+      if (!taken.contains(candidate.toLowerCase())) return candidate;
+    }
+    // Unreachable for any realistic lobby; fall back to the original so
+    // we at least don't crash.
+    return desired;
   }
 
   // --- Round progression --------------------------------------------------
