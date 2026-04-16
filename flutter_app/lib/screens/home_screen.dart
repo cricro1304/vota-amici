@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme.dart';
 import '../models/pack.dart';
+import '../models/question.dart';
 import '../services/dev_bot_service.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
@@ -29,9 +30,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _devMode = false;
   bool _loading = false;
 
-  /// The pack the host picked on the `selectPack` step. Drives the
-  /// `modes` payload when creating the room (see [_create]).
+  /// The pack the host picked on the `selectPack` step. Independent from
+  /// [_selectedModes] — the pack narrows which *topic* the questions will
+  /// be drawn from (Originale, Coppie, …) while the mode narrows the
+  /// *tone* (light / neutro / spicy). Host can mix any combination.
   Pack? _selectedPack;
+
+  /// Tone of questions included in the round. Default mirrors the original
+  /// home-screen behaviour: Light + Neutro on, Spicy opt-in.
+  final Set<QuestionMode> _selectedModes = {
+    QuestionMode.light,
+    QuestionMode.neutro,
+  };
 
   @override
   void dispose() {
@@ -68,15 +78,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (pack == null) {
       // Shouldn't be reachable — the UI only exposes `_create` after a pack
       // has been picked — but guard anyway so we fail loudly instead of
-      // silently creating a room with no modes.
+      // silently creating a room.
       return _err(GameException('Scegli prima un pacchetto!'));
+    }
+    if (_selectedModes.isEmpty) {
+      return _err(GameException('Scegli almeno una modalità di gioco!'));
     }
     setState(() => _loading = true);
     try {
       final res = await ref.read(gameServiceProvider).createRoom(
             hostName: name,
             timerSeconds: _timerEnabled ? 10 : null,
-            modes: pack.modes,
+            modes: _selectedModes.toList(growable: false),
           );
       await ref
           .read(sessionServiceProvider)
@@ -280,7 +293,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               pack: pack,
               onChange: () => setState(() => _mode = _Mode.selectPack),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             TextField(
               controller: _nameCtrl,
               textAlign: TextAlign.center,
@@ -293,6 +306,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 hintText: 'Il tuo nome',
                 counterText: '',
               ),
+            ),
+            const SizedBox(height: 12),
+            _ModePicker(
+              selected: _selectedModes,
+              onToggle: (mode) => setState(() {
+                if (_selectedModes.contains(mode)) {
+                  _selectedModes.remove(mode);
+                } else {
+                  _selectedModes.add(mode);
+                }
+              }),
             ),
             const SizedBox(height: 10),
             SoftCard(
@@ -577,6 +601,112 @@ class _SelectedPackBadge extends StatelessWidget {
             child: const Text('Cambia'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Multi-select chip row for choosing question modes when creating a room.
+/// Mirrors the "Modalità di gioco" section on the landing page so the UX
+/// vocabulary is consistent. Orthogonal to [Pack] — the host picks the
+/// topic (pack) *and* the tone (modes) independently.
+class _ModePicker extends StatelessWidget {
+  const _ModePicker({required this.selected, required this.onToggle});
+
+  final Set<QuestionMode> selected;
+  final ValueChanged<QuestionMode> onToggle;
+
+  static const List<({QuestionMode mode, String emoji, String label})>
+      _options = [
+    (mode: QuestionMode.light, emoji: '🌸', label: 'Light'),
+    (mode: QuestionMode.neutro, emoji: '🎯', label: 'Neutro'),
+    (mode: QuestionMode.spicy, emoji: '🌶️', label: 'Spicy'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          EmojiText(
+            '🎲 Modalità di gioco',
+            style: bodyFont(
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              color: AppColors.foreground,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Scegli quali domande includere',
+            style: bodyFont(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.mutedFg,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final opt in _options)
+                _ModeChip(
+                  emoji: opt.emoji,
+                  label: opt.label,
+                  selected: selected.contains(opt.mode),
+                  onTap: () => onToggle(opt.mode),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeChip extends StatelessWidget {
+  const _ModeChip({
+    required this.emoji,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = selected ? AppColors.primary : AppColors.muted;
+    final fg = selected ? Colors.white : AppColors.mutedFg;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: EmojiText(
+            '$emoji $label',
+            style: bodyFont(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: fg,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -60,7 +60,7 @@ window.LANDING_TRANSLATIONS = {
     q_sub: '100+ verità in attesa di un voto. Le amicizie? Si vedrà.',
 
     // Game modes section
-    modes_title: 'Scegli la <span class="modes-title-highlight">vibe</span> della serata',
+    modes_title: 'Scegli la <span class="modes-title-highlight">vibe</span> della serata ✨',
     modes_sub: 'La vibe filtra le domande. Coccole, drama o rovina-amicizie. Scegli tu il danno 🤌',
     mode_light_title: 'Light',
     mode_light_desc: 'Complimenti travestiti da domande. Coccole e buone vibrazioni.',
@@ -250,7 +250,7 @@ window.LANDING_TRANSLATIONS = {
     q_sub: '100+ truths waiting for a vote. Friendships? We\'ll see.',
 
     // Game modes section
-    modes_title: 'Pick tonight\'s <span class="modes-title-highlight">vibe</span>',
+    modes_title: 'Pick tonight\'s <span class="modes-title-highlight">vibe</span> ✨',
     modes_sub: 'The vibe filters the questions. Cuddles, drama or friendship-ender. Pick your damage 🤌',
     mode_light_title: 'Light',
     mode_light_desc: 'Compliments dressed up as questions. Cozy, good-vibes only.',

@@ -56,7 +56,7 @@ nav {
 }
 
 .nav-logo {
-  font-family: 'Fredoka', sans-serif;
+  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 1.25rem;
   color: white;
@@ -71,7 +71,7 @@ nav {
 }
 
 .nav-link {
-  font-family: 'Fredoka', sans-serif;
+  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
   color: white;
@@ -82,7 +82,7 @@ nav {
 .nav-link:hover { opacity: 1; }
 
 .nav-cta {
-  font-family: 'Fredoka', sans-serif;
+  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--pink);
@@ -107,7 +107,7 @@ nav {
 }
 
 .lang-btn {
-  font-family: 'Fredoka', sans-serif;
+  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 0.8rem;
   padding: 0.3rem 0.65rem;
@@ -136,7 +136,7 @@ footer {
 }
 
 footer .footer-logo {
-  font-family: 'Fredoka', sans-serif;
+  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   color: var(--pink);
   font-size: 1.1rem;
