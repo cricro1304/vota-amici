@@ -185,56 +185,68 @@ class _ScoreboardBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasRounds = stats.rounds.isNotEmpty;
+    // The whole page scrolls as one unit — hero, MVP card, podium, round
+    // cards AND the "Nuova Partita" button live inside a single scroll
+    // view. Keeping the round list inside its own Expanded+ListView made
+    // the rounds feel cramped on short viewports (phones) and prevented
+    // natural over-scroll bounce on iOS.
     return PopIn(
-      child: Column(
-        children: [
-          const _Hero(),
-          const SizedBox(height: 16),
-          if (stats.champion != null) _ChampionCard(champion: stats.champion!),
-          if (stats.podium.length >= 2) ...[
-            const SizedBox(height: 12),
-            _Podium(podium: stats.podium),
-          ],
-          const SizedBox(height: 20),
-          if (hasRounds) ...[
-            const _SectionLabel(
-              icon: '🎞️',
-              text: 'Round per round',
-            ),
-            const SizedBox(height: 10),
-          ],
-          Expanded(
-            child: hasRounds
-                ? ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    itemCount: stats.rounds.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) {
-                      final r = stats.rounds[i];
-                      return _RoundCard(
-                        round: r,
-                        sharing: sharingRoundIds.contains(r.roundId),
-                        onShare: (origin) =>
-                            onShareRound(r, sharePositionOrigin: origin),
-                      );
-                    },
-                  )
-                : Center(
-                    child: Text(
-                      'Nessun round registrato.',
-                      style: bodyFont(color: AppColors.mutedFg),
-                    ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 12),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _Hero(),
+            const SizedBox(height: 16),
+            if (stats.champion != null) _ChampionCard(champion: stats.champion!),
+            if (stats.podium.length >= 2) ...[
+              const SizedBox(height: 12),
+              _Podium(podium: stats.podium),
+            ],
+            const SizedBox(height: 20),
+            if (hasRounds) ...[
+              const _SectionLabel(
+                icon: '🎞️',
+                text: 'Round per round',
+              ),
+              const SizedBox(height: 10),
+              for (var i = 0; i < stats.rounds.length; i++) ...[
+                _RoundCard(
+                  round: stats.rounds[i],
+                  sharing: sharingRoundIds.contains(stats.rounds[i].roundId),
+                  onShare: (origin) => onShareRound(
+                    stats.rounds[i],
+                    sharePositionOrigin: origin,
                   ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: 320,
-            child: ElevatedButton(
-              onPressed: onPlayAgain,
-              child: const EmojiText('🎮 Nuova Partita'),
+                ),
+                if (i < stats.rounds.length - 1) const SizedBox(height: 12),
+              ],
+            ] else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: Text(
+                    'Nessun round registrato.',
+                    style: bodyFont(color: AppColors.mutedFg),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            Center(
+              child: SizedBox(
+                width: 320,
+                child: ElevatedButton(
+                  onPressed: onPlayAgain,
+                  child: const EmojiText('🎮 Nuova Partita'),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

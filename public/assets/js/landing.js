@@ -120,20 +120,58 @@
 
 
   /* ── 3. i18n ────────────────────────────────────────────────────────── */
+  // The question carousel is seeded with Italian chips directly in the HTML
+  // so the marquee has something to scroll on the very first paint, even if
+  // landing.js loads late (flaky connections, cold-start cache miss, etc.).
+  // buildCarousel() only swaps content when the lang actually differs from
+  // what's currently rendered — repeated calls with the same lang are a
+  // no-op. This matters because innerHTML replacement + `width: max-content`
+  // forces a full reflow of the track, and the running `translateX(-50%)`
+  // animation keyframe is pinned to the old width, so you'd see a visible
+  // "jump" or freeze right after every swap.
+  function makeChips(arr) {
+    return arr.concat(arr) // duplicate so the marquee can loop seamlessly
+      .map(function (q) { return '<span class="question-chip">' + q + '</span>'; })
+      .join('');
+  }
+
+  function restartTrackAnimation(track) {
+    // Toggle the animation off/on so the keyframe re-reads the fresh
+    // width. Without this, the scroll-left/scroll-right animations stay
+    // anchored to the previous content's width and visibly stall on the
+    // language toggle.
+    var prev = track.style.animation;
+    track.style.animation = 'none';
+    // Force a reflow so the "none" actually lands before we restore.
+    // Reading offsetWidth is the canonical way to do this.
+    void track.offsetWidth; // eslint-disable-line no-unused-expressions
+    track.style.animation = prev || '';
+  }
+
   function buildCarousel() {
     var t = translations[currentLang];
+    if (!t) return;
     var track1 = document.getElementById('qTrack1');
     var track2 = document.getElementById('qTrack2');
     if (!track1 || !track2) return;
 
-    function makeChips(arr) {
-      return arr.concat(arr) // duplicate so the marquee can loop seamlessly
-        .map(function (q) { return '<span class="question-chip">' + q + '</span>'; })
-        .join('');
-    }
+    // Skip rebuilds when the DOM already reflects the target language. This
+    // makes the boot-time setLang(currentLang) call a pure no-op when the
+    // HTML seed matches the stored lang (the common case for IT users).
+    var track1Lang = track1.getAttribute('data-seeded-lang');
+    var track2Lang = track2.getAttribute('data-seeded-lang');
+    if (track1Lang === currentLang && track2Lang === currentLang) return;
 
     track1.innerHTML = makeChips(t.carousel_row1);
     track2.innerHTML = makeChips(t.carousel_row2);
+    track1.setAttribute('data-seeded-lang', currentLang);
+    track2.setAttribute('data-seeded-lang', currentLang);
+
+    // Re-kick both marquee animations so they re-measure against the new
+    // content width — otherwise the keyframes are anchored to the previous
+    // language's chip set and the track visibly freezes / jumps.
+    restartTrackAnimation(track1);
+    restartTrackAnimation(track2);
   }
 
   // Exposed globally so the inline onclick="setLang('it')" handlers work.

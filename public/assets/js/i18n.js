@@ -62,7 +62,10 @@
     //    state, language attr) paints first — otherwise the synchronous
     //    rewrite of dozens of nodes blocks the click for ~100ms+ on
     //    mid-tier mobiles and the whole interaction feels frozen.
+    var didRun = false;
     var run = function () {
+      if (didRun) return;
+      didRun = true;
       var nodes = document.querySelectorAll('[data-i18n]');
       for (var i = 0; i < nodes.length; i++) {
         var el = nodes[i];
@@ -82,6 +85,12 @@
     };
     if (typeof window.requestAnimationFrame === 'function') {
       window.requestAnimationFrame(run);
+      // Belt + braces: rAF is throttled (or paused) when the tab is in
+      // the background, which on some iOS/Android browsers can delay the
+      // translation apply by tens of seconds. A setTimeout fallback kicks
+      // in after 250ms so stored-lang content still lands — the `didRun`
+      // guard makes whichever callback fires second a no-op.
+      setTimeout(run, 250);
     } else {
       run();
     }

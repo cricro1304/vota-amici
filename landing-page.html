@@ -332,14 +332,19 @@
     <h2 class="section-title" data-i18n="q_title">Le domande che non osavi fare 😏</h2>
     <p class="section-subtitle" data-i18n="q_sub">100+ verità in attesa di un voto. Le amicizie? Si vedrà.</p>
 
-    <!-- Row 1: scrolls left -->
+    <!-- Row 1: scrolls left. Seeded with Italian chips so the marquee has
+         something to show on the first paint — before landing.js (deferred)
+         has had a chance to run. buildCarousel() rewrites the content when
+         the language resolves (or when the user toggles IT/EN). The chips
+         are duplicated inline so the scroll-left keyframe's translateX(-50%)
+         lands on a seamless loop boundary. -->
     <div class="question-carousel">
-      <div class="question-track" id="qTrack1"></div>
+      <div class="question-track" id="qTrack1" data-seeded-lang="it"><span class="question-chip">Chi è il più simpatico? 😄</span><span class="question-chip">Chi è il più pigro? 😴</span><span class="question-chip">Chi è il più drammatico? 🎭</span><span class="question-chip">Chi è il più testardo? 💪</span><span class="question-chip">Chi sopravviverebbe su un'isola deserta? 🏝️</span><span class="question-chip">Chi è il più ritardatario? ⏰</span><span class="question-chip">Chi è il più chiacchierone? 🗣️</span><span class="question-chip">Chi farebbe il miglior presidente? 🎩</span><span class="question-chip">Chi è il più goloso? 🍕</span><span class="question-chip">Chi diventerà famoso? ⭐</span><span class="question-chip">Chi è il più simpatico? 😄</span><span class="question-chip">Chi è il più pigro? 😴</span><span class="question-chip">Chi è il più drammatico? 🎭</span><span class="question-chip">Chi è il più testardo? 💪</span><span class="question-chip">Chi sopravviverebbe su un'isola deserta? 🏝️</span><span class="question-chip">Chi è il più ritardatario? ⏰</span><span class="question-chip">Chi è il più chiacchierone? 🗣️</span><span class="question-chip">Chi farebbe il miglior presidente? 🎩</span><span class="question-chip">Chi è il più goloso? 🍕</span><span class="question-chip">Chi diventerà famoso? ⭐</span></div>
     </div>
 
     <!-- Row 2: scrolls right -->
     <div class="question-carousel">
-      <div class="question-track question-track-2" id="qTrack2"></div>
+      <div class="question-track question-track-2" id="qTrack2" data-seeded-lang="it"><span class="question-chip">Chi è il più generoso? 💝</span><span class="question-chip">Chi è il più permaloso? 😤</span><span class="question-chip">Chi è il più introverso? 🤫</span><span class="question-chip">Chi è il più romantico? 💘</span><span class="question-chip">Chi è il più disordinato? 🧦</span><span class="question-chip">Chi è il più competitivo? 🏅</span><span class="question-chip">Chi è il più avventuroso? 🧗</span><span class="question-chip">Chi è il più creativo? 🎨</span><span class="question-chip">Chi è il più fortunato? 🍀</span><span class="question-chip">Chi è il più affidabile? 🤝</span><span class="question-chip">Chi è il più generoso? 💝</span><span class="question-chip">Chi è il più permaloso? 😤</span><span class="question-chip">Chi è il più introverso? 🤫</span><span class="question-chip">Chi è il più romantico? 💘</span><span class="question-chip">Chi è il più disordinato? 🧦</span><span class="question-chip">Chi è il più competitivo? 🏅</span><span class="question-chip">Chi è il più avventuroso? 🧗</span><span class="question-chip">Chi è il più creativo? 🎨</span><span class="question-chip">Chi è il più fortunato? 🍀</span><span class="question-chip">Chi è il più affidabile? 🤝</span></div>
     </div>
   </div>
 </section>
