@@ -1093,6 +1093,12 @@ section { padding: 5rem 1.5rem; }
   margin-bottom: 1.5rem;
   mask-image:         linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
+  /* iOS Safari sometimes promotes mask-image ancestors into a stacking
+     context that breaks GPU compositing of descendant transforms; force
+     the carousel itself onto its own compositor layer so the track's
+     translateX animation stays smooth on mobile. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .question-track {
@@ -1101,10 +1107,16 @@ section { padding: 5rem 1.5rem; }
   flex-wrap: nowrap;
   /* flex-shrink:0 stops the track from being squeezed down to the
      carousel's own width — it must stay wider than its container so
-     translateX(-50%) actually moves something visible. */
+     translateX(-50%) actually moves something visible. On mobile
+     Safari the implicit main-size of a nowrap flex row is sometimes
+     clamped to the parent width, which made the marquee appear frozen;
+     `width: max-content` forces the track to size to its content. */
   flex-shrink: 0;
+  width: max-content;
   animation: scroll-left 30s linear infinite;
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .question-track-2 { animation: scroll-right 28s linear infinite; }
 
