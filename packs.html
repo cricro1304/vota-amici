@@ -8,7 +8,12 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Google Fonts: loaded non-blocking. -->
+  <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" /></noscript>
 
   <link rel="stylesheet" href="assets/css/shared.css" />
   <link rel="stylesheet" href="assets/css/packs.css" />
@@ -28,6 +33,8 @@
     <a href="https://ilpiu.org" class="nav-cta" target="_blank" data-i18n="nav_cta">Gioca Gratis 🎮</a>
   </div>
 </nav>
+
+<main id="main-content">
 
 <!-- PAGE HERO -->
 <section class="page-hero">
@@ -214,6 +221,8 @@
 
 </div>
 
+</main>
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo">🎭 Chi è il più...?</div>
@@ -228,8 +237,8 @@
   <p data-i18n="footer_text">Il party game che non sapevi di aver bisogno.<br/>Fatto con 🤌 in Italia.</p>
 </footer>
 
-<script src="assets/js/i18n.js"></script>
-<script src="assets/js/packs.translations.js"></script>
-<script src="assets/js/packs.js"></script>
+<script src="assets/js/i18n.js" defer></script>
+<script src="assets/js/packs.translations.js" defer></script>
+<script src="assets/js/packs.js" defer></script>
 </body>
 </html>

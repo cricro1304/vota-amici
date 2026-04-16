@@ -11,10 +11,20 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap" rel="stylesheet" />
 
+  <!-- Google Fonts: loaded non-blocking (preload + onload swap, noscript fallback). -->
+  <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap" /></noscript>
+
+  <!-- shared.css is small and loads critical tokens/reset → keep it blocking. -->
   <link rel="stylesheet" href="assets/css/shared.css" />
-  <link rel="stylesheet" href="assets/css/landing.css" />
+
+  <!-- landing.css is 65 KB: load non-blocking to free up LCP. -->
+  <link rel="preload" as="style" href="assets/css/landing.css"
+        onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="assets/css/landing.css" /></noscript>
 </head>
 <body>
 
@@ -31,6 +41,8 @@
     <a href="/play" class="nav-cta" target="_blank" data-i18n="nav_cta">Gioca Gratis 🎮</a>
   </div>
 </nav>
+
+<main id="main-content">
 
 <!-- UNIFIED FLOW: HERO + TUTORIAL WITH STICKY PHONE -->
 <div class="flow-wrapper">
@@ -653,6 +665,8 @@
   <p class="hero-free" style="margin-top: 1rem;" data-i18n="cta_note">Funziona su qualsiasi telefono. Basta un browser.</p>
 </section>
 
+</main>
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo">🎭 Chi è il più...?</div>
@@ -675,8 +689,8 @@
   <div class="pack-tile-examples" id="packSheetExamples"></div>
 </div>
 
-<script src="assets/js/i18n.js"></script>
-<script src="assets/js/landing.translations.js"></script>
-<script src="assets/js/landing.js"></script>
+<script src="assets/js/i18n.js" defer></script>
+<script src="assets/js/landing.translations.js" defer></script>
+<script src="assets/js/landing.js" defer></script>
 </body>
 </html>

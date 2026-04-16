@@ -48,6 +48,29 @@ fi
 # Flutter web build output -> /play/
 cp -R flutter_app/build/web/. dist/play/
 
+echo "==> Minifying landing CSS/JS with esbuild..."
+# esbuild is zero-config and already fast on Vercel's build image.
+# We minify only the landing-page assets (not Flutter's own bundle).
+# Fails soft: if esbuild is missing we skip rather than break the deploy.
+if command -v npx >/dev/null 2>&1; then
+  for f in dist/assets/css/landing.css dist/assets/css/shared.css dist/assets/css/packs.css; do
+    if [ -f "$f" ]; then
+      npx --yes esbuild "$f" --minify --loader=css --log-level=error \
+        --outfile="$f.min" && mv "$f.min" "$f"
+    fi
+  done
+  for f in dist/assets/js/landing.js dist/assets/js/landing.translations.js \
+           dist/assets/js/packs.js dist/assets/js/packs.translations.js \
+           dist/assets/js/i18n.js; do
+    if [ -f "$f" ]; then
+      npx --yes esbuild "$f" --minify --log-level=error \
+        --outfile="$f.min" && mv "$f.min" "$f"
+    fi
+  done
+else
+  echo "   (npx not available — skipping minification)"
+fi
+
 echo "==> Done. Contents:"
 ls -la dist
 ls -la dist/play | head -10

@@ -7,7 +7,8 @@
 
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
-  --pink:        #e6366e;
+  --pink:        #e6366e;  /* brand pink — backgrounds / accents */
+  --pink-ink:   #b01a52;   /* AA-safe text color (>=4.5:1 on --bg and white) */
   --pink-light: #f9d1dc;
   --pink-glow:  rgba(230, 54, 110, 0.25);
   --cyan:       #3ba3d0;
