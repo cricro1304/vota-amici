@@ -1,10 +1,15 @@
+import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// Builds the shareable room URL + triggers the native share sheet.
+/// Builds shareable URLs + triggers the native share sheet.
 ///
 /// The share sheet is the same API that powers AirDrop on iOS, the OS share
 /// target on Android, and the Web Share API on mobile browsers — so one call
@@ -22,17 +27,17 @@ class ShareService {
           : fromEnv;
     }
     if (kIsWeb) {
-      // On web we always have a usable origin.
       final origin = Uri.base.origin;
       return origin;
     }
-    // Last-resort fallback for native builds that forgot to set APP_URL.
     return 'https://vota-amici.vercel.app';
   }
 
   /// Public helper so tests / UI can preview the link.
   Uri roomUrl(String code) =>
       Uri.parse('$_baseUrl/room/${code.toUpperCase()}');
+
+  Uri siteUrl() => Uri.parse(_baseUrl);
 
   /// Opens the native share sheet with the invite link.
   ///
@@ -56,9 +61,83 @@ class ShareService {
     );
   }
 
-  /// Copies the URL to the clipboard. Used as a fallback button alongside the
-  /// share sheet so desktop / keyboard users have a discoverable option.
+  /// Copies the invite URL to the clipboard. Used as a fallback button
+  /// alongside the share sheet so desktop / keyboard users have a
+  /// discoverable option.
   Future<void> copyLink(String code) async {
     await Clipboard.setData(ClipboardData(text: roomUrl(code).toString()));
+  }
+
+  /// Captures a widget subtree (wrapped in a [RepaintBoundary] with [key])
+  /// as a PNG, then hands it to the native share sheet alongside a caption.
+  ///
+  /// Works on mobile (iOS/Android) + on web where Web Share Level 2 with
+  /// files is supported (iOS Safari 15+, Android Chrome). Browsers that
+  /// don't support file sharing fall through to the `text + url` payload
+  /// via share_plus.
+  ///
+  /// [caption] is the message users see in the share sheet pre-populated —
+  /// e.g. the fun result line. We always append [siteUrl] so the recipient
+  /// has a one-tap way to come try the game.
+  Future<void> sharePng({
+    required GlobalKey boundaryKey,
+    required String caption,
+    String filename = 'vota-amici.png',
+    Rect? sharePositionOrigin,
+    double pixelRatio = 3.0,
+  }) async {
+    final bytes = await capturePng(boundaryKey, pixelRatio: pixelRatio);
+    if (bytes == null) {
+      // Capture failed — still give the user something useful by sharing
+      // the caption + link instead of silently no-oping.
+      await Share.share(
+        '$caption\n${siteUrl()}',
+        sharePositionOrigin: sharePositionOrigin,
+      );
+      return;
+    }
+
+    final params = ShareParams(
+      text: '$caption\n${siteUrl()}',
+      files: [
+        XFile.fromData(
+          bytes,
+          name: filename,
+          mimeType: 'image/png',
+        ),
+      ],
+      sharePositionOrigin: sharePositionOrigin,
+    );
+    await SharePlus.instance.share(params);
+  }
+
+  /// Rasterises the subtree attached to [boundaryKey] into PNG bytes.
+  /// Returns `null` if the boundary isn't in the tree yet or the encode
+  /// fails — callers should handle that gracefully (see [sharePng]).
+  static Future<Uint8List?> capturePng(
+    GlobalKey boundaryKey, {
+    double pixelRatio = 3.0,
+  }) async {
+    try {
+      final ctx = boundaryKey.currentContext;
+      if (ctx == null) return null;
+      final obj = ctx.findRenderObject();
+      if (obj is! RenderRepaintBoundary) return null;
+      // On some platforms the boundary may need "needs paint" to flush.
+      // Trying the capture and falling back to a delayed retry is the
+      // safest thing we can do without depending on private APIs.
+      ui.Image image;
+      try {
+        image = await obj.toImage(pixelRatio: pixelRatio);
+      } catch (_) {
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+        image = await obj.toImage(pixelRatio: pixelRatio);
+      }
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      return byteData?.buffer.asUint8List();
+    } catch (_) {
+      return null;
+    }
   }
 }
