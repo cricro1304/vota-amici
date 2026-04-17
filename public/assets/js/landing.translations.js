@@ -33,6 +33,9 @@ window.LANDING_TRANSLATIONS = {
     tut_pack_colleghi: 'Colleghi',
     tut_pack_colleghi_sub: 'L\'ufficio si confessa',
     tut_pack_soon: 'Soon',
+    // Coppie-specific NEW marker. `tut_pack_soon` stays reserved for the
+    // Fratelli / Colleghi rows; do NOT merge these two keys.
+    tut_pack_new: '✨ Nuovo',
     step1_title: 'Apri la stanza',
     step1_desc: 'Un tap, un codice, la crew entra. Zero account, zero download: si parte.',
     step_modes_title: 'Scegli la vibe',
@@ -89,6 +92,13 @@ window.LANDING_TRANSLATIONS = {
     pack_classic_desc: 'Le domande essenziali per qualsiasi serata tra amici. Il punto di partenza perfetto.',
     pack_free_badge: '✅ Gratis per sempre',
     pack_play: '🎮 Gioca Ora',
+    // Coppie hero (promoted from the "in arrivo" grid now that it ships).
+    pack_couples_title: 'Coppie. 18 domande',
+    pack_couples_desc: 'Quanto vi conoscete davvero? Le domande che mettono alla prova anche le coppie più solide.',
+    pack_new_badge: '✨ Nuovo',
+    pack_play_couples: '💕 Gioca in coppia',
+    // Novità announcement strip above the hero row.
+    novita_strip_text: 'Novità: il pack Coppie è live! Provalo ora',
     packs_coming: 'Prossimamente... 🔜',
     packs_see_all: '🎲 Vedi tutti i pacchetti',
 
@@ -223,6 +233,7 @@ window.LANDING_TRANSLATIONS = {
     tut_pack_colleghi: 'Coworkers',
     tut_pack_colleghi_sub: 'The office confesses',
     tut_pack_soon: 'Soon',
+    tut_pack_new: '✨ New',
     step1_title: 'Open the room',
     step1_desc: 'One tap, one code, crew\'s in. No accounts, no downloads. Off you go.',
     step_modes_title: 'Pick the vibe',
@@ -279,6 +290,11 @@ window.LANDING_TRANSLATIONS = {
     pack_classic_desc: 'The essential questions for any night with friends. The perfect starting point.',
     pack_free_badge: '✅ Free forever',
     pack_play: '🎮 Play Now',
+    pack_couples_title: 'Couples. 18 questions',
+    pack_couples_desc: 'How well do you really know each other? Questions that test even the strongest couples.',
+    pack_new_badge: '✨ New',
+    pack_play_couples: '💕 Play as a couple',
+    novita_strip_text: 'New: the Couples pack is live! Try it now',
     packs_coming: 'Coming soon... 🔜',
     packs_see_all: '🎲 See all packs',
 

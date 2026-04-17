@@ -270,7 +270,10 @@
                     <div class="tut-pack-name" data-i18n="tut_pack_coppie">Coppie</div>
                     <div class="tut-pack-sub" data-i18n="tut_pack_coppie_sub">Per chi si conosce davvero</div>
                   </div>
-                  <span class="tut-pack-soon" data-i18n="tut_pack_soon">Soon</span>
+                  <!-- Coppie shipped — swap the shared `.tut-pack-soon` +
+                       `tut_pack_soon` pair for pack-specific NEW markers so
+                       Fratelli / Colleghi rows below keep their Soon tag. -->
+                  <span class="tut-pack-new" data-i18n="tut_pack_new">✨ Nuovo</span>
                 </div>
                 <div class="tut-pack-row">
                   <span class="tut-pack-emoji">👫</span>
@@ -424,33 +427,40 @@
     <p class="section-subtitle" data-i18n="packs_sub">L'Originale è gratis, ora e per sempre. Gli altri stanno arrivando, ognuno con un nuovo modo di smascherarvi 🫣</p>
 
     <div class="packs-wrapper">
-      <div class="pack-hero">
-        <div class="pack-hero-emoji">🎭</div>
-        <h3 data-i18n="pack_classic_title">Originale. 100+ domande</h3>
-        <p data-i18n="pack_classic_desc">Le domande essenziali per qualsiasi serata tra amici. Il punto di partenza perfetto.</p>
-        <span class="pack-badge" data-i18n="pack_free_badge">✅ Gratis per sempre</span>
-        <br/>
-        <a href="/play" class="pack-play-btn" data-i18n="pack_play">🎮 Gioca Ora</a>
+      <!-- Novità strip: promoted Coppie from "in arrivo" to live. When the
+           next pack ships, swap the text + href and keep the strip. -->
+      <a href="/play" class="novita-strip">
+        <span class="novita-spark">✨</span>
+        <span data-i18n="novita_strip_text">Novità: il pack Coppie è live! Provalo ora</span>
+        <span class="novita-spark">✨</span>
+        <span class="novita-arrow">→</span>
+      </a>
+
+      <!-- Two playable heroes side by side. Originale = OG, steady; Coppie
+           = the new release. Stacks on narrow viewports via flex-wrap. -->
+      <div class="pack-hero-row">
+        <div class="pack-hero">
+          <div class="pack-hero-emoji">🎭</div>
+          <h3 data-i18n="pack_classic_title">Originale. 100+ domande</h3>
+          <p data-i18n="pack_classic_desc">Le domande essenziali per qualsiasi serata tra amici. Il punto di partenza perfetto.</p>
+          <span class="pack-badge" data-i18n="pack_free_badge">✅ Gratis per sempre</span>
+          <br/>
+          <a href="/play" class="pack-play-btn" data-i18n="pack_play">🎮 Gioca Ora</a>
+        </div>
+
+        <div class="pack-hero pack-hero-couples">
+          <div class="pack-hero-emoji">💑</div>
+          <h3 data-i18n="pack_couples_title">Coppie. 18 domande</h3>
+          <p data-i18n="pack_couples_desc">Quanto vi conoscete davvero? Le domande che mettono alla prova anche le coppie più solide.</p>
+          <span class="pack-badge new" data-i18n="pack_new_badge">✨ Nuovo</span>
+          <br/>
+          <a href="/play" class="pack-play-btn" data-i18n="pack_play_couples">💕 Gioca in coppia</a>
+        </div>
       </div>
 
       <p class="packs-coming-label" data-i18n="packs_coming">Prossimamente... 🔜</p>
 
       <div class="packs-grid">
-        <div class="pack-tile">
-          <div class="pack-tile-emoji">💑</div>
-          <h4 data-i18n="tile_coppie">Coppie</h4>
-          <p class="pack-tile-preview" data-i18n="tile_coppie_q1">💤 chi russa di più</p>
-          <span class="pack-tile-tag" data-i18n="tile_coming">In arrivo</span>
-          <div class="pack-tile-popup">
-            <p class="pack-tile-desc" data-i18n="tile_coppie_desc">Quanto vi conoscete davvero? Le domande che mettono alla prova anche le coppie più solide.</p>
-            <div class="pack-tile-examples">
-              <span class="pack-tile-chip" data-i18n="tile_coppie_q1">💤 chi russa di più</span>
-              <span class="pack-tile-chip" data-i18n="tile_coppie_q2">📱 chi sta più al telefono</span>
-              <span class="pack-tile-chip" data-i18n="tile_coppie_q3">🍽️ chi cucina meglio</span>
-              <span class="pack-tile-chip count-chip" data-i18n="tile_count">+50 domande</span>
-            </div>
-          </div>
-        </div>
         <div class="pack-tile">
           <div class="pack-tile-emoji">👫</div>
           <h4 data-i18n="tile_fratelli">Fratelli</h4>

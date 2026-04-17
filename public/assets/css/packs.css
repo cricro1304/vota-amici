@@ -100,6 +100,20 @@
 }
 .pack-tag.free { background: var(--teal);       color: white; }
 .pack-tag.soon { background: var(--pink-light); color: var(--pink); }
+/* `.new` signals a pack that *just* became playable — visually louder than
+ * `.free` (steady-state green) and warmer than `.soon` (muted pink-light).
+ * Pink→peach gradient + subtle pulse so the eye catches it first on the
+ * page. Keep the animation cheap: transform + opacity only. */
+.pack-tag.new {
+  background: linear-gradient(135deg, #ff5d8f 0%, #ff8bb0 50%, #ffb199 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 93, 143, 0.35);
+  animation: pack-tag-new-pulse 2.4s ease-in-out infinite;
+}
+@keyframes pack-tag-new-pulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 4px 12px rgba(255, 93, 143, 0.35); }
+  50%      { transform: scale(1.06); box-shadow: 0 6px 18px rgba(255, 93, 143, 0.55); }
+}
 
 
 /* ── Chips (pack-card question examples) ────────────────────────────────── */

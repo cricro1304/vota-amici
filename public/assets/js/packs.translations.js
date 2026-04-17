@@ -27,6 +27,9 @@ window.PACKS_TRANSLATIONS = {
 
     // Coming-soon tag (shared across non-free packs)
     soon_tag: '🔜 In arrivo',
+    // Coppie shipped — its row uses `new_tag` instead of `soon_tag` so the
+    // other rows keep their muted coming-soon styling.
+    new_tag: '✨ Nuovo',
     spicy_18_tag: '🔞',
 
     // Coppie
@@ -96,6 +99,9 @@ window.PACKS_TRANSLATIONS = {
     // Shared count chips
     count_100: '+100 domande',
     count_50: '+50 domande',
+    // Coppie ships with 18 questions — keep its chip separate from the
+    // shared `count_50` so future rebalances don't have to split it.
+    count_18_coppie: '+18 domande',
 
     // Footer
     footer_text: 'Il party game che non sapevi di aver bisogno.<br/>Fatto con 🤌 in Italia.'
@@ -124,6 +130,7 @@ window.PACKS_TRANSLATIONS = {
 
     // Coming-soon tag
     soon_tag: '🔜 Coming soon',
+    new_tag: '✨ New',
     spicy_18_tag: '🔞',
 
     // Couples
@@ -193,6 +200,7 @@ window.PACKS_TRANSLATIONS = {
     // Shared count chips
     count_100: '+100 questions',
     count_50: '+50 questions',
+    count_18_coppie: '+18 questions',
 
     // Footer
     footer_text: 'The party game you didn\'t know you needed.<br/>Made with 🤌 in Italy.'

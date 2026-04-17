@@ -685,6 +685,21 @@ section { padding: 5rem 1.5rem; }
   border-radius: 999px;
   flex: none;
 }
+/* Tutorial "✨ Nuovo" marker — same footprint as `.tut-pack-soon` but
+ * pink/gradient so the Coppie row reads as *released*, not queued. */
+.tut-pack-new {
+  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-weight: 800;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
+  background: linear-gradient(135deg, #ff5d8f 0%, #ff8bb0 100%);
+  padding: 3px 8px;
+  border-radius: 999px;
+  flex: none;
+  box-shadow: 0 2px 6px rgba(255, 93, 143, 0.4);
+}
 
 /* Tutorial screen 1: Lobby */
 .tut-lobby { align-items: center; }
@@ -1441,6 +1456,69 @@ section { padding: 5rem 1.5rem; }
 }
 
 
+/* Novità announcement strip — sits between the section title and the
+ * hero row. One-line banner promoting whichever pack just became
+ * playable; easy to swap to a future pack by changing the inline
+ * emoji/text. Clickable by design (wraps the whole strip in an <a>). */
+.novita-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 820px;
+  margin: 0 auto 1.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 2rem;
+  background: linear-gradient(90deg, #ffe3ee 0%, #fff1e6 100%);
+  border: 1.5px dashed #e6366e;
+  color: #e6366e;
+  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(230, 54, 110, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.novita-strip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(230, 54, 110, 0.22);
+}
+.novita-strip .novita-spark {
+  animation: novita-spark-twinkle 1.6s ease-in-out infinite;
+  display: inline-block;
+}
+.novita-strip .novita-spark:last-child { animation-delay: 0.8s; }
+@keyframes novita-spark-twinkle {
+  0%, 100% { transform: scale(1)    rotate(0deg);  opacity: 0.7; }
+  50%      { transform: scale(1.25) rotate(15deg); opacity: 1; }
+}
+.novita-strip .novita-arrow {
+  font-weight: 900;
+  margin-left: 0.25rem;
+  transition: transform 0.2s ease;
+}
+.novita-strip:hover .novita-arrow { transform: translateX(4px); }
+
+/* Hero row — holds the two playable packs (Originale + Coppie) side by
+ * side on desktop, stacked on narrow viewports. Wrap container lives
+ * above the .packs-coming-label divider. */
+.pack-hero-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: stretch;
+  justify-content: center;
+  max-width: 820px;
+  margin: 0.5rem auto 3rem;
+}
+.pack-hero-row .pack-hero {
+  /* Inside the row: drop the auto-margin + shrink to fit two-up. */
+  margin: 0;
+  flex: 1 1 360px;
+  max-width: 400px;
+}
+
 /* Free pack — hero card with energy (kept light: single linear gradient) */
 .pack-hero {
   position: relative;
@@ -1458,6 +1536,23 @@ section { padding: 5rem 1.5rem; }
   transform: rotate(-1deg);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   overflow: hidden;
+}
+/* Couples hero variant — rose→peach palette, tilted the other way so the
+ * two heroes lean into each other like an open book on the page. */
+.pack-hero.pack-hero-couples {
+  background: linear-gradient(135deg, #e6366e 0%, #ff7aa8 50%, #ffb199 100%);
+  transform: rotate(1deg);
+  box-shadow:
+    0 20px 42px -14px rgba(230, 54, 110, 0.35),
+    0 8px 16px -6px rgba(255, 177, 153, 0.3),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+.pack-hero.pack-hero-couples:hover {
+  transform: rotate(1deg) translateY(-5px);
+  box-shadow:
+    0 28px 52px -14px rgba(230, 54, 110, 0.45),
+    0 12px 22px -6px rgba(255, 177, 153, 0.35),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.3);
 }
 .pack-hero::before {
   content: '';
@@ -1516,7 +1611,21 @@ section { padding: 5rem 1.5rem; }
   letter-spacing: 0.02em;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
+/* Louder sibling of `.pack-badge` — used on the Coppie hero to scream
+ * "this pack just shipped". Gentle pulse ties it visually to the
+ * `.pack-tag.new` used on packs.html, without copying the animation. */
+.pack-hero .pack-badge.new {
+  background: linear-gradient(135deg, #fff 0%, #ffe3ee 100%);
+  color: #e6366e;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.6), 0 2px 6px rgba(230, 54, 110, 0.25);
+  animation: pack-badge-new-glow 2.2s ease-in-out infinite;
+}
+@keyframes pack-badge-new-glow {
+  0%, 100% { box-shadow: 0 4px 16px rgba(255, 255, 255, 0.6), 0 2px 6px rgba(230, 54, 110, 0.25); }
+  50%      { box-shadow: 0 6px 22px rgba(255, 255, 255, 0.9), 0 4px 12px rgba(230, 54, 110, 0.45); }
+}
 .pack-hero .pack-play-btn { color: var(--pink); }
+.pack-hero.pack-hero-couples .pack-play-btn { color: #e6366e; }
 
 .pack-play-btn {
   display: inline-block;
@@ -1660,42 +1769,40 @@ section { padding: 5rem 1.5rem; }
 }
 
 /* --- Per-pack color theming (matches emoji order in the grid) ----------- */
-.packs-grid .pack-tile:nth-child(1) {  /* Coppie 💑 — rose */
-  --pack-color: #e6366e;
-  --pack-bg: #ffe3ee;
-  --pack-bg-2: #ffc6dc;
-}
-.packs-grid .pack-tile:nth-child(2) {  /* Fratelli 👫 — sun */
+/* Coppie was nth-child(1) with a rose palette. Now that Coppie has been
+ * promoted out of the grid into a second hero tile, the grid starts at
+ * Fratelli. All indices below are shifted up by one. */
+.packs-grid .pack-tile:nth-child(1) {  /* Fratelli 👫 — sun */
   --pack-color: #d97706;
   --pack-bg: #fff1ca;
   --pack-bg-2: #ffe199;
 }
-.packs-grid .pack-tile:nth-child(3) {  /* Famiglia 👨‍👩‍👧‍👦 — terracotta */
+.packs-grid .pack-tile:nth-child(2) {  /* Famiglia 👨‍👩‍👧‍👦 — terracotta */
   --pack-color: #c2410c;
   --pack-bg: #fde0cc;
   --pack-bg-2: #fcc09a;
 }
-.packs-grid .pack-tile:nth-child(4) {  /* Colleghi 💼 — indigo */
+.packs-grid .pack-tile:nth-child(3) {  /* Colleghi 💼 — indigo */
   --pack-color: #4f46e5;
   --pack-bg: #e0e3ff;
   --pack-bg-2: #c4caff;
 }
-.packs-grid .pack-tile:nth-child(5) {  /* Coinquilini 🏠 — mint */
+.packs-grid .pack-tile:nth-child(4) {  /* Coinquilini 🏠 — mint */
   --pack-color: #059669;
   --pack-bg: #d1f5e4;
   --pack-bg-2: #a7eccb;
 }
-.packs-grid .pack-tile:nth-child(6) {  /* Viaggi ✈️ — sky */
+.packs-grid .pack-tile:nth-child(5) {  /* Viaggi ✈️ — sky */
   --pack-color: #0284c7;
   --pack-bg: #d6eefc;
   --pack-bg-2: #aedcf7;
 }
-.packs-grid .pack-tile:nth-child(7) {  /* Conoscersi 🤝 — lavender */
+.packs-grid .pack-tile:nth-child(6) {  /* Conoscersi 🤝 — lavender */
   --pack-color: #7c3aed;
   --pack-bg: #e9ddff;
   --pack-bg-2: #d4baff;
 }
-.packs-grid .pack-tile:nth-child(8) {  /* Spicy 🌶️ — chili red */
+.packs-grid .pack-tile:nth-child(7) {  /* Spicy 🌶️ — chili red */
   --pack-color: #dc2626;
   --pack-bg: #fed7d7;
   --pack-bg-2: #fcb1b1;
