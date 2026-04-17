@@ -36,12 +36,70 @@ class RoomRepository {
 
   /// Stream of a single room's current state. Supabase pushes incremental
   /// updates — we never refetch on change.
-  Stream<Room?> watchRoom(String roomId) {
-    return _client
+  ///
+  /// Why the REST primer + pack_id carry-over: realtime replication events
+  /// can occasionally deliver a row whose payload doesn't include
+  /// `pack_id` — most reliably reproduced right after the column was
+  /// added to the table, before the Realtime server refreshes its schema
+  /// cache, but also seen intermittently on the joiner's very first
+  /// subscription. When that happens, `Pack.byDbId(null)` falls back to
+  /// classic and the joiner sees the plain theme while the host (whose
+  /// local Room object came back from `createRoom`'s REST insert)
+  /// correctly renders couples. To make that impossible, we:
+  ///
+  ///   1. Do an explicit REST fetch FIRST (authoritative full row) and
+  ///      emit it — this is what the host already effectively has.
+  ///   2. Then subscribe to realtime for subsequent changes.
+  ///   3. If any realtime payload arrives with `pack_id == null` while
+  ///      we've already seen a non-null value, keep the cached one. The
+  ///      pack of a room never changes over its lifetime, so downgrading
+  ///      non-null → null is always wrong.
+  Stream<Room?> watchRoom(String roomId) async* {
+    String? cachedPackId;
+
+    // 1. REST primer. A single round-trip, cheap, and gives us the
+    //    authoritative row before realtime even connects.
+    try {
+      final initial = await findRoomById(roomId);
+      if (initial != null) {
+        cachedPackId = initial.packId;
+        yield initial;
+      }
+    } catch (_) {
+      // Non-fatal — the realtime stream below will supply the row.
+    }
+
+    // 2. Realtime deltas. We re-apply the pack_id carry-over on every
+    //    emission so a late UPDATE (status flip, round bump) that
+    //    happens to omit pack_id doesn't flicker the joiner back to
+    //    classic mid-game.
+    await for (final rows in _client
         .from('rooms')
         .stream(primaryKey: ['id'])
-        .eq('id', roomId)
-        .map((rows) => rows.isEmpty ? null : Room.fromJson(rows.first));
+        .eq('id', roomId)) {
+      if (rows.isEmpty) {
+        yield null;
+        continue;
+      }
+      final row = Room.fromJson(rows.first);
+      if (row.packId == null && cachedPackId != null) {
+        // Carry-over: stream lost pack_id but we know what it is.
+        yield Room(
+          id: row.id,
+          code: row.code,
+          hostPlayerId: row.hostPlayerId,
+          status: row.status,
+          currentRound: row.currentRound,
+          timerSeconds: row.timerSeconds,
+          modes: row.modes,
+          packId: cachedPackId,
+          createdAt: row.createdAt,
+        );
+      } else {
+        if (row.packId != null) cachedPackId = row.packId;
+        yield row;
+      }
+    }
   }
 
   Future<Room> createRoom({

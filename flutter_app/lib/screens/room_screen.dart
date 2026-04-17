@@ -31,6 +31,15 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
   final _rejoinCtrl = TextEditingController();
   bool _rejoining = false;
 
+  /// `true` when [_resolve] found evidence that this browser had been in
+  /// this room before (either a cached playerId in SessionService, or a
+  /// player row matching our browser fingerprint). Drives the empty-name
+  /// screen copy: a prior session means "welcome back" (rejoin after a
+  /// drop), no prior session means "welcome, enter your name" (fresh
+  /// link-join). Previously we showed the rejoin copy unconditionally,
+  /// which made first-time link-join look like a connection recovery.
+  bool _hadPriorSession = false;
+
   String get _normalized => widget.code.toUpperCase();
 
   @override
@@ -53,6 +62,12 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
     });
     final session = ref.read(sessionServiceProvider);
     final cachedPlayerId = session.getPlayerId(_normalized);
+    // Track whether this browser has any prior signal for this room, so
+    // the name-entry screen below can say "welcome back" (prior session)
+    // vs "welcome, enter your name" (fresh link-join). A cached playerId
+    // is the strongest signal; if it's missing we'll additionally probe
+    // the browser-fingerprint path further down.
+    var hadPrior = cachedPlayerId != null && cachedPlayerId.isNotEmpty;
 
     try {
       final roomRepo = ref.read(roomRepositoryProvider);
@@ -89,6 +104,10 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
           resolvedPlayerId = byBrowser.id;
           // Heal the per-room cache so the next reload hits the fast path.
           await session.setPlayerId(room.code, byBrowser.id);
+          // We found a player row for this browser → this IS a
+          // same-browser rejoin even if the per-room cache was cleared
+          // (private tab, cache eviction, cross-origin swap).
+          hadPrior = true;
         } else if (cachedPlayerId != null) {
           // The cache was stale AND browser fingerprint doesn't match —
           // clear it so we don't keep re-failing the same lookup.
@@ -100,6 +119,7 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
       setState(() {
         _roomId = room.id;
         _playerId = resolvedPlayerId;
+        _hadPriorSession = hadPrior;
         _resolving = false;
       });
     } catch (e) {
@@ -213,46 +233,62 @@ class _RoomScreenState extends ConsumerState<RoomScreen> {
     );
   }
 
-  Widget _buildRejoin() => GameLayout(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const EmojiText('🔄', style: TextStyle(fontSize: 50)),
-            const SizedBox(height: 16),
-            const Text(
-              'Rientra nella stanza',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+  Widget _buildRejoin() {
+    // Pick the copy based on whether this browser has been in this room
+    // before. A fresh link-join (tapping an invite from a messaging app)
+    // should feel like a welcome, NOT a reconnect. The old copy ("Rientra
+    // nella stanza", 🔄) read as "your connection dropped" to people who
+    // had never been here, which was disorienting on first impression.
+    final emoji = _hadPriorSession ? '🔄' : '👋';
+    final title = _hadPriorSession
+        ? 'Rientra nella stanza'
+        : 'Unisciti alla stanza';
+    final ctaLabel = _hadPriorSession
+        ? (_rejoining ? '⏳ Rientro...' : '🚀 Rientra')
+        : (_rejoining ? '⏳ Entrando...' : '🎮 Entra');
+
+    return GameLayout(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          EmojiText(emoji, style: const TextStyle(fontSize: 50)),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style:
+                const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Codice: $_normalized',
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 5,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Codice: $_normalized',
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 5,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: 280,
+            child: TextField(
+              controller: _rejoinCtrl,
+              textAlign: TextAlign.center,
+              maxLength: 20,
+              decoration: const InputDecoration(
+                hintText: 'Il tuo nome',
+                counterText: '',
               ),
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: 280,
-              child: TextField(
-                controller: _rejoinCtrl,
-                textAlign: TextAlign.center,
-                maxLength: 20,
-                decoration: const InputDecoration(
-                  hintText: 'Il tuo nome',
-                  counterText: '',
-                ),
-              ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: 280,
+            child: ElevatedButton(
+              onPressed: _rejoining ? null : _rejoin,
+              child: EmojiText(ctaLabel),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: 280,
-              child: ElevatedButton(
-                onPressed: _rejoining ? null : _rejoin,
-                child: EmojiText(_rejoining ? '⏳ Entrando...' : '🚀 Entra'),
-              ),
-            ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }
