@@ -373,6 +373,32 @@ class _CouplesReveal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final outcome = _compute();
+    // Wrap the per-outcome body in an ambient heart backdrop so every
+    // couples reveal (agree / cross / self) gets the same themed
+    // atmosphere. Hearts sit *behind* the content via Stack children
+    // order; pointer events pass through to any widgets above them.
+    return _RevealHeartBackdrop(
+      // Tint hearts toward the mood of the outcome: strong pink for
+      // agreement, orange for cross (fiery), purple-ish for self.
+      mood: _moodFor(outcome),
+      child: _outcomeBody(outcome),
+    );
+  }
+
+  _RevealMood _moodFor(_CouplesOutcome o) {
+    switch (o) {
+      case _CouplesOutcome.agree:
+        return _RevealMood.tender;
+      case _CouplesOutcome.crossDisagree:
+        return _RevealMood.spicy;
+      case _CouplesOutcome.selfDisagree:
+        return _RevealMood.playful;
+      case _CouplesOutcome.incomplete:
+        return _RevealMood.neutral;
+    }
+  }
+
+  Widget _outcomeBody(_CouplesOutcome outcome) {
     switch (outcome) {
       case _CouplesOutcome.agree:
         // Both picked the same person — find them and show a single
@@ -450,6 +476,147 @@ class _CouplesReveal extends StatelessWidget {
           ),
         );
     }
+  }
+}
+
+/// Mood hint for the reveal backdrop. Drives which hearts/emojis
+/// float behind the result, letting the three couples outcomes share
+/// the same decorative structure while still feeling distinct.
+enum _RevealMood { tender, spicy, playful, neutral }
+
+/// Ambient heart decoration behind a couples reveal body. Keeps the
+/// per-outcome widgets small and focused on their content while giving
+/// the whole reveal screen a consistent "this is a game for two"
+/// atmosphere. Hearts are positioned via a Stack so they don't shift
+/// the content's layout, and use the shared `_RevealFloatingHeart`
+/// animation for staggered drift/fade.
+class _RevealHeartBackdrop extends StatelessWidget {
+  const _RevealHeartBackdrop({required this.child, required this.mood});
+  final Widget child;
+  final _RevealMood mood;
+
+  @override
+  Widget build(BuildContext context) {
+    // Heart set tuned to the outcome mood. Keep lengths identical so
+    // the five positioned slots below always have something to render.
+    final List<String> hearts = switch (mood) {
+      _RevealMood.tender => const ['💕', '💖', '💗', '💘', '✨'],
+      _RevealMood.spicy => const ['🔥', '💔', '❤️‍🔥', '💢', '✨'],
+      _RevealMood.playful => const ['👀', '💬', '🙈', '🤭', '✨'],
+      _RevealMood.neutral => const ['⏳', '💭', '✨', '💫', '✨'],
+    };
+
+    return SizedBox(
+      width: double.infinity,
+      height: 320,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          // Backdrop hearts — positioned so they frame the content
+          // without overlapping the central avatar(s).
+          Positioned(
+            left: 12,
+            top: 6,
+            child: _RevealFloatingHeart(emoji: hearts[0], size: 26, phaseMs: 0),
+          ),
+          Positioned(
+            right: 18,
+            top: 20,
+            child:
+                _RevealFloatingHeart(emoji: hearts[1], size: 22, phaseMs: 500),
+          ),
+          Positioned(
+            left: 8,
+            bottom: 40,
+            child:
+                _RevealFloatingHeart(emoji: hearts[2], size: 24, phaseMs: 1100),
+          ),
+          Positioned(
+            right: 14,
+            bottom: 24,
+            child:
+                _RevealFloatingHeart(emoji: hearts[3], size: 20, phaseMs: 1700),
+          ),
+          Positioned(
+            left: 40,
+            bottom: 0,
+            child:
+                _RevealFloatingHeart(emoji: hearts[4], size: 16, phaseMs: 2200),
+          ),
+          // Foreground body — centered.
+          Center(child: child),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ambient heart for `_RevealHeartBackdrop`. Same animation model as
+/// the lobby's waiting hearts: staggered repeat with translate + fade
+/// + scale so the cluster reads as organic. Kept private to this
+/// file rather than promoted to a shared widget — the lobby and home
+/// screen each have their own copy with different size budgets, and
+/// consolidating would mean parameterising more than it's worth.
+class _RevealFloatingHeart extends StatefulWidget {
+  const _RevealFloatingHeart({
+    required this.emoji,
+    required this.size,
+    required this.phaseMs,
+  });
+  final String emoji;
+  final double size;
+  final int phaseMs;
+
+  @override
+  State<_RevealFloatingHeart> createState() => _RevealFloatingHeartState();
+}
+
+class _RevealFloatingHeartState extends State<_RevealFloatingHeart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(Duration(milliseconds: widget.phaseMs), () {
+      if (mounted) _c.repeat(reverse: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        final t = Curves.easeInOut.transform(_c.value);
+        return Opacity(
+          // A touch more subtle than the lobby hearts — these are
+          // ambient background decoration, not the main event.
+          opacity: 0.4 + 0.45 * t,
+          child: Transform.translate(
+            offset: Offset(0, -7 * t),
+            child: Transform.scale(
+              scale: 0.85 + 0.2 * t,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: EmojiText(
+        widget.emoji,
+        style: TextStyle(fontSize: widget.size),
+      ),
+    );
   }
 }
 

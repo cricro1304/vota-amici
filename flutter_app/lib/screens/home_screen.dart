@@ -205,32 +205,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildHero() => PopIn(
-        child: Column(
-          children: [
-            const EmojiText('🎭', style: TextStyle(fontSize: 64)),
-            const SizedBox(height: 12),
-            Text(
-              'Chi è il più...?',
-              style: displayFont(
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
-                color: AppColors.foreground,
-              ),
+  Widget _buildHero() {
+    // When a couples pack is selected we swap the hero for a
+    // romance-themed version so the whole create step reads as
+    // "game for two" instead of "game with friends". We only do this
+    // in `_Mode.create` — on `_Mode.home` there's no selected pack yet
+    // and we don't want to prejudge which pack the user will pick.
+    final isCouplesCreate = _mode == _Mode.create &&
+        _selectedPack?.kind == PackKind.couples;
+    if (isCouplesCreate) {
+      return const _CouplesHero();
+    }
+    return PopIn(
+      child: Column(
+        children: [
+          const EmojiText('🎭', style: TextStyle(fontSize: 64)),
+          const SizedBox(height: 12),
+          Text(
+            'Chi è il più...?',
+            style: displayFont(
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              color: AppColors.foreground,
             ),
-            const SizedBox(height: 6),
-            EmojiText(
-              'Scopri cosa pensano davvero di te i tuoi amici 👀',
-              textAlign: TextAlign.center,
-              style: bodyFont(
-                color: AppColors.mutedFg,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+          ),
+          const SizedBox(height: 6),
+          EmojiText(
+            'Scopri cosa pensano davvero di te i tuoi amici 👀',
+            textAlign: TextAlign.center,
+            style: bodyFont(
+              color: AppColors.mutedFg,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildCompactHeader() => PopIn(
         child: Column(
@@ -369,7 +381,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loading ? null : _create,
-              child: EmojiText(_loading ? '⏳ Creando...' : '🎮 Crea Partita'),
+              // Couples gets warmer copy — this button literally starts
+              // a 2-person game, "Crea Partita" reads too utilitarian
+              // for the "how well do you know each other" framing.
+              child: EmojiText(
+                _loading
+                    ? '⏳ Creando...'
+                    : (pack.kind == PackKind.couples
+                        ? '💕 Inizia la sfida'
+                        : '🎮 Crea Partita'),
+              ),
             ),
             TextButton(
               onPressed: () => setState(() => _mode = _Mode.selectPack),
@@ -731,6 +752,164 @@ class _ModeChip extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Hero block shown on the create step when the Coppie pack is
+/// selected. Swaps the theater-mask emoji + "amici" copy for a
+/// couples-framed version: floating hearts, a 💑 centerpiece, and
+/// framing that reads as "game for two" rather than "party game".
+class _CouplesHero extends StatelessWidget {
+  const _CouplesHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return PopIn(
+      child: Column(
+        children: [
+          // Reuse the existing lobby decoration for visual continuity
+          // — the same cluster of floating hearts the non-host sees
+          // while waiting. Sizing/layout identical; this is a pure
+          // vibe swap, not a new animation.
+          const _HomeCouplesDecoration(),
+          const SizedBox(height: 6),
+          Text(
+            'Quanto vi conoscete?',
+            textAlign: TextAlign.center,
+            style: displayFont(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: AppColors.foreground,
+            ),
+          ),
+          const SizedBox(height: 6),
+          EmojiText(
+            'Scopri cosa pensa davvero il tuo partner 💕',
+            textAlign: TextAlign.center,
+            style: bodyFont(
+              color: AppColors.mutedFg,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Home-screen variant of the floating-hearts cluster. Kept inline
+/// (instead of re-using `_CouplesWaitingDecoration` from the lobby)
+/// because the two screens have different size/spacing budgets — the
+/// home hero runs wider and taller, and tying them together would
+/// mean either shrinking the home hero or stretching the lobby one.
+class _HomeCouplesDecoration extends StatelessWidget {
+  const _HomeCouplesDecoration();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      height: 130,
+      child: Stack(
+        alignment: Alignment.center,
+        children: const [
+          Positioned(
+            left: 20,
+            top: 8,
+            child: _HomeFloatingHeart(emoji: '💕', size: 26, phaseMs: 0),
+          ),
+          Positioned(
+            right: 22,
+            top: 2,
+            child: _HomeFloatingHeart(emoji: '💗', size: 22, phaseMs: 500),
+          ),
+          Positioned(
+            left: 6,
+            bottom: 14,
+            child: _HomeFloatingHeart(emoji: '💖', size: 24, phaseMs: 1100),
+          ),
+          Positioned(
+            right: 10,
+            bottom: 6,
+            child: _HomeFloatingHeart(emoji: '💘', size: 20, phaseMs: 1700),
+          ),
+          Positioned(
+            right: 90,
+            top: 0,
+            child: _HomeFloatingHeart(emoji: '✨', size: 16, phaseMs: 2200),
+          ),
+          Floater(
+            child: EmojiText('💑', style: TextStyle(fontSize: 64)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Local copy of the lobby's `_FloatingHeart` — same behaviour,
+/// different file scope. Duplicating is cheaper than promoting the
+/// widget to a shared module for two callsites that may well want to
+/// diverge visually (they're already sized differently).
+class _HomeFloatingHeart extends StatefulWidget {
+  const _HomeFloatingHeart({
+    required this.emoji,
+    required this.size,
+    required this.phaseMs,
+  });
+
+  final String emoji;
+  final double size;
+  final int phaseMs;
+
+  @override
+  State<_HomeFloatingHeart> createState() => _HomeFloatingHeartState();
+}
+
+class _HomeFloatingHeartState extends State<_HomeFloatingHeart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(Duration(milliseconds: widget.phaseMs), () {
+      if (mounted) _c.repeat(reverse: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        final t = Curves.easeInOut.transform(_c.value);
+        return Opacity(
+          opacity: 0.55 + 0.45 * t,
+          child: Transform.translate(
+            offset: Offset(0, -6 * t),
+            child: Transform.scale(
+              scale: 0.85 + 0.2 * t,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: EmojiText(
+        widget.emoji,
+        style: TextStyle(fontSize: widget.size),
       ),
     );
   }
