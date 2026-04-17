@@ -1,3 +1,4 @@
+import '../core/constants.dart';
 import 'question.dart';
 
 /// Availability state of a pack. Mirrors the tags shown on `packs.html`:
@@ -5,6 +6,19 @@ import 'question.dart';
 ///   - `comingSoon` → "🔜 In arrivo"
 ///   - `ageRestricted` → "🔞" (18+, also gated behind a future release)
 enum PackStatus { available, comingSoon, ageRestricted }
+
+/// Shape of the game flow a pack uses. Orthogonal to [PackStatus] and
+/// [QuestionMode] — `kind` picks the *rules* (how many players, what the
+/// reveal looks like, what the end screen shows), while modes pick the
+/// *tone* and status picks the availability.
+///
+///   - `classic` → N players (≥ [kMinPlayersToStart]); per-round winner
+///     by vote count; end screen shows vote totals.
+///   - `couples` → exactly 2 players; per-round reveal is one of three
+///     outcomes (agree / each-picked-the-other / each-picked-themselves);
+///     end screen shows a compatibility % + per-mode breakdown, hides
+///     individual tallies.
+enum PackKind { classic, couples }
 
 /// A question pack that the host picks before creating a room. The set of
 /// packs is a purely client-side catalog today — the backend stores the
@@ -24,8 +38,15 @@ class Pack {
     required this.questionCount,
     required this.status,
     required this.modes,
+    this.kind = PackKind.classic,
+    this.dbId,
+    this.minPlayers = kMinPlayersToStart,
+    this.maxPlayers,
   });
 
+  /// Client-side slug (`originale`, `coppie`, `spicy`, …). Used for
+  /// navigation, analytics, and matching the landing-page cards — NOT
+  /// persisted to the database.
   final String id;
   final String emoji;
   final String title;
@@ -43,6 +64,23 @@ class Pack {
   /// Which `QuestionMode`s this pack enables on the created room. Used
   /// directly as the `modes` payload when calling `createRoom`.
   final List<QuestionMode> modes;
+
+  /// Game-flow archetype. Drives lobby rules, the reveal widget, and the
+  /// end screen. See [PackKind] for the taxonomy.
+  final PackKind kind;
+
+  /// UUID of the matching row in `public.question_packs`. Null for packs
+  /// that don't have a DB row yet (the "comingSoon" marketing cards) —
+  /// those are not playable so no one ever reads this null.
+  final String? dbId;
+
+  /// Lower bound on the lobby. Classic packs inherit [kMinPlayersToStart]
+  /// (3). Couples packs override to 2.
+  final int minPlayers;
+
+  /// Optional upper bound on the lobby. Null = no cap (classic). Couples
+  /// sets this to 2 so a third joiner is blocked at the service layer.
+  final int? maxPlayers;
 
   bool get isPlayable => status == PackStatus.available;
 
@@ -64,6 +102,8 @@ class Pack {
       questionCount: 100,
       status: PackStatus.available,
       modes: [QuestionMode.light, QuestionMode.neutro],
+      kind: PackKind.classic,
+      dbId: kClassicPackId,
     ),
     Pack(
       id: 'coppie',
@@ -77,9 +117,16 @@ class Pack {
         '🍽️ chi cucina meglio',
         '🛒 chi spende di più',
       ],
-      questionCount: 50,
-      status: PackStatus.comingSoon,
+      questionCount: 18,
+      status: PackStatus.available,
       modes: [QuestionMode.light, QuestionMode.neutro],
+      kind: PackKind.couples,
+      dbId: kCouplesPackId,
+      // The couples flow is literally about *a* couple — lobby enforces
+      // exactly 2 players; the reveal taxonomy (agree / cross / self)
+      // only makes sense at N=2.
+      minPlayers: 2,
+      maxPlayers: 2,
     ),
     Pack(
       id: 'fratelli',
@@ -197,4 +244,16 @@ class Pack {
 
   static Pack byId(String id) =>
       catalog.firstWhere((p) => p.id == id, orElse: () => catalog.first);
+
+  /// Resolve a pack from its database UUID. Used by screens that only see
+  /// `room.packId` (a nullable FK) and need to branch on the pack's
+  /// [kind]. A null or unknown id falls back to Originale/classic — the
+  /// right behaviour for pre-migration rooms that have `pack_id IS NULL`.
+  static Pack byDbId(String? dbId) {
+    if (dbId == null) return catalog.first;
+    for (final p in catalog) {
+      if (p.dbId == dbId) return p;
+    }
+    return catalog.first;
+  }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/constants.dart';
 import '../core/theme.dart';
+import '../models/pack.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
 import '../widgets/emoji_text.dart';
@@ -90,11 +90,17 @@ class _ShareRow extends ConsumerWidget {
 class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   bool _starting = false;
 
-  Future<void> _start(int playerCount) async {
+  Future<void> _start(int playerCount, Pack pack) async {
     if (_starting) return; // Prevent double-fire from manual click + auto-start.
-    if (playerCount < kMinPlayersToStart) {
+    if (playerCount < pack.minPlayers) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Servono almeno 3 giocatori!')),
+        SnackBar(
+          content: Text(pack.kind == PackKind.couples
+              // Pack-specific message — for couples we know exactly who
+              // is missing, and "almeno 2 giocatori" reads like an error.
+              ? 'Aspetta il tuo partner per iniziare 💑'
+              : 'Servono almeno ${pack.minPlayers} giocatori!'),
+        ),
       );
       return;
     }
@@ -162,6 +168,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
     final isHost = room.hostPlayerId == widget.playerId;
     final hasBots = players.any((p) => p.name.startsWith('Bot '));
+    final pack = Pack.byDbId(room.packId);
+    final isCouples = pack.kind == PackKind.couples;
 
 return PopIn(
       child: Column(
@@ -189,7 +197,12 @@ return PopIn(
           RoomCodeCard(code: room.code, label: 'CODICE STANZA'),
           const SizedBox(height: 10),
           Text(
-            'Condividi questo codice con i tuoi amici!',
+            isCouples
+                // Couples are typically sitting next to each other but
+                // may want to play on two phones — mention the pack name
+                // so the copy doesn't read as "invite your friends".
+                ? 'Condividi questo codice con il tuo partner 💑'
+                : 'Condividi questo codice con i tuoi amici!',
             textAlign: TextAlign.center,
             style: bodyFont(
               fontSize: 13,
@@ -201,7 +214,12 @@ return PopIn(
           _ShareRow(code: room.code),
           const SizedBox(height: 28),
           Text(
-            'Giocatori (${players.length})',
+            // For couples we show "(1/2)" / "(2/2)" so the lobby makes
+            // the capacity constraint self-evident; for classic we keep
+            // the open-ended count.
+            isCouples
+                ? 'Giocatori (${players.length}/${pack.maxPlayers ?? pack.minPlayers})'
+                : 'Giocatori (${players.length})',
             textAlign: TextAlign.center,
             style: displayFont(
               fontSize: 18,
@@ -228,7 +246,7 @@ return PopIn(
           const SizedBox(height: 24),
           if (isHost)
             ElevatedButton(
-              onPressed: () => _start(players.length),
+              onPressed: () => _start(players.length, pack),
               child: const EmojiText('🚀 Inizia Partita'),
             )
           else
@@ -238,7 +256,9 @@ return PopIn(
                     child: EmojiText('⏳', style: TextStyle(fontSize: 36))),
                 const SizedBox(height: 8),
                 Text(
-                  "In attesa che l'host inizi la partita...",
+                  isCouples
+                      ? "In attesa che il tuo partner inizi la partita..."
+                      : "In attesa che l'host inizi la partita...",
                   textAlign: TextAlign.center,
                   style: bodyFont(
                     color: AppColors.mutedFg,

@@ -48,6 +48,7 @@ class RoomRepository {
     required String code,
     required int? timerSeconds,
     required List<String> modes,
+    required String packId,
   }) async {
     final data = await _client
         .from('rooms')
@@ -56,6 +57,10 @@ class RoomRepository {
           'status': 'lobby',
           'timer_seconds': timerSeconds,
           'modes': modes,
+          // Persist the pack so the server/client both know which game
+          // flow to run. Nullable in the schema but we always stamp it
+          // on new rooms — only legacy rows end up with NULL.
+          'pack_id': packId,
         })
         .select()
         .single();

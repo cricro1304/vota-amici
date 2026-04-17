@@ -92,10 +92,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // cache or coming in via a different URL origin) can recover us
       // without creating a duplicate host player.
       final session = ref.read(sessionServiceProvider);
+      // `pack.dbId` is non-null for every playable catalog entry (see
+      // Pack.catalog); the `pack == null` guard above plus the
+      // `!pack.isPlayable` branch in `_onPackTap` means we can't reach
+      // here with a pack that has no DB row. The `!` is load-bearing —
+      // if it ever fires we want to crash rather than silently create a
+      // pack-less room.
       final res = await ref.read(gameServiceProvider).createRoom(
             hostName: name,
             timerSeconds: _timerEnabled ? 10 : null,
             modes: _selectedModes.toList(growable: false),
+            packId: pack.dbId!,
             browserId: session.browserId(),
           );
       await session.setPlayerId(res.room.code, res.player.id);

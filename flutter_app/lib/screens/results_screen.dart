@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
+import '../models/pack.dart';
 import '../models/player.dart';
+import '../models/vote.dart';
 import '../services/game_service.dart';
 import '../state/providers.dart';
 import '../widgets/emoji_text.dart';
@@ -109,6 +111,8 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
       );
     }
     final isHost = room.hostPlayerId == widget.playerId;
+    final pack = Pack.byDbId(room.packId);
+    final isCouples = pack.kind == PackKind.couples;
 
     if (_roundId != round.id) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -169,7 +173,16 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            if (winners.isEmpty)
+            if (isCouples)
+              // Couples have a fundamentally different reveal: with only
+              // 2 players and 2 votes there's no "winner by tally"; we
+              // show one of three outcomes (agree / cross / self) with
+              // tailored copy per Cristiano's voice-memo taxonomy.
+              _CouplesReveal(
+                players: players,
+                votes: votes,
+              )
+            else if (winners.isEmpty)
               Text(
                 'Nessun voto!',
                 style: displayFont(
@@ -296,6 +309,222 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// One of the three couples-round outcomes:
+///   - `agree`          → both voters named the same person
+///   - `crossDisagree`  → A picked B, B picked A (each thinks it's the
+///                         OTHER one more X)
+///   - `selfDisagree`   → A picked A, B picked B (each picked THEMSELF,
+///                         i.e. mutual self-claim)
+///   - `incomplete`     → fewer than 2 votes landed before the reveal
+///                         fired (edge case, e.g. host revealed early
+///                         or a voter disconnected)
+enum _CouplesOutcome { agree, crossDisagree, selfDisagree, incomplete }
+
+/// Reveal body for the couples pack. Computes the outcome locally from
+/// `players` + `votes` — no server-side help needed — and renders one of
+/// four states. Keep rendering fast and self-contained; this widget is
+/// rebuilt whenever the votes stream ticks.
+class _CouplesReveal extends StatelessWidget {
+  const _CouplesReveal({required this.players, required this.votes});
+
+  final List<Player> players;
+  final List<Vote> votes;
+
+  String _initials(String name) {
+    final t = name.trim();
+    if (t.isEmpty) return '??';
+    return t.substring(0, t.length >= 2 ? 2 : 1).toUpperCase();
+  }
+
+  /// Map a player's index in [players] to their palette colour. Keeps
+  /// A and B visually distinct from each other AND consistent with the
+  /// lobby/voting screens which use the same palette.
+  Color _colourFor(Player p) =>
+      playerColor(players.indexWhere((x) => x.id == p.id));
+
+  _CouplesOutcome _compute() {
+    if (players.length != 2 || votes.length < 2) {
+      return _CouplesOutcome.incomplete;
+    }
+    // Index votes by voter to make the pattern-match trivial.
+    final byVoter = <String, String>{
+      for (final v in votes) v.voterId: v.votedForId,
+    };
+    final a = players[0];
+    final b = players[1];
+    final aVote = byVoter[a.id];
+    final bVote = byVoter[b.id];
+    if (aVote == null || bVote == null) return _CouplesOutcome.incomplete;
+
+    if (aVote == bVote) return _CouplesOutcome.agree;
+    if (aVote == b.id && bVote == a.id) return _CouplesOutcome.crossDisagree;
+    if (aVote == a.id && bVote == b.id) return _CouplesOutcome.selfDisagree;
+    // N=2 with both voting different people and not hitting either of
+    // the two "clean" disagreement patterns is logically impossible —
+    // with 2 candidates and 2 voters, "different answers" is exhaustively
+    // either cross or self. We fall through to `incomplete` as a safety net.
+    return _CouplesOutcome.incomplete;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final outcome = _compute();
+    switch (outcome) {
+      case _CouplesOutcome.agree:
+        // Both picked the same person — find them and show a single
+        // large avatar with a "siete d'accordo" banner. We recompute
+        // the target here instead of threading it through _compute()
+        // to keep the signature simple; it's O(players.length) = 2.
+        final targetId = votes.first.votedForId;
+        final target = players.firstWhere(
+          (p) => p.id == targetId,
+          // Shouldn't happen — targetId is always one of the two — but
+          // defending against a race where a player row is deleted
+          // mid-reveal. Falls back to the first player.
+          orElse: () => players.first,
+        );
+        return Column(
+          children: [
+            WinnerRing(
+              initials: _initials(target.name),
+              size: 110,
+              innerColor: _colourFor(target),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              target.name,
+              style: displayFont(
+                fontSize: 30,
+                fontWeight: FontWeight.w700,
+                color: AppColors.foreground,
+              ),
+            ),
+            const SizedBox(height: 16),
+            EmojiText(
+              '💕 Siete d\'accordo!',
+              textAlign: TextAlign.center,
+              style: displayFont(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        );
+
+      case _CouplesOutcome.crossDisagree:
+        // "A thinks B, B thinks A". Show both avatars side by side and
+        // the headline "Parlatene — pensate entrambi sia l'altro".
+        return _CouplesPairBody(
+          players: players,
+          initials: _initials,
+          colourFor: _colourFor,
+          headlineEmoji: '🔥',
+          headlineText: 'Parlatene!',
+          subtext: 'Pensate entrambi sia l\'altro',
+        );
+
+      case _CouplesOutcome.selfDisagree:
+        // "A thinks A, B thinks B". Different mood from cross: this is
+        // a mutual claim, often funny/telling. Headline is gentler.
+        return _CouplesPairBody(
+          players: players,
+          initials: _initials,
+          colourFor: _colourFor,
+          headlineEmoji: '👀',
+          headlineText: 'Discutete!',
+          subtext: 'Ognuno ha votato se stesso',
+        );
+
+      case _CouplesOutcome.incomplete:
+        return Text(
+          'Voti non ancora completi',
+          style: displayFont(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.mutedFg,
+          ),
+        );
+    }
+  }
+}
+
+/// Shared layout for the two disagreement cases — two avatars side by
+/// side, then a punchy headline + short subtext. The callsites only
+/// vary the copy + emoji, so extracting this keeps the outcome-to-UI
+/// mapping readable in one place.
+class _CouplesPairBody extends StatelessWidget {
+  const _CouplesPairBody({
+    required this.players,
+    required this.initials,
+    required this.colourFor,
+    required this.headlineEmoji,
+    required this.headlineText,
+    required this.subtext,
+  });
+
+  final List<Player> players;
+  final String Function(String) initials;
+  final Color Function(Player) colourFor;
+  final String headlineEmoji;
+  final String headlineText;
+  final String subtext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 28,
+          runSpacing: 16,
+          children: [
+            for (final p in players)
+              Column(
+                children: [
+                  WinnerRing(
+                    initials: initials(p.name),
+                    size: 90,
+                    innerColor: colourFor(p),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    p.name,
+                    style: displayFont(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.foreground,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        EmojiText(
+          '$headlineEmoji $headlineText',
+          textAlign: TextAlign.center,
+          style: displayFont(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtext,
+          textAlign: TextAlign.center,
+          style: bodyFont(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppColors.mutedFg,
+          ),
+        ),
+      ],
     );
   }
 }

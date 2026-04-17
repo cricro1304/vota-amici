@@ -35,6 +35,12 @@ class Room {
   final int currentRound;
   final int? timerSeconds;
   final List<String> modes;
+
+  /// FK into `public.question_packs`. Nullable because pre-migration
+  /// rooms (created before the couples-pack rollout) carry no pack_id —
+  /// screens treat NULL as "classic" via [Pack.byDbId].
+  final String? packId;
+
   final DateTime createdAt;
 
   const Room({
@@ -45,6 +51,7 @@ class Room {
     required this.currentRound,
     required this.timerSeconds,
     required this.modes,
+    required this.packId,
     required this.createdAt,
   });
 
@@ -62,6 +69,7 @@ class Room {
                 ?.map((e) => e.toString())
                 .toList(growable: false) ??
             const ['light', 'neutro', 'spicy'],
+        packId: json['pack_id'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 }

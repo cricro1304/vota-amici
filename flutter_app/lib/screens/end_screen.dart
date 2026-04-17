@@ -5,13 +5,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme.dart';
+import '../models/pack.dart';
 import '../models/player.dart';
+import '../models/question.dart';
 import '../models/round.dart';
 import '../models/vote.dart';
 import '../state/providers.dart';
 import '../widgets/confetti_burst.dart';
 import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
+import '../widgets/landing_widgets.dart';
 import '../widgets/round_share_card.dart';
 
 /// Final scoreboard shown after the host ends the game.
@@ -39,7 +42,14 @@ class _EndScreenState extends ConsumerState<EndScreen> {
         ref.watch(playersProvider(widget.roomId)).valueOrNull ?? const [];
     final rounds =
         ref.watch(roundsProvider(widget.roomId)).valueOrNull ?? const [];
+    final room = ref.watch(roomProvider(widget.roomId)).valueOrNull;
     final summaryAsync = ref.watch(_summaryProvider(widget.roomId));
+
+    // Couples packs get a different scoreboard: compatibility % +
+    // per-mode breakdown, hiding individual tallies (Cristiano
+    // explicitly rejected per-player tallies for the couples flow).
+    final pack = Pack.byDbId(room?.packId);
+    final isCouples = pack.kind == PackKind.couples;
 
     return summaryAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -50,6 +60,27 @@ class _EndScreenState extends ConsumerState<EndScreen> {
         ),
       ),
       data: (summary) {
+        if (isCouples) {
+          final stats = _computeCouplesStats(
+            rounds: rounds,
+            votes: summary.votes,
+            questions: summary.questions,
+          );
+          return Stack(
+            children: [
+              _CouplesScoreboardBody(
+                stats: stats,
+                onPlayAgain: () => context.go('/'),
+              ),
+              // Confetti still fires — a game ending is always worth a
+              // little celebration, compatibility score aside.
+              Positioned.fill(
+                child: ConfettiBurst(seed: widget.roomId),
+              ),
+            ],
+          );
+        }
+
         final stats = _computeStats(
           players: players,
           rounds: rounds,
@@ -884,7 +915,7 @@ _ScoreboardStats _computeStats({
   required List<Player> players,
   required List<Round> rounds,
   required List<Vote> votes,
-  required Map<String, String> questions,
+  required Map<String, Question> questions,
 }) {
   // Player bookkeeping — wins (rounds won outright or tied) + total votes.
   final winCounts = <String, int>{for (final p in players) p.id: 0};
@@ -936,7 +967,7 @@ _ScoreboardStats _computeStats({
     roundStats.add(_RoundStats(
       roundId: r.id,
       number: r.roundNumber,
-      question: questions[r.questionId] ?? '',
+      question: questions[r.questionId]?.text ?? '',
       winners: winnerStats,
       maxVotes: maxV,
       totalVotes: total,
@@ -1016,13 +1047,433 @@ String _stripQuestion(String q) {
 }
 
 // ---------------------------------------------------------------------------
+// Couples scoreboard — per Cristiano's design, the couples pack hides
+// per-player tallies (there's no "MVP" between two partners) and instead
+// shows a single compatibility score plus a per-mode breakdown. The
+// compatibility number is just: rounds where both voted for the same
+// person / total voted rounds. Incomplete rounds (0 votes) are excluded
+// from the denominator so a quick-exit game doesn't tank the score.
+// ---------------------------------------------------------------------------
+
+class _CouplesModeTally {
+  const _CouplesModeTally({required this.agreed, required this.total});
+  final int agreed;
+  final int total;
+}
+
+class _CouplesStats {
+  const _CouplesStats({
+    required this.totalRounds,
+    required this.roundsAgreed,
+    required this.compatibilityPercent,
+    required this.perMode,
+  });
+
+  /// Rounds that had at least one vote — the denominator of
+  /// [compatibilityPercent]. Rounds with 0 votes are ignored so an
+  /// aborted session doesn't dilute the score.
+  final int totalRounds;
+  final int roundsAgreed;
+
+  /// 0..100. Rounded down to keep it matching what users see in the UI
+  /// when we format `$compatibilityPercent%`.
+  final int compatibilityPercent;
+
+  /// Mode → tally. Only modes the couple actually played appear here
+  /// (the host may have excluded, say, spicy at room creation).
+  final Map<QuestionMode, _CouplesModeTally> perMode;
+}
+
+_CouplesStats _computeCouplesStats({
+  required List<Round> rounds,
+  required List<Vote> votes,
+  required Map<String, Question> questions,
+}) {
+  final sortedRounds = [...rounds]
+    ..sort((a, b) => a.roundNumber.compareTo(b.roundNumber));
+
+  // Mutable accumulators — Dart doesn't have a Tally type so we unpack
+  // into (agreed, total) pairs inline.
+  var totalAnswered = 0;
+  var totalAgreed = 0;
+  final modeAgreed = <QuestionMode, int>{};
+  final modeTotal = <QuestionMode, int>{};
+
+  for (final r in sortedRounds) {
+    final roundVotes = votes.where((v) => v.roundId == r.id).toList();
+    if (roundVotes.isEmpty) continue; // skip incomplete rounds
+
+    // Two voters expected — but we defend against the degenerate case
+    // of a single vote (e.g. partner left mid-round) by treating
+    // "only one vote cast" as "no agreement possible", which still
+    // counts toward the denominator so it feels like a dropped round.
+    final targetIds = roundVotes.map((v) => v.votedForId).toSet();
+    final agreed = roundVotes.length >= 2 && targetIds.length == 1;
+
+    totalAnswered++;
+    if (agreed) totalAgreed++;
+
+    // Default to neutro if the question isn't in the map (shouldn't
+    // happen — we prefetch all played questions — but gracefully
+    // handle rather than throw).
+    final mode = questions[r.questionId]?.mode ?? QuestionMode.neutro;
+    modeTotal[mode] = (modeTotal[mode] ?? 0) + 1;
+    if (agreed) modeAgreed[mode] = (modeAgreed[mode] ?? 0) + 1;
+  }
+
+  final percent = totalAnswered == 0
+      ? 0
+      : ((totalAgreed * 100) / totalAnswered).floor();
+
+  final perMode = <QuestionMode, _CouplesModeTally>{
+    for (final m in modeTotal.keys)
+      m: _CouplesModeTally(
+        agreed: modeAgreed[m] ?? 0,
+        total: modeTotal[m] ?? 0,
+      ),
+  };
+
+  return _CouplesStats(
+    totalRounds: totalAnswered,
+    roundsAgreed: totalAgreed,
+    compatibilityPercent: percent,
+    perMode: perMode,
+  );
+}
+
+/// Compatibility banding → hero emoji + headline copy. Kept as a
+/// function rather than baked into `_CouplesScoreboardBody.build` so a
+/// future tweak (e.g. "add a 90+ tier") is a one-line change.
+({String emoji, String title, String subtitle, Color tint}) _couplesVerdict(
+  int percent,
+) {
+  if (percent >= 80) {
+    return (
+      emoji: '💞',
+      title: 'Anime gemelle',
+      subtitle: 'Vi conoscete a memoria!',
+      tint: AppColors.primary,
+    );
+  }
+  if (percent >= 60) {
+    return (
+      emoji: '💕',
+      title: 'Gran bella intesa',
+      subtitle: 'Siete spesso sulla stessa lunghezza d\'onda',
+      tint: AppColors.primaryLight,
+    );
+  }
+  if (percent >= 40) {
+    return (
+      emoji: '🤝',
+      title: 'Vi state ancora scoprendo',
+      subtitle: 'Ogni coppia ha i suoi misteri',
+      tint: AppColors.secondary,
+    );
+  }
+  if (percent > 0) {
+    return (
+      emoji: '🌶️',
+      title: 'Opposti che si attraggono',
+      subtitle: 'Avete parecchio di cui parlare stasera',
+      tint: AppColors.orange,
+    );
+  }
+  return (
+    emoji: '🤷',
+    title: 'Nessun round completato',
+    subtitle: 'Riprovate — la serata è giovane',
+    tint: AppColors.mutedFg,
+  );
+}
+
+String _modeLabel(QuestionMode m) {
+  switch (m) {
+    case QuestionMode.light:
+      return 'Light';
+    case QuestionMode.neutro:
+      return 'Neutro';
+    case QuestionMode.spicy:
+      return 'Spicy';
+  }
+}
+
+String _modeEmoji(QuestionMode m) {
+  switch (m) {
+    case QuestionMode.light:
+      return '🌿';
+    case QuestionMode.neutro:
+      return '⚖️';
+    case QuestionMode.spicy:
+      return '🌶️';
+  }
+}
+
+Color _modeColor(QuestionMode m) {
+  switch (m) {
+    case QuestionMode.light:
+      return AppColors.accent;
+    case QuestionMode.neutro:
+      return AppColors.secondary;
+    case QuestionMode.spicy:
+      return AppColors.orange;
+  }
+}
+
+class _CouplesScoreboardBody extends StatelessWidget {
+  const _CouplesScoreboardBody({
+    required this.stats,
+    required this.onPlayAgain,
+  });
+
+  final _CouplesStats stats;
+  final VoidCallback onPlayAgain;
+
+  @override
+  Widget build(BuildContext context) {
+    final verdict = _couplesVerdict(stats.compatibilityPercent);
+    // Render modes in a fixed order (light → neutro → spicy) rather
+    // than insertion order so the breakdown reads consistently across
+    // sessions. Only modes that were actually played are shown.
+    const modeOrder = [
+      QuestionMode.light,
+      QuestionMode.neutro,
+      QuestionMode.spicy,
+    ];
+    final orderedModes = modeOrder
+        .where((m) => stats.perMode.containsKey(m))
+        .toList(growable: false);
+
+    return PopIn(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 12),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _CouplesHero(verdict: verdict),
+            const SizedBox(height: 16),
+            _CompatibilityCard(
+              percent: stats.compatibilityPercent,
+              agreed: stats.roundsAgreed,
+              total: stats.totalRounds,
+              tint: verdict.tint,
+            ),
+            if (orderedModes.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const _SectionLabel(
+                icon: '📊',
+                text: 'Intesa per categoria',
+              ),
+              const SizedBox(height: 10),
+              for (final m in orderedModes) ...[
+                _ModeBreakdownRow(
+                  mode: m,
+                  tally: stats.perMode[m]!,
+                ),
+                if (m != orderedModes.last) const SizedBox(height: 10),
+              ],
+            ],
+            const SizedBox(height: 24),
+            Center(
+              child: SizedBox(
+                width: 320,
+                child: ElevatedButton(
+                  onPressed: onPlayAgain,
+                  child: const EmojiText('💞 Nuova Partita'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CouplesHero extends StatelessWidget {
+  const _CouplesHero({required this.verdict});
+  final ({String emoji, String title, String subtitle, Color tint}) verdict;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Floater(
+          child: EmojiText(verdict.emoji, style: bodyFont(fontSize: 56)),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          verdict.title,
+          textAlign: TextAlign.center,
+          style: displayFont(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            color: AppColors.foreground,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: EmojiText(
+            verdict.subtitle,
+            textAlign: TextAlign.center,
+            style: bodyFont(
+              color: AppColors.mutedFg,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CompatibilityCard extends StatelessWidget {
+  const _CompatibilityCard({
+    required this.percent,
+    required this.agreed,
+    required this.total,
+    required this.tint,
+  });
+
+  final int percent;
+  final int agreed;
+  final int total;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            tint.withValues(alpha: 0.95),
+            AppColors.primary.withValues(alpha: 0.9),
+          ],
+        ),
+        boxShadow: kCardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          EmojiText(
+            '💘 COMPATIBILITÀ',
+            style: bodyFont(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Colors.white.withValues(alpha: 0.9),
+              letterSpacing: 1.6,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$percent%',
+            style: displayFont(
+              fontSize: 64,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          EmojiText(
+            total == 0
+                ? 'Nessun round completato'
+                : '🎯 $agreed ${agreed == 1 ? 'risposta' : 'risposte'} su $total in sintonia',
+            textAlign: TextAlign.center,
+            style: bodyFont(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeBreakdownRow extends StatelessWidget {
+  const _ModeBreakdownRow({required this.mode, required this.tally});
+  final QuestionMode mode;
+  final _CouplesModeTally tally;
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = tally.total == 0 ? 0.0 : tally.agreed / tally.total;
+    final percent = (ratio * 100).floor();
+    final color = _modeColor(mode);
+
+    return SoftCard(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              EmojiText(
+                _modeEmoji(mode),
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _modeLabel(mode),
+                  style: displayFont(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.foreground,
+                  ),
+                ),
+              ),
+              Text(
+                '$percent%',
+                style: displayFont(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${tally.agreed}/${tally.total}',
+                style: bodyFont(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.mutedFg,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _VoteBar(ratio: ratio, color: color),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Historic-vote fetch — keyed by roomId only so Riverpod reuses the future.
 // ---------------------------------------------------------------------------
 
 class _EndSummary {
   _EndSummary({required this.votes, required this.questions});
   final List<Vote> votes;
-  final Map<String, String> questions;
+
+  /// Keyed by question id. Full [Question] objects (not just text) so
+  /// the couples scoreboard can group rounds by `mode` for the
+  /// per-mode compatibility breakdown.
+  final Map<String, Question> questions;
 }
 
 final _summaryProvider = FutureProvider.autoDispose
@@ -1039,6 +1490,6 @@ final _summaryProvider = FutureProvider.autoDispose
   final questions = await gameService.questionsForIds(qIds);
   return _EndSummary(
     votes: votes,
-    questions: {for (final q in questions) q.id: q.text},
+    questions: {for (final q in questions) q.id: q},
   );
 });

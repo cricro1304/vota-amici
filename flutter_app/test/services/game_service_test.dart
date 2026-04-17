@@ -52,6 +52,10 @@ void main() {
         status: status,
         currentRound: 0,
         timerSeconds: null,
+        modes: const ['light', 'neutro', 'spicy'],
+        // null `packId` is the legacy-room case — `joinRoom` tests here
+        // don't care which pack the room belongs to.
+        packId: null,
         createdAt: DateTime.now(),
       );
 

@@ -89,6 +89,7 @@ class MockRoomRepository extends _i1.Mock implements _i4.RoomRepository {
     required String? code,
     required int? timerSeconds,
     required List<String>? modes,
+    required String? packId,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -98,6 +99,7 @@ class MockRoomRepository extends _i1.Mock implements _i4.RoomRepository {
             #code: code,
             #timerSeconds: timerSeconds,
             #modes: modes,
+            #packId: packId,
           },
         ),
         returnValue: _i5.Future<_i2.Room>.value(_FakeRoom_0(
@@ -109,6 +111,7 @@ class MockRoomRepository extends _i1.Mock implements _i4.RoomRepository {
               #code: code,
               #timerSeconds: timerSeconds,
               #modes: modes,
+              #packId: packId,
             },
           ),
         )),

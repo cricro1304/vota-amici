@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../core/constants.dart';
+import '../models/pack.dart';
 import '../models/player.dart';
 import '../models/question.dart';
 import '../models/room.dart';
@@ -20,13 +21,14 @@ class GameService {
   final RoomRepository roomRepository;
   final GameRepository gameRepository;
 
-  /// Cache questions once per app session — avoids round-by-round refetches.
+  /// Cache ALL questions (every pack) once per app session — avoids
+  /// round-by-round refetches. Filtering by pack_id + modes happens
+  /// in-memory via [_questionsForRoom].
   List<Question>? _questionCache;
   final _random = Random();
 
   Future<List<Question>> _questions() async {
-    return _questionCache ??=
-        await gameRepository.fetchQuestionsForPack(kDefaultQuestionPackId);
+    return _questionCache ??= await gameRepository.fetchAllQuestions();
   }
 
   // --- Room lifecycle -----------------------------------------------------
@@ -34,6 +36,7 @@ class GameService {
   Future<({Room room, Player player})> createRoom({
     required String hostName,
     required int? timerSeconds,
+    required String packId,
     List<QuestionMode> modes = const [
       QuestionMode.light,
       QuestionMode.neutro,
@@ -51,6 +54,7 @@ class GameService {
       code: code,
       timerSeconds: timerSeconds,
       modes: selected.map(questionModeToString).toList(growable: false),
+      packId: packId,
     );
     // New room ⇒ no existing players ⇒ no name-collision / browser-recovery
     // to worry about; just stamp the browser id so a later rejoin from this
@@ -66,17 +70,31 @@ class GameService {
     return (room: room, player: player);
   }
 
-  /// Returns the subset of cached questions matching the room's selected
-  /// modes. Falls back to the full set if `modes` is empty (legacy rooms).
-  List<Question> _questionsForRoom(List<Question> all, List<String> modes) {
-    if (modes.isEmpty) return all;
+  /// Returns the subset of cached questions matching the room's pack AND
+  /// selected modes. Falls back gracefully:
+  ///   - NULL `packId` (legacy rooms pre-couples-migration) → all packs.
+  ///   - empty `modes` → all modes.
+  ///   - filter collapses to empty (e.g. picked a pack × mode combo with
+  ///     no seeded rows yet) → return the pack's rows regardless of mode
+  ///     rather than bricking the room.
+  List<Question> _questionsForRoom(
+    List<Question> all, {
+    required String? packId,
+    required List<String> modes,
+  }) {
+    // 1. Scope to the room's pack first (or all packs if legacy).
+    final inPack = packId == null
+        ? all
+        : all.where((q) => q.packId == packId).toList(growable: false);
+    if (inPack.isEmpty) return all; // pack has no questions seeded yet
+
+    // 2. Then scope by mode.
+    if (modes.isEmpty) return inPack;
     final allowed = modes.toSet();
-    final filtered = all.where((q) {
+    final filtered = inPack.where((q) {
       return allowed.contains(questionModeToString(q.mode));
     }).toList(growable: false);
-    // If the host selected a mode that has no seeded questions yet (Spicy
-    // before authoring), don't end up with an empty pool.
-    return filtered.isEmpty ? all : filtered;
+    return filtered.isEmpty ? inPack : filtered;
   }
 
   /// Joins [roomCode] as [playerName].
@@ -141,10 +159,25 @@ class GameService {
       throw GameException('La partita è già iniziata');
     }
 
-    // (3) Fresh create — pick a non-colliding display name so the lobby
-    // doesn't show two identical chips. We read the current player list
-    // once rather than looping SELECTs: the list is small and a single
-    // round-trip is simpler/cheaper than probing name-by-name.
+    // (3) Fresh create. Before we insert a new player row, check the
+    // pack's `maxPlayers` cap. For the couples pack that's 2 — a third
+    // joiner that isn't a cache or browser rejoin (handled above) is
+    // refused here rather than at the lobby UI, so bots and any future
+    // programmatic join paths get the same guardrail.
+    final pack = Pack.byDbId(room.packId);
+    if (pack.maxPlayers != null) {
+      final current = await roomRepository.watchPlayers(room.id).first;
+      if (current.length >= pack.maxPlayers!) {
+        throw GameException(
+          'La stanza "${pack.title}" è al completo (max ${pack.maxPlayers} giocatori)',
+        );
+      }
+    }
+
+    // Pick a non-colliding display name so the lobby doesn't show two
+    // identical chips. We read the current player list once rather than
+    // looping SELECTs: the list is small and a single round-trip is
+    // simpler/cheaper than probing name-by-name.
     final trimmed = playerName.trim();
     final finalName = await _uniqueNameFor(roomId: room.id, desired: trimmed);
 
@@ -204,7 +237,11 @@ class GameService {
     // UNIQUE(room_id, round_number) constraint make it structurally
     // impossible to end up with duplicate Round 1 rows.
     final room = await roomRepository.findRoomById(roomId);
-    final pool = _questionsForRoom(all, room?.modes ?? const []);
+    final pool = _questionsForRoom(
+      all,
+      packId: room?.packId,
+      modes: room?.modes ?? const [],
+    );
     final first = pool[_random.nextInt(pool.length)];
 
     await gameRepository.startGameRpc(
@@ -249,7 +286,11 @@ class GameService {
     // the React `nextRound` semantics ("no more questions" means no more
     // questions *in scope*, not in the global pool).
     final room = await roomRepository.findRoomById(roomId);
-    final scoped = _questionsForRoom(all, room?.modes ?? const []);
+    final scoped = _questionsForRoom(
+      all,
+      packId: room?.packId,
+      modes: room?.modes ?? const [],
+    );
     final usedIds = existingRounds.map((r) => r.questionId).toSet();
     final available =
         scoped.where((q) => !usedIds.contains(q.id)).toList(growable: false);

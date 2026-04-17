@@ -126,4 +126,15 @@ class GameRepository {
         .map((r) => Question.fromJson(r as Map<String, dynamic>))
         .toList();
   }
+
+  /// All questions across every pack. Fetched once per app session and
+  /// cached in the service layer — the total pool is small (a few dozen
+  /// rows per pack × a handful of packs), so one fetch and a client-side
+  /// filter by (pack_id, mode) is cheaper than a query per round.
+  Future<List<Question>> fetchAllQuestions() async {
+    final rows = await _client.from('questions').select();
+    return (rows as List)
+        .map((r) => Question.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
 }
