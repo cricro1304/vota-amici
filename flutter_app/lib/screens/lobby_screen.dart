@@ -30,8 +30,13 @@ class LobbyScreen extends ConsumerStatefulWidget {
 /// "Copia link" is a keyboard-friendly fallback for desktop users that don't
 /// get a share sheet.
 class _ShareRow extends ConsumerWidget {
-  const _ShareRow({required this.code});
+  const _ShareRow({required this.code, this.isCouples = false});
   final String code;
+
+  /// When true, the primary button's label reads "Invita il tuo partner"
+  /// and the icon becomes a heart — fits the couples flow, where the
+  /// link is almost always going to a single specific person.
+  final bool isCouples;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,7 +74,9 @@ class _ShareRow extends ConsumerWidget {
         Expanded(
           child: ElevatedButton(
             onPressed: onShare,
-            child: const EmojiText('📤 Condividi link'),
+            child: EmojiText(
+              isCouples ? '💌 Invita il partner' : '📤 Condividi link',
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -194,7 +201,14 @@ return PopIn(
                 ),
               ),
             ),
-          RoomCodeCard(code: room.code, label: 'CODICE STANZA'),
+          if (isCouples)
+            // Dashed-box room code gets a pair of hearts flanking it
+            // and a soft pink backdrop — the link share moment is the
+            // first "couples" visual the partner sees, so it has to
+            // commit to the theme immediately.
+            _CouplesRoomCodePanel(code: room.code)
+          else
+            RoomCodeCard(code: room.code, label: 'CODICE STANZA'),
           const SizedBox(height: 10),
           Text(
             isCouples
@@ -211,7 +225,7 @@ return PopIn(
             ),
           ),
           const SizedBox(height: 12),
-          _ShareRow(code: room.code),
+          _ShareRow(code: room.code, isCouples: isCouples),
           const SizedBox(height: 28),
           Text(
             // For couples we show "(1/2)" / "(2/2)" so the lobby makes
@@ -424,6 +438,74 @@ class _FloatingHeartState extends State<_FloatingHeart>
       child: EmojiText(
         widget.emoji,
         style: TextStyle(fontSize: widget.size),
+      ),
+    );
+  }
+}
+
+/// Couples-only replacement for the plain [RoomCodeCard].
+///
+/// Visually identical center (same letter-spaced code, same dashed
+/// primary border) so the "what" is unchanged and muscle memory holds,
+/// but wrapped in a blush gradient card with hearts flanking the code
+/// and a softer "CODICE COPPIA" label. Commits the theme the moment
+/// the room is created without obscuring the code itself — which is
+/// still the most-read thing on this screen.
+class _CouplesRoomCodePanel extends StatelessWidget {
+  const _CouplesRoomCodePanel({required this.code});
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFF5FA), Color(0xFFFFE3EE)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: kCardShadow,
+      ),
+      child: Column(
+        children: [
+          // Hearts flank the code — each is its own drifting Floater
+          // so the pair gently pulse out of sync. crossAxisAlignment
+          // centers them vertically against the (taller) RoomCodeCard,
+          // and the surrounding SizedBox(width: 10) provides spacing
+          // without imposing a height on the animated child (which
+          // would require Center+bounded-height).
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const _FloatingHeart(emoji: '💕', size: 24, phaseMs: 0),
+              const SizedBox(width: 10),
+              // The dashed-border, letter-spaced room code — reused
+              // verbatim so the "what to read aloud" element is
+              // visually unchanged between classic and couples. We
+              // push the couples-specific label in here so the card
+              // has a single header slot rather than two stacked ones.
+              RoomCodeCard(code: code, label: 'CODICE COPPIA'),
+              const SizedBox(width: 10),
+              const _FloatingHeart(emoji: '💖', size: 24, phaseMs: 900),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Small sparkle row under the code — purely decorative, gives
+          // the card a "certificate of couples-hood" feel.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              _FloatingHeart(emoji: '✨', size: 14, phaseMs: 300),
+              SizedBox(width: 10),
+              EmojiText('💑', style: TextStyle(fontSize: 20)),
+              SizedBox(width: 10),
+              _FloatingHeart(emoji: '✨', size: 14, phaseMs: 1500),
+            ],
+          ),
+        ],
       ),
     );
   }

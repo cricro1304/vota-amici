@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
+import '../models/pack.dart';
 import '../models/player.dart';
 import '../models/question.dart';
 import '../services/game_service.dart';
@@ -194,23 +195,40 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
         ? votes.length
         : (_selectedId != null ? votes.length + 1 : votes.length);
 
+    final isCouples = Pack.byDbId(room.packId).kind == PackKind.couples;
+
     if (alreadySubmitted) {
-      return _buildWaiting(optimisticCount, players.length);
+      return _buildWaiting(optimisticCount, players.length, isCouples);
     }
 
     return _buildBallot(
-        players, room.currentRound, question, mode, room.timerSeconds);
+      players,
+      room.currentRound,
+      question,
+      mode,
+      room.timerSeconds,
+      isCouples,
+    );
   }
 
-  Widget _buildWaiting(int voted, int total) {
-    return PopIn(
+  Widget _buildWaiting(int voted, int total, bool isCouples) {
+    // Couples: single partner we're waiting on, so the copy gets
+    // warmer and more specific ("partner" not "giocatori"), and the
+    // checkmark becomes a heart so the moment feels less admin-panel.
+    final emoji = isCouples ? '💕' : '✅';
+    final title = isCouples ? 'Voto inviato!' : 'Voto registrato!';
+    final subtitle = isCouples
+        ? 'In attesa del tuo partner... ($voted/$total)'
+        : 'In attesa degli altri giocatori... ($voted/$total)';
+
+    final body = PopIn(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Floater(child: EmojiText('✅', style: bodyFont(fontSize: 48))),
+          Floater(child: EmojiText(emoji, style: bodyFont(fontSize: 48))),
           const SizedBox(height: 16),
           Text(
-            'Voto registrato!',
+            title,
             style: displayFont(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -218,7 +236,8 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            'In attesa degli altri giocatori... ($voted/$total)',
+            subtitle,
+            textAlign: TextAlign.center,
             style: bodyFont(
               color: AppColors.mutedFg,
               fontWeight: FontWeight.w700,
@@ -240,12 +259,19 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
         ],
       ),
     );
+
+    // Hearts peripheral to the waiting card — same visual language as
+    // the lobby and per-turn reveal so the couples flow feels coherent.
+    if (isCouples) {
+      return _VotingCouplesBackdrop(child: body);
+    }
+    return body;
   }
 
   Widget _buildBallot(List<Player> players, int roundNumber, String question,
-      QuestionMode mode, int? timerSeconds) {
+      QuestionMode mode, int? timerSeconds, bool isCouples) {
     final theme = _modeTheme(mode);
-    return PopIn(
+    final ballot = PopIn(
       // Keyed by mode+round so switching tone re-triggers the pop-in animation
       // — a new vibe card visibly lands on the table.
       key: ValueKey('q-$roundNumber-${mode.name}'),
@@ -308,13 +334,32 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          if (isCouples) ...[
+            const SizedBox(height: 18),
+            // "Chi dei due..." prompt above the two tiles: reframes the
+            // 2-tile grid as an explicit binary choice rather than a
+            // lineup, which reads very differently at N=2.
+            EmojiText(
+              '💕 Chi dei due? 💕',
+              textAlign: TextAlign.center,
+              style: displayFont(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 14),
+          ] else
+            const SizedBox(height: 24),
           Expanded(
             child: GridView.count(
               crossAxisCount: 2,
               mainAxisSpacing: 14,
               crossAxisSpacing: 14,
-              childAspectRatio: 1.1,
+              // Couples mode shows exactly two tiles — taller aspect
+              // makes the choice feel like two prominent portraits
+              // rather than small chips in a grid.
+              childAspectRatio: isCouples ? 0.82 : 1.1,
               children: [
                 for (var i = 0; i < players.length; i++)
                   _VoteTile(
@@ -323,6 +368,7 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
                     index: i,
                     selected: _selectedId == players[i].id,
                     disabled: _submitting,
+                    isCouples: isCouples,
                     onTap: () => _vote(players[i].id, players.length),
                   ),
               ],
@@ -331,6 +377,11 @@ class _VotingScreenState extends ConsumerState<VotingScreen> {
         ],
       ),
     );
+
+    if (isCouples) {
+      return _VotingCouplesBackdrop(child: ballot);
+    }
+    return ballot;
   }
 }
 
@@ -380,6 +431,7 @@ class _VoteTile extends StatelessWidget {
     required this.selected,
     required this.disabled,
     required this.onTap,
+    this.isCouples = false,
   });
 
   final String name;
@@ -388,6 +440,11 @@ class _VoteTile extends StatelessWidget {
   final bool selected;
   final bool disabled;
   final VoidCallback onTap;
+
+  /// Couples-specific styling: pink-tinted background gradient and a
+  /// little sparkle on the selected tile. Keeps the vanilla look for
+  /// classic mode so we don't accidentally re-theme every game.
+  final bool isCouples;
 
   @override
   Widget build(BuildContext context) {
@@ -401,7 +458,16 @@ class _VoteTile extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: isCouples ? null : AppColors.card,
+          // Soft blush gradient for couples tiles — reads distinctly
+          // romantic without overpowering the avatar colour inside.
+          gradient: isCouples
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFF5FA), Color(0xFFFFE3EE)],
+                )
+              : null,
           borderRadius: BorderRadius.circular(20),
           boxShadow: kCardShadow,
         ),
@@ -420,28 +486,197 @@ class _VoteTile extends StatelessWidget {
                     : null,
               ),
               padding: const EdgeInsets.all(14),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
                 children: [
-                  PlayerAvatar(
-                    name: name,
-                    index: index,
-                    size: AvatarSize.lg,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    isSelf ? '$name (Tu)' : name,
-                    textAlign: TextAlign.center,
-                    style: bodyFont(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        PlayerAvatar(
+                          name: name,
+                          index: index,
+                          size: AvatarSize.lg,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          isSelf ? '$name (Tu)' : name,
+                          textAlign: TextAlign.center,
+                          style: bodyFont(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  // Floating heart tag in the top corner of couples
+                  // tiles — self gets 💖, partner gets 💕 so the pair
+                  // visually mirrors each other.
+                  if (isCouples)
+                    Positioned(
+                      top: 2,
+                      right: 2,
+                      child: EmojiText(
+                        isSelf ? '💖' : '💕',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  // Selected-state sparkle for couples, to reinforce
+                  // that this is a "you chose them" moment and not
+                  // just a form input.
+                  if (isCouples && selected)
+                    const Positioned(
+                      bottom: 4,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: EmojiText(
+                          '✨',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Peripheral floating hearts behind the couples ballot / waiting card.
+/// Same motion vocabulary as the lobby and per-round reveal, so the
+/// couples flow reads as a single coherent mood throughout the game.
+class _VotingCouplesBackdrop extends StatelessWidget {
+  const _VotingCouplesBackdrop({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // StackFit.expand passes tight constraints to the non-positioned
+    // `child` below — without this, the ballot's Column(Expanded(...))
+    // would get loose constraints from the Stack and crash with
+    // "Expanded widgets must be placed inside a Flex that has a
+    // bounded maxHeight". The hearts layer is wrapped in
+    // Positioned.fill separately so it also fills the same area.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // IgnorePointer so the hearts never block tile taps underneath.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Stack(
+              children: const [
+                Positioned(
+                  left: 10,
+                  top: 12,
+                  child: _VotingFloatingHeart(
+                      emoji: '💕', size: 22, phaseMs: 0),
+                ),
+                Positioned(
+                  right: 14,
+                  top: 36,
+                  child: _VotingFloatingHeart(
+                      emoji: '💗', size: 18, phaseMs: 600),
+                ),
+                Positioned(
+                  left: 4,
+                  top: 200,
+                  child: _VotingFloatingHeart(
+                      emoji: '💖', size: 20, phaseMs: 1200),
+                ),
+                Positioned(
+                  right: 8,
+                  top: 260,
+                  child: _VotingFloatingHeart(
+                      emoji: '💘', size: 18, phaseMs: 1700),
+                ),
+                Positioned(
+                  left: 28,
+                  bottom: 40,
+                  child: _VotingFloatingHeart(
+                      emoji: '✨', size: 14, phaseMs: 2100),
+                ),
+                Positioned(
+                  right: 32,
+                  bottom: 20,
+                  child: _VotingFloatingHeart(
+                      emoji: '💕', size: 16, phaseMs: 2500),
+                ),
+              ],
+            ),
+          ),
+        ),
+        child,
+      ],
+    );
+  }
+}
+
+/// Same drift/opacity/scale pattern as the lobby and reveal floating
+/// hearts — private to this screen so the size/phase budget can be
+/// tuned to the voting layout without cross-screen coupling.
+class _VotingFloatingHeart extends StatefulWidget {
+  const _VotingFloatingHeart({
+    required this.emoji,
+    required this.size,
+    required this.phaseMs,
+  });
+
+  final String emoji;
+  final double size;
+  final int phaseMs;
+
+  @override
+  State<_VotingFloatingHeart> createState() => _VotingFloatingHeartState();
+}
+
+class _VotingFloatingHeartState extends State<_VotingFloatingHeart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(Duration(milliseconds: widget.phaseMs), () {
+      if (mounted) _c.repeat(reverse: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        final t = Curves.easeInOut.transform(_c.value);
+        return Opacity(
+          // Slightly lower opacity ceiling than the lobby hearts — the
+          // ballot has more text and we don't want the background to
+          // compete with the question card.
+          opacity: 0.35 + 0.35 * t,
+          child: Transform.translate(
+            offset: Offset(0, -5 * t),
+            child: Transform.scale(
+              scale: 0.85 + 0.2 * t,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: EmojiText(
+        widget.emoji,
+        style: TextStyle(fontSize: widget.size),
       ),
     );
   }
