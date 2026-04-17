@@ -14,7 +14,6 @@ import '../state/providers.dart';
 import '../widgets/confetti_burst.dart';
 import '../widgets/emoji_text.dart';
 import '../widgets/game_layout.dart';
-import '../widgets/landing_widgets.dart';
 import '../widgets/round_share_card.dart';
 
 /// Final scoreboard shown after the host ends the game.
@@ -1377,12 +1376,14 @@ class _CompatibilityCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '$percent%',
+            // Tight line-height so the big number doesn't push the
+            // subtitle off the card — `displayFont` itself doesn't
+            // expose `height`, so layer it on via copyWith.
             style: displayFont(
               fontSize: 64,
               fontWeight: FontWeight.w800,
               color: Colors.white,
-              height: 1.0,
-            ),
+            ).copyWith(height: 1.0),
           ),
           const SizedBox(height: 6),
           EmojiText(
