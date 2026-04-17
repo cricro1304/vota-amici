@@ -249,6 +249,36 @@ return PopIn(
               onPressed: () => _start(players.length, pack),
               child: const EmojiText('🚀 Inizia Partita'),
             )
+          else if (isCouples)
+            // Couples waiting gets its own romance-themed decoration:
+            // floating hearts around a central 💑 so the non-host half
+            // of the couple doesn't stare at a plain hourglass while
+            // the other is tapping Inizia Partita.
+            Column(
+              children: [
+                const _CouplesWaitingDecoration(),
+                const SizedBox(height: 10),
+                Text(
+                  'Il tuo partner sta per iniziare...',
+                  textAlign: TextAlign.center,
+                  style: bodyFont(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                EmojiText(
+                  '✨ Preparatevi a scoprire quanto vi conoscete ✨',
+                  textAlign: TextAlign.center,
+                  style: bodyFont(
+                    color: AppColors.mutedFg,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            )
           else
             Column(
               children: [
@@ -256,9 +286,7 @@ return PopIn(
                     child: EmojiText('⏳', style: TextStyle(fontSize: 36))),
                 const SizedBox(height: 8),
                 Text(
-                  isCouples
-                      ? "In attesa che il tuo partner inizi la partita..."
-                      : "In attesa che l'host inizi la partita...",
+                  "In attesa che l'host inizi la partita...",
                   textAlign: TextAlign.center,
                   style: bodyFont(
                     color: AppColors.mutedFg,
@@ -268,6 +296,134 @@ return PopIn(
               ],
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Decorative waiting state for the couples pack: a central 💑 that
+/// floats gently, surrounded by four smaller hearts that each drift,
+/// fade, and pulse on their own phase so the cluster never reads as
+/// "in sync". Keeps the non-host partner entertained while waiting for
+/// the host to hit Inizia Partita.
+class _CouplesWaitingDecoration extends StatelessWidget {
+  const _CouplesWaitingDecoration();
+
+  @override
+  Widget build(BuildContext context) {
+    // Hearts picked for visual variety: different shapes/colours but
+    // all "love" family so the vibe stays clearly romantic. Phase
+    // offsets are staggered so they don't all rise together.
+    return SizedBox(
+      width: 220,
+      height: 140,
+      child: Stack(
+        alignment: Alignment.center,
+        children: const [
+          Positioned(
+            left: 18,
+            top: 8,
+            child: _FloatingHeart(emoji: '💕', size: 22, phaseMs: 0),
+          ),
+          Positioned(
+            right: 24,
+            top: 4,
+            child: _FloatingHeart(emoji: '💗', size: 18, phaseMs: 500),
+          ),
+          Positioned(
+            left: 6,
+            bottom: 18,
+            child: _FloatingHeart(emoji: '💖', size: 20, phaseMs: 1100),
+          ),
+          Positioned(
+            right: 14,
+            bottom: 10,
+            child: _FloatingHeart(emoji: '💘', size: 16, phaseMs: 1700),
+          ),
+          Positioned(
+            left: 80,
+            top: 0,
+            child: _FloatingHeart(emoji: '✨', size: 14, phaseMs: 2200),
+          ),
+          // Big centerpiece — uses the shared Floater so the cadence
+          // matches other "waiting" moments in the app.
+          Floater(
+            child: EmojiText('💑', style: TextStyle(fontSize: 58)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Individual floating heart — a tiny looping controller with a phase
+/// offset so each heart in [_CouplesWaitingDecoration] is out of sync.
+/// Drives translation, opacity, AND scale so the motion reads as
+/// organic rather than purely vertical.
+class _FloatingHeart extends StatefulWidget {
+  const _FloatingHeart({
+    required this.emoji,
+    required this.size,
+    required this.phaseMs,
+  });
+
+  final String emoji;
+  final double size;
+
+  /// Delay before starting the loop. Lets us stagger sibling hearts so
+  /// they don't all peak at the same instant — see
+  /// [_CouplesWaitingDecoration].
+  final int phaseMs;
+
+  @override
+  State<_FloatingHeart> createState() => _FloatingHeartState();
+}
+
+class _FloatingHeartState extends State<_FloatingHeart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // Delayed start rather than `_c.value = phase/duration` because
+    // we want the *whole* loop to be offset, not just the first pass.
+    Future<void>.delayed(Duration(milliseconds: widget.phaseMs), () {
+      if (mounted) _c.repeat(reverse: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        final t = Curves.easeInOut.transform(_c.value);
+        return Opacity(
+          // Fade from 55% → 100% over the loop so hearts seem to
+          // "breathe" in and out of view.
+          opacity: 0.55 + 0.45 * t,
+          child: Transform.translate(
+            offset: Offset(0, -6 * t),
+            child: Transform.scale(
+              scale: 0.85 + 0.2 * t,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: EmojiText(
+        widget.emoji,
+        style: TextStyle(fontSize: widget.size),
       ),
     );
   }

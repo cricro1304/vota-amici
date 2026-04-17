@@ -108,11 +108,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       await session.setPlayerId(res.room.code, res.player.id);
 
       if (_devMode) {
-        // Spawn bots + auto-start the game.
-        await ref.read(devBotServiceProvider).seedBots(
-              roomId: res.room.id,
-              count: 3,
-            );
+        // Spawn bots + auto-start the game. Cap by the pack's own
+        // `maxPlayers` when set — couples is 2-player-only, so blindly
+        // seeding 3 bots makes the room reject everyone past the second
+        // and breaks the agree/cross/self reveal taxonomy which assumes
+        // exactly 2 voters. For unlimited packs (classic) we keep the
+        // 3-bot default which gives a decent feel for the voting UI.
+        final botCount = pack.maxPlayers != null
+            ? (pack.maxPlayers! - 1).clamp(0, 5)
+            : 3;
+        if (botCount > 0) {
+          await ref.read(devBotServiceProvider).seedBots(
+                roomId: res.room.id,
+                count: botCount,
+              );
+        }
       }
 
       if (mounted) context.go('/room/${res.room.code}');
