@@ -23,8 +23,10 @@ class GameRepository {
         .map((rows) => rows.map(Round.fromJson).toList());
   }
 
-  /// One-shot fetch of every round in a room. Used for idempotency checks
-   /// in startGame/nextRound so we never insert a duplicate `round_number`.
+  /// One-shot fetch of every round in a room. Kept for tests and ad-hoc
+  /// tooling; round transitions no longer call this — the `start_game`
+  /// and `advance_round` Postgres functions do the idempotency check
+  /// server-side inside the same transaction as the write.
   Future<List<Round>> fetchRoundsForRoom(String roomId) async {
     final rows = await _client
         .from('rounds')
@@ -36,28 +38,49 @@ class GameRepository {
         .toList();
   }
 
-  Future<Round> createRound({
+  // --- Round transitions (RPCs) -------------------------------------------
+  //
+  // These three wrap Postgres functions defined in
+  // `supabase/migrations/20260417093000_add_round_transition_rpcs.sql`.
+  // Each one runs as a single transaction guarded by `SELECT … FOR UPDATE`
+  // on `rooms`, so concurrent callers serialize and we never end up with
+  // duplicate `round_number` rows or half-applied transitions. All three
+  // return void; clients pick up the new state via the existing
+  // `watchRooms`/`watchRounds` realtime streams.
+
+  /// Lobby → in_round, round 1. Idempotent.
+  Future<void> startGameRpc({
     required String roomId,
-    required String questionId,
-    required int roundNumber,
+    required String firstQuestionId,
   }) async {
-    final data = await _client
-        .from('rounds')
-        .insert({
-          'room_id': roomId,
-          'question_id': questionId,
-          'round_number': roundNumber,
-          'status': 'voting',
-        })
-        .select()
-        .single();
-    return Round.fromJson(data);
+    await _client.rpc('start_game', params: {
+      'p_room_id': roomId,
+      'p_first_question_id': firstQuestionId,
+    });
   }
 
-  Future<void> updateRoundStatus(String roundId, RoundStatus status) async {
-    await _client
-        .from('rounds')
-        .update({'status': roundStatusToString(status)}).eq('id', roundId);
+  /// Close the current round, insert round `current_round + 1`, bump the
+  /// room. Idempotent on the next round_number.
+  Future<void> advanceRoundRpc({
+    required String roomId,
+    required String nextQuestionId,
+  }) async {
+    await _client.rpc('advance_round', params: {
+      'p_room_id': roomId,
+      'p_next_question_id': nextQuestionId,
+    });
+  }
+
+  /// Flip the current round to revealed and the room to results.
+  /// Idempotent.
+  Future<void> revealResultsRpc({
+    required String roomId,
+    required String roundId,
+  }) async {
+    await _client.rpc('reveal_results', params: {
+      'p_room_id': roomId,
+      'p_round_id': roundId,
+    });
   }
 
   // --- Votes --------------------------------------------------------------
