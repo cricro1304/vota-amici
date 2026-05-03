@@ -833,7 +833,11 @@
 </div>
 
 <script src="assets/js/i18n.js" defer></script>
-<script src="assets/js/landing.translations.js" defer></script>
+<!-- landing.translations.js intentionally NOT loaded here. landing.js
+     lazy-loads it on demand (when stored lang ≠ IT, or when the user
+     toggles language). For the default Italian visitor — the
+     overwhelming majority — the file is never fetched. PSI flagged it
+     as 66% unused JavaScript on the boot path. -->
 <script src="assets/js/landing.js" defer></script>
 </body>
 </html>
