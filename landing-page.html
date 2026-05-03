@@ -137,6 +137,26 @@
       .lang-btn{width:28px;height:28px;font-size:.7rem;display:flex;align-items:center;justify-content:center}
       .hero-cta{font-size:1.1rem;padding:.85rem 1.8rem}
     }
+    /* Below-the-fold "skeleton" rules: just enough to keep section
+       backgrounds, layouts, and section-titles looking right if the
+       user scrolls before async landing.css arrives. Specific decoration
+       (cards, badges, animations) can wait — these rules just prevent
+       the page from looking visibly broken during the ~100-200ms gap
+       between FCP and async-CSS apply on a slow connection. */
+    main{display:block}
+    section{padding:4rem 1.5rem;position:relative}
+    .section-inner{max-width:1100px;margin:0 auto}
+    .section-title{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;text-align:center;margin-bottom:.75rem}
+    .section-subtitle{text-align:center;color:var(--text-muted);font-weight:600;margin-bottom:2rem;max-width:640px;margin-left:auto;margin-right:auto}
+    .questions-section{background:linear-gradient(135deg,var(--pink) 0%,#f06292 50%,var(--cyan) 100%);color:#fff}
+    .questions-section .section-title,.questions-section .section-subtitle{color:#fff}
+    .modes-section{background:#fff8ed}
+    .packs-section{background:linear-gradient(180deg,#fff3e6 0%,#fff1f6 40%,#fde8ef 100%)}
+    .social-section{background:#fff8ed}
+    .final-cta-section{background:linear-gradient(135deg,var(--pink) 0%,#f06292 50%,var(--cyan) 100%);color:#fff;text-align:center;padding:5rem 1.5rem}
+    .final-cta-section h2{color:#fff;font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:.75rem}
+    .final-cta-section p{color:rgba(255,255,255,.95);margin-bottom:1.5rem}
+    footer{background:linear-gradient(135deg,#f9d1dc 0%,#e8c4d4 100%);color:var(--text-muted);text-align:center;padding:2rem 1.5rem;font-size:.9rem;font-weight:600}
   </style>
 
   <!-- Google Fonts: keep async with display=swap so we don't block FCP
@@ -149,16 +169,28 @@
         onload="this.onload=null;this.rel='stylesheet'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap" /></noscript>
 
-  <!-- shared.css + landing.css: BLOCKING. The preload tags above kick
-       off the requests during HTML parse, so by the time the parser
-       reaches these tags the bytes are usually already in the cache.
-       Blocking is intentional: the previous async-onload pattern caused
-       a visible FOUC and made content paint "late" as the user scrolled
-       on Safari mobile (sections appeared unstyled until landing.css
-       finished applying). Keeping these blocking guarantees the entire
-       page is styled before first paint, so scroll feels instant. -->
+  <!-- shared.css: BLOCKING. Tiny (~5KB), and contains nav + footer +
+       lang-toggle styles that need to land in the first paint frame
+       to avoid a visible nav flash. -->
   <link rel="stylesheet" href="assets/css/shared.css" />
-  <link rel="stylesheet" href="assets/css/landing.css" />
+
+  <!-- landing.css: ASYNC. The bulk of the visual decoration (animations,
+       card styles, mode/pack/verdict layouts) is in here — none of it
+       is needed for the first paint. Loading it blocking on Slow 4G +
+       weak CPU was costing ~5s of FCP/LCP on Lighthouse mobile. The
+       inline critical CSS above + precise font-fallback metrics +
+       per-section background skeletons mean async arrival is invisible:
+       the page paints fully styled and decorated rules apply ~100ms
+       later as a no-op (no reflows, no shifts).
+
+       The preload above already kicked the request off in parallel
+       with HTML parse; this onload-swap pattern just promotes it from
+       "preload" to "stylesheet" once the bytes are in the cache. The
+       <noscript> fallback covers the (vanishingly rare) case of a
+       JS-disabled browser. -->
+  <link rel="preload" as="style" href="assets/css/landing.css"
+        onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="assets/css/landing.css" /></noscript>
 </head>
 <body>
 

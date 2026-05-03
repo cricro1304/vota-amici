@@ -192,11 +192,15 @@
 }
 
 /* "Ma che vuoi" hand gesture — fires once when the section scrolls in.
-   Animation toggled by .play class added via IntersectionObserver in landing.js */
+   Animation toggled by .play class added via IntersectionObserver in landing.js.
+   No `will-change: transform` — it would keep the gesture on its own
+   compositor layer permanently, and Safari then lazily rasterizes that
+   layer when it scrolls in (visible as the "content appears late" feel
+   on Safari). The animation only fires once on visibility + every 60s,
+   so the temporary layer cost during animation is fine. */
 .hand-gesture {
   display: inline-block;
   transform-origin: 50% 80%;
-  will-change: transform;
 }
 
 .hand-gesture.play {
@@ -1143,18 +1147,22 @@ section { padding: 5rem 1.5rem; }
 .question-carousel {
   /* Flex container so the track sits on a proper baseline and the
      marquee animation has a measurable width to translate against.
-     `overflow: hidden` + the gradient mask give the fade edges. */
+     `overflow: hidden` + the gradient mask give the fade edges.
+
+     Note: previously this had `transform: translateZ(0)` to work
+     around an old iOS Safari bug where mask-image ancestors broke
+     GPU compositing of descendant transforms. That hack created a
+     dedicated compositor layer for the carousel which Safari then
+     lazily rasterized when scrolled into view (visible as a "blank
+     for a frame" effect when the user reached this section). Modern
+     Safari (16+) handles mask-image + child transforms correctly
+     without the hack, and the running marquee animation already
+     promotes the .question-track to a layer on its own. */
   display: flex;
   overflow: hidden;
   margin-bottom: 1.5rem;
   mask-image:         linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
-  /* iOS Safari sometimes promotes mask-image ancestors into a stacking
-     context that breaks GPU compositing of descendant transforms; force
-     the carousel itself onto its own compositor layer so the track's
-     translateX animation stays smooth on mobile. */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
 }
 
 .question-track {
@@ -1418,17 +1426,21 @@ section { padding: 5rem 1.5rem; }
   overflow: hidden;
   isolation: isolate;
 }
-/* Wavy divider on top — blends the cream modes-section into the pink canvas. */
+/* Soft transition from the cream modes-section into the pink packs
+   canvas. Previously this used a SVG `mask` to draw a wavy divider —
+   visually nice, but Safari rasterizes SVG masks lazily, which made
+   the entire packs section flash blank for a frame when scrolled into
+   view. Replaced with a tall vertical gradient that blends the two
+   section colors over ~48px. Visually subtler than a wave but renders
+   instantly on Safari with no compositor layer. */
 .packs-section::before {
   content: '';
   position: absolute;
-  top: -1px;
+  top: 0;
   left: 0;
   right: 0;
   height: 48px;
-  background: var(--bg);
-  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 48' preserveAspectRatio='none'><path d='M0,0 L1200,0 L1200,20 C1000,48 800,10 600,28 C400,46 200,14 0,36 Z' fill='black'/></svg>") no-repeat center/100% 100%;
-          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 48' preserveAspectRatio='none'><path d='M0,0 L1200,0 L1200,20 C1000,48 800,10 600,28 C400,46 200,14 0,36 Z' fill='black'/></svg>") no-repeat center/100% 100%;
+  background: linear-gradient(180deg, var(--bg) 0%, transparent 100%);
   z-index: 1;
   pointer-events: none;
 }
@@ -1846,7 +1858,11 @@ section { padding: 5rem 1.5rem; }
   z-index: 20;
   transition: opacity 0.12s ease-out, transform 0.12s ease-out;
   transition-delay: 0s;
-  will-change: opacity, transform;
+  /* No will-change here — the popup only opens on hover/click, and the
+     hint would otherwise keep every pack tile's popup on its own
+     compositor layer permanently, contributing to Safari's lazy-paint
+     scroll-in jank. The transition itself triggers temporary
+     promotion when fired, which is enough. */
   box-shadow:
     0 20px 48px -12px rgba(230, 54, 110, 0.22),
     0 8px 16px  -4px rgba(0, 0, 0, 0.08);
