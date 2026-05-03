@@ -213,6 +213,50 @@ function renderPage(page, lang, dict) {
     }
   });
 
+  // 5b. Asset paths: every relative URL in <link href>, <script src>,
+  //     <img src>, etc. needs to be made absolute (`/assets/...`) so
+  //     the EN page at /en/landing-page.html doesn't try to load
+  //     /en/assets/css/landing.css (which 404s — assets only live at
+  //     /assets/...). The IT page works either way; absolute is also
+  //     fine there. Rewriting at build time is safer than telling the
+  //     template author to remember to use absolute paths everywhere.
+  function absolutize(url) {
+    if (!url) return url;
+    // Skip absolute URLs, protocol-relative URLs, data:, mailto:, etc.
+    if (/^(https?:|data:|mailto:|tel:|\/\/|#|\/)/i.test(url)) return url;
+    // Strip leading "./" if present, then prepend "/"
+    return '/' + url.replace(/^\.\//, '');
+  }
+  // Cover every common attribute that holds a URL. The `xlink:href`
+  // selector contains a colon which css-what (cheerio's selector
+  // parser) can't handle, so we escape the colon — `[xlink\\:href]`
+  // in the JS string is `[xlink\:href]` in the selector, which css-what
+  // treats as a literal colon.
+  const URL_ATTRS = [
+    ['link', 'href'],
+    ['script', 'src'],
+    ['img', 'src'],
+    ['img', 'srcset'], // technically a list, but we only use single URLs in this codebase
+    ['source', 'src'],
+    ['source', 'srcset'],
+    ['video', 'src'],
+    ['video', 'poster'],
+    ['audio', 'src'],
+    ['iframe', 'src'],
+    ['use', 'href'],
+    ['use', 'xlink\\:href'],
+  ];
+  for (const [tag, attr] of URL_ATTRS) {
+    $(`${tag}[${attr}]`).each((_, el) => {
+      const $el = $(el);
+      // attr() expects the literal attr name (no escaping).
+      const attrName = attr.replace(/\\/g, '');
+      const val = $el.attr(attrName);
+      const next = absolutize(val);
+      if (next !== val) $el.attr(attrName, next);
+    });
+  }
+
   // 6. <title> + meta description + og:title + og:description.
   if (page.titles && page.titles[lang]) {
     $('title').text(page.titles[lang]);
@@ -254,7 +298,23 @@ function renderPage(page, lang, dict) {
   $('script[src*="translations.js"]').remove();
   $('script[src*="i18n.js"]').remove();
 
-  return $.html();
+  // 9. Post-process pass: absolutize URLs inside <noscript> blocks.
+  //    Cheerio parses <noscript> contents as raw text per the HTML
+  //    spec (contents only become live DOM when scripting is disabled),
+  //    so the [link][href] selector above doesn't reach the inner
+  //    <link>. Without this fix, the EN page's <noscript> fallback
+  //    would 404 on /en/assets/css/landing.css. Regex is fine here —
+  //    the noscript blocks contain only well-formed <link> tags.
+  let out = $.html();
+  out = out.replace(/<noscript>([\s\S]*?)<\/noscript>/g, (_, inner) => {
+    const fixed = inner.replace(
+      /(\b(?:href|src)=)"([^"]+)"/g,
+      (m, attr, url) => attr + '"' + absolutize(url) + '"'
+    );
+    return '<noscript>' + fixed + '</noscript>';
+  });
+
+  return out;
 }
 
 // ── Drive the build ─────────────────────────────────────────────────────────
