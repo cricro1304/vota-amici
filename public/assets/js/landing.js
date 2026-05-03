@@ -197,103 +197,109 @@
 
 
   /* ── 4. Pack tile interactions ──────────────────────────────────────── */
+  // All DOM lookups + listener attachment for this block are wrapped in
+  // setupPackTileInteractions() so they only run during the deferred
+  // boot phase (initBackgroundWork). Doing this synchronously at IIFE-
+  // execute time was contributing ~200ms of input-delay during initial
+  // load — the user's tap on the hero CTA had to wait behind 14
+  // listeners + several DOM walks even though packs sit far below the
+  // fold and can't be interacted with in the first second anyway.
   var isMobileView = function () { return window.innerWidth <= 600; };
 
-  var packSheet         = document.getElementById('packSheet');
-  var packBackdrop      = document.getElementById('packBackdrop');
-  var packSheetTitle    = document.getElementById('packSheetTitle');
-  var packSheetDesc     = document.getElementById('packSheetDesc');
-  var packSheetExamples = document.getElementById('packSheetExamples');
+  function setupPackTileInteractions() {
+    var packSheet         = document.getElementById('packSheet');
+    var packBackdrop      = document.getElementById('packBackdrop');
+    var packSheetTitle    = document.getElementById('packSheetTitle');
+    var packSheetDesc     = document.getElementById('packSheetDesc');
+    var packSheetExamples = document.getElementById('packSheetExamples');
 
-  function openPackSheet(tile) {
-    var popup = tile.querySelector('.pack-tile-popup');
-    if (!popup) return;
+    function openPackSheet(tile) {
+      var popup = tile.querySelector('.pack-tile-popup');
+      if (!popup) return;
 
-    var title = tile.querySelector('h4');
-    var emoji = tile.querySelector('.pack-tile-emoji');
-    packSheetTitle.textContent = (emoji ? emoji.textContent + ' ' : '') +
-                                 (title ? title.textContent : '');
+      var title = tile.querySelector('h4');
+      var emoji = tile.querySelector('.pack-tile-emoji');
+      packSheetTitle.textContent = (emoji ? emoji.textContent + ' ' : '') +
+                                   (title ? title.textContent : '');
 
-    var descEl = popup.querySelector('.pack-tile-desc');
-    packSheetDesc.textContent = descEl ? descEl.textContent : '';
+      var descEl = popup.querySelector('.pack-tile-desc');
+      packSheetDesc.textContent = descEl ? descEl.textContent : '';
 
-    packSheetExamples.innerHTML = '';
-    popup.querySelectorAll('.pack-tile-chip').forEach(function (c) {
-      var span = document.createElement('span');
-      span.className = c.className;
-      span.textContent = c.textContent;
-      packSheetExamples.appendChild(span);
-    });
-
-    packBackdrop.classList.add('open');
-    packSheet.style.display = 'block';
-    // Two RAFs to ensure the transition runs from the initial translateY(100%).
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () { packSheet.classList.add('open'); });
-    });
-  }
-
-  function closePackSheet() {
-    packSheet.classList.remove('open');
-    packBackdrop.classList.remove('open');
-    setTimeout(function () { packSheet.style.display = 'none'; }, 350);
-  }
-
-  if (packBackdrop) packBackdrop.addEventListener('click', closePackSheet);
-
-  // Clamp popup position so it doesn't overflow viewport (desktop/tablet only).
-  function clampPopup(tile) {
-    if (isMobileView()) return;
-    var popup = tile.querySelector('.pack-tile-popup');
-    if (!popup) return;
-
-    // Reset to centered before measuring.
-    popup.style.left = '50%';
-    popup.style.right = 'auto';
-    popup.style.transform = 'translateX(-50%) translateY(0)';
-
-    requestAnimationFrame(function () {
-      var rect = popup.getBoundingClientRect();
-      var vw = window.innerWidth;
-      if (rect.right > vw - 16) {
-        var shift = rect.right - vw + 20;
-        popup.style.left = 'calc(50% - ' + shift + 'px)';
-      } else if (rect.left < 16) {
-        var shift2 = 16 - rect.left;
-        popup.style.left = 'calc(50% + ' + shift2 + 'px)';
-      }
-    });
-  }
-
-  document.querySelectorAll('.pack-tile').forEach(function (tile) {
-    tile.addEventListener('click', function (e) {
-      if (isMobileView()) {
-        e.stopPropagation();
-        openPackSheet(tile);
-        return;
-      }
-      // Desktop: toggle 'touched' for click-to-open popup.
-      var wasOpen = tile.classList.contains('touched');
-      document.querySelectorAll('.pack-tile').forEach(function (t) {
-        t.classList.remove('touched');
+      packSheetExamples.innerHTML = '';
+      popup.querySelectorAll('.pack-tile-chip').forEach(function (c) {
+        var span = document.createElement('span');
+        span.className = c.className;
+        span.textContent = c.textContent;
+        packSheetExamples.appendChild(span);
       });
-      if (!wasOpen) {
-        tile.classList.add('touched');
-        clampPopup(tile);
-      }
-    });
 
-    tile.addEventListener('mouseenter', function () { clampPopup(tile); });
-  });
-
-  // Click outside any tile closes all open popups.
-  document.addEventListener('click', function (e) {
-    if (!e.target.closest('.pack-tile')) {
-      document.querySelectorAll('.pack-tile').forEach(function (t) {
-        t.classList.remove('touched');
+      packBackdrop.classList.add('open');
+      packSheet.style.display = 'block';
+      // Two RAFs to ensure the transition runs from the initial translateY(100%).
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { packSheet.classList.add('open'); });
       });
     }
-  });
+
+    function closePackSheet() {
+      packSheet.classList.remove('open');
+      packBackdrop.classList.remove('open');
+      setTimeout(function () { packSheet.style.display = 'none'; }, 350);
+    }
+
+    if (packBackdrop) packBackdrop.addEventListener('click', closePackSheet);
+
+    // Clamp popup position so it doesn't overflow viewport (desktop/tablet only).
+    function clampPopup(tile) {
+      if (isMobileView()) return;
+      var popup = tile.querySelector('.pack-tile-popup');
+      if (!popup) return;
+
+      // Reset to centered before measuring.
+      popup.style.left = '50%';
+      popup.style.right = 'auto';
+      popup.style.transform = 'translateX(-50%) translateY(0)';
+
+      requestAnimationFrame(function () {
+        var rect = popup.getBoundingClientRect();
+        var vw = window.innerWidth;
+        if (rect.right > vw - 16) {
+          var shift = rect.right - vw + 20;
+          popup.style.left = 'calc(50% - ' + shift + 'px)';
+        } else if (rect.left < 16) {
+          var shift2 = 16 - rect.left;
+          popup.style.left = 'calc(50% + ' + shift2 + 'px)';
+        }
+      });
+    }
+
+    var packTiles = document.querySelectorAll('.pack-tile');
+    packTiles.forEach(function (tile) {
+      tile.addEventListener('click', function (e) {
+        if (isMobileView()) {
+          e.stopPropagation();
+          openPackSheet(tile);
+          return;
+        }
+        // Desktop: toggle 'touched' for click-to-open popup.
+        var wasOpen = tile.classList.contains('touched');
+        packTiles.forEach(function (t) { t.classList.remove('touched'); });
+        if (!wasOpen) {
+          tile.classList.add('touched');
+          clampPopup(tile);
+        }
+      });
+
+      tile.addEventListener('mouseenter', function () { clampPopup(tile); });
+    });
+
+    // Click outside any tile closes all open popups.
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.pack-tile')) {
+        packTiles.forEach(function (t) { t.classList.remove('touched'); });
+      }
+    });
+  }
 
 
   /* ── 5. Scroll-driven tutorial phone coordination ───────────────────── */
@@ -428,6 +434,11 @@
   // floats a "+1" upwards. Pure local fun — nothing is persisted. Event
   // delegation on .verdicts-board means it survives i18n re-renders that
   // swap child nodes.
+  //
+  // Wrapped in a function so the DOM lookup + listener attach happens
+  // during deferred boot rather than at IIFE-execute time, for the same
+  // input-delay reasons as setupPackTileInteractions above.
+  function setupVerdictReactions() {
   var verdictsBoardEl = document.querySelector('.verdicts-board');
   if (verdictsBoardEl) {
     // Match either "<emoji> 12" or plain "12" — we only care about the
@@ -483,6 +494,7 @@
       }
     });
   }
+  } // end setupVerdictReactions
 
 
   /* ── 6b. Hand-gesture animation ─────────────────────────────────────── */
@@ -566,6 +578,8 @@
   function initBackgroundWork() {
     tutSteps.forEach(function (s) { s.classList.remove('active'); });
     setupTutorialObservers();
+    setupPackTileInteractions();
+    setupVerdictReactions();
     startCarousel();
     startVoteCycle();
   }
