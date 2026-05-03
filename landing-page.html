@@ -98,12 +98,36 @@
     .lang-btn{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:600;font-size:.8rem;padding:.3rem .65rem;color:rgba(255,255,255,.7);background:transparent;border:none;cursor:pointer}
     .lang-btn.active{background:#fff;color:var(--pink);border-radius:.85rem}
     /* Flow grid + hero: same shape as final landing.css so the browser
-       reserves the right space immediately. Phone column hides until
-       the full landing.css applies, otherwise the iphone-frame would
-       paint as a black box without its rounded styling. */
+       reserves the right space immediately. */
     .flow-wrapper{position:relative;width:100%;overflow-x:clip}
     .flow-grid{display:grid;grid-template-columns:1fr 340px;gap:2rem;max-width:1100px;margin:0 auto;padding:0 1.5rem}
     .flow-content{display:flex;flex-direction:column;min-width:0}
+    /* Phone-mockup skeleton. Without these constraints in the inline
+       critical CSS, the .app-screen / .tut-app-screen contents (vote
+       buttons, screen titles, "Marco Luca Giulia Sara") render in
+       normal document flow as plain stacked text "splatted around"
+       below the hero — until landing.css arrives and applies the
+       absolute positioning + overflow:hidden that contains them
+       inside the iphone-frame. Inlining the box dimensions, the
+       iphone-screen overflow clip, and the screens' absolute
+       positioning eliminates the splat on first paint. The full
+       cosmetic styling (notch, shadows, screen contents) still
+       arrives from landing.css and slots into a layout that's
+       already correct. */
+    .flow-phone{position:relative;height:auto}
+    .flow-phone-inner{position:sticky;top:calc(50vh - 290px);display:flex;justify-content:center;align-items:flex-start;padding:10px 0}
+    .iphone-frame{width:280px;height:570px;background:#1a1a2e;border-radius:40px;padding:12px;position:relative}
+    .iphone-screen{width:100%;height:100%;border-radius:30px;overflow:hidden;background:var(--bg);position:relative}
+    .screen-carousel{width:100%;height:100%;position:relative}
+    .app-screen,.tut-app-screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:40px 16px 16px;opacity:0}
+    .app-screen.active{opacity:1}
+    @media (max-width:980px){
+      .iphone-frame{width:220px;height:450px;border-radius:32px;padding:10px}
+      .iphone-screen{border-radius:24px}
+      .app-screen,.tut-app-screen{padding:32px 12px 12px}
+      .tut-app-screen{display:none}
+      .app-screen.active{opacity:1}
+    }
     .hero-block{min-height:100vh;display:flex;align-items:center;padding:5rem 0 3rem;position:relative}
     .hero-text{position:relative;z-index:2}
     .hero-text h1{font-size:clamp(2.6rem,6.5vw,4.2rem);font-weight:700;line-height:1.05;margin-bottom:1.5rem;position:relative}
