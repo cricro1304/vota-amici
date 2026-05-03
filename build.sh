@@ -58,6 +58,23 @@ fi
 # Flutter web build output -> /play/
 cp -R flutter_app/build/web/. dist/play/
 
+echo "==> Generating per-language static HTML (IT + EN) for landing & packs..."
+# Builds dist/landing-page.html, dist/en/landing-page.html, dist/packs.html,
+# dist/en/packs.html from the IT-seeded templates + translation dictionaries.
+# This replaces the previous client-side i18n approach entirely — the
+# generated HTML for each language is fully translated with no runtime
+# translation code shipped to the browser. Cheerio is installed on demand
+# inside the script if not already present.
+node scripts/build-i18n.js
+
+# Translation dictionaries are build-time-only inputs now — drop them
+# from the deploy so we don't ship dead JS the browser would fetch.
+# Same for i18n.js (the runtime i18n helper) and packs.js (its only job
+# was the i18n boot call, which is gone).
+rm -f dist/assets/js/landing.translations.js
+rm -f dist/assets/js/packs.translations.js
+rm -f dist/assets/js/i18n.js
+
 echo "==> Minifying landing CSS/JS with esbuild..."
 # esbuild is zero-config and already fast on Vercel's build image.
 # We minify only the landing-page assets (not Flutter's own bundle).
@@ -72,9 +89,11 @@ if command -v npx >/dev/null 2>&1; then
         --outfile="$f.min" && mv "$f.min" "$f"
     fi
   done
-  for f in dist/assets/js/landing.js dist/assets/js/landing.translations.js \
-           dist/assets/js/packs.js dist/assets/js/packs.translations.js \
-           dist/assets/js/i18n.js; do
+  # Only landing.js + packs.js still ship to production — translations
+  # files and i18n.js were just removed above. The `[ -f ]` guard makes
+  # this a no-op for files that don't exist, so it's safe across both
+  # the old and new asset sets.
+  for f in dist/assets/js/landing.js dist/assets/js/packs.js; do
     if [ -f "$f" ]; then
       npx --yes esbuild "$f" --minify --log-level=error \
         --outfile="$f.min" && mv "$f.min" "$f"

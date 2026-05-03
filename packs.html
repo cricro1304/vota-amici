@@ -241,8 +241,9 @@
   <p data-i18n="footer_text">Il party game che non sapevi di aver bisogno.<br/>Fatto con 🤌 in Italia.</p>
 </footer>
 
-<script src="assets/js/i18n.js" defer></script>
-<script src="assets/js/packs.translations.js" defer></script>
-<script src="assets/js/packs.js" defer></script>
+<!-- i18n.js / packs.translations.js / packs.js intentionally not loaded.
+     Per-language pages are generated at build time by
+     scripts/build-i18n.js (IT at /packs.html, EN at /en/packs.html),
+     so the page is fully static with no runtime translation work. -->
 </body>
 </html>

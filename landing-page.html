@@ -870,12 +870,12 @@
   <div class="pack-tile-examples" id="packSheetExamples"></div>
 </div>
 
-<script src="assets/js/i18n.js" defer></script>
-<!-- landing.translations.js intentionally NOT loaded here. landing.js
-     lazy-loads it on demand (when stored lang ≠ IT, or when the user
-     toggles language). For the default Italian visitor — the
-     overwhelming majority — the file is never fetched. PSI flagged it
-     as 66% unused JavaScript on the boot path. -->
+<!-- i18n.js / landing.translations.js intentionally NOT loaded.
+     Per-language pages are generated at build time by
+     scripts/build-i18n.js (IT at /landing-page.html, EN at
+     /en/landing-page.html), so there's no client-side translation
+     work and zero translation JS in the bundle. The lang toggle in
+     the nav is a real <a href> link to the alternate-language page. -->
 <script src="assets/js/landing.js" defer></script>
 </body>
 </html>

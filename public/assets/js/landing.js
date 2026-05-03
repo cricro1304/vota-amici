@@ -41,32 +41,15 @@
     ]
   };
 
-  // Translations are lazy-loaded — see loadTranslations() below.
-  // Read window.LANDING_TRANSLATIONS at use-time, not boot-time, so the
-  // setLang call works whether the dictionary is already present or
-  // arrives later via the dynamically-injected <script>.
-  function getTranslations() { return window.LANDING_TRANSLATIONS; }
-
-  var translationsLoading = null; // promise-like: array of pending callbacks
-  function loadTranslations(callback) {
-    if (getTranslations()) { callback(); return; }
-    if (translationsLoading) { translationsLoading.push(callback); return; }
-    translationsLoading = [callback];
-    var script = document.createElement('script');
-    script.src = 'assets/js/landing.translations.js';
-    script.async = true;
-    script.onload = function () {
-      var pending = translationsLoading;
-      translationsLoading = null;
-      pending.forEach(function (cb) { cb(); });
-    };
-    script.onerror = function () { translationsLoading = null; };
-    document.head.appendChild(script);
-  }
-
-
   /* ── 2. Phone carousel (hero demo) ──────────────────────────────────── */
-  var currentLang = (window.I18n && window.I18n.getStoredLang) ? window.I18n.getStoredLang() : 'it';
+  // Page language is determined entirely by which HTML file the user
+  // requested — IT lives at /landing-page.html, EN lives at
+  // /en/landing-page.html, and each is fully translated at build time
+  // by scripts/build-i18n.js. There's no client-side i18n machinery
+  // anymore; we just read <html lang> to pick the right phone-mockup
+  // round set and result-line phrasing below.
+  var currentLang = (document.documentElement.lang || 'it').slice(0, 2).toLowerCase();
+  if (currentLang !== 'it' && currentLang !== 'en') currentLang = 'it';
   var roundIndex = 0;
   var screens = document.querySelectorAll('.app-screen');
   var currentScreen = 0;
@@ -149,88 +132,14 @@
 
 
   /* ── 3. i18n ────────────────────────────────────────────────────────── */
-  // The question carousel is seeded with Italian chips directly in the HTML
-  // so the marquee has something to scroll on the very first paint, even if
-  // landing.js loads late (flaky connections, cold-start cache miss, etc.).
-  // buildCarousel() only swaps content when the lang actually differs from
-  // what's currently rendered — repeated calls with the same lang are a
-  // no-op. This matters because innerHTML replacement + `width: max-content`
-  // forces a full reflow of the track, and the running `translateX(-50%)`
-  // animation keyframe is pinned to the old width, so you'd see a visible
-  // "jump" or freeze right after every swap.
-  function makeChips(arr) {
-    return arr.concat(arr) // duplicate so the marquee can loop seamlessly
-      .map(function (q) { return '<span class="question-chip">' + q + '</span>'; })
-      .join('');
-  }
-
-  function restartTrackAnimation(track) {
-    // Toggle the animation off/on so the keyframe re-reads the fresh
-    // width. Without this, the scroll-left/scroll-right animations stay
-    // anchored to the previous content's width and visibly stall on the
-    // language toggle. Use a double-rAF instead of `void offsetWidth` —
-    // the offsetWidth read is a synchronous forced layout (PSI flagged
-    // it as 39ms of forced reflow on initial boot). The rAF version
-    // lets the browser do the work between paint frames where it's
-    // free, with no main-thread cost during the boot critical path.
-    var prev = track.style.animation;
-    track.style.animation = 'none';
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        track.style.animation = prev || '';
-      });
-    });
-  }
-
-  function buildCarousel() {
-    var translations = getTranslations();
-    if (!translations) return;
-    var t = translations[currentLang];
-    if (!t) return;
-    var track1 = document.getElementById('qTrack1');
-    var track2 = document.getElementById('qTrack2');
-    if (!track1 || !track2) return;
-
-    // Skip rebuilds when the DOM already reflects the target language. This
-    // makes the boot-time setLang(currentLang) call a pure no-op when the
-    // HTML seed matches the stored lang (the common case for IT users).
-    var track1Lang = track1.getAttribute('data-seeded-lang');
-    var track2Lang = track2.getAttribute('data-seeded-lang');
-    if (track1Lang === currentLang && track2Lang === currentLang) return;
-
-    track1.innerHTML = makeChips(t.carousel_row1);
-    track2.innerHTML = makeChips(t.carousel_row2);
-    track1.setAttribute('data-seeded-lang', currentLang);
-    track2.setAttribute('data-seeded-lang', currentLang);
-
-    // Re-kick both marquee animations so they re-measure against the new
-    // content width — otherwise the keyframes are anchored to the previous
-    // language's chip set and the track visibly freezes / jumps.
-    restartTrackAnimation(track1);
-    restartTrackAnimation(track2);
-  }
-
-  // Exposed globally so the inline onclick="setLang('it')" handlers work.
-  // applyTranslations defers its data-i18n bulk to rAF for snappier toggle
-  // feedback. buildCarousel + applyRound stay synchronous because the
-  // question-track marquee animation needs its content present on the
-  // same frame the .question-track element exists, otherwise the CSS
-  // animation runs against an empty element and visibly stalls.
-  //
-  // Lazy-loads the translations dictionary on first call. For default IT
-  // visitors whose stored lang matches the HTML seed, setLang is never
-  // called on boot (see boot section below) and the translations file is
-  // never fetched — saving ~7KB of transfer + 22KB of JS parse.
-  window.setLang = function (lang) {
-    loadTranslations(function () {
-      var translations = getTranslations();
-      if (!translations) return; // network error — fall back to current lang
-      currentLang = lang;
-      window.I18n.applyTranslations(lang, translations[lang]);
-      buildCarousel();
-      applyRound();
-    });
-  };
+  // (Removed.) Per-language pages are generated at build time by
+  // scripts/build-i18n.js — the IT site lives at /landing-page.html, the
+  // EN site at /en/landing-page.html. The lang toggle in the nav is now
+  // a real <a href> link to the alternate-language page, so there's no
+  // window.setLang to expose, no translations dictionary to load, no
+  // post-paint text rewrite. The question-carousel chips are baked into
+  // each language's HTML at build time, so makeChips / buildCarousel /
+  // restartTrackAnimation are all gone too.
 
 
   /* ── 4. Pack tile interactions ──────────────────────────────────────── */
@@ -580,14 +489,6 @@
     handObserver.observe(hand);
   }
 
-  // Re-arm whenever language changes (innerHTML rewrite swaps the node).
-  var _origSetLang = window.setLang;
-  window.setLang = function (lang) {
-    _origSetLang(lang);
-    armHandGesture();
-  };
-
-
   /* ── 7. Boot ────────────────────────────────────────────────────────── */
   // Critical path: keep this section tiny so the hero CTA is interactive
   // on the very first frame. Anything that walks the DOM, sets up
@@ -612,32 +513,7 @@
     setupVerdictReactions();
     startCarousel();
     startVoteCycle();
-    // Hand-gesture observer normally re-arms inside the wrapped
-    // setLang. For IT visitors we skip the boot setLang call entirely
-    // (see below), so arm it directly here so the 🤌 wiggle still
-    // fires when the title scrolls in.
     armHandGesture();
-  }
-
-  // i18n boot: only call setLang when the stored/preferred language
-  // differs from the HTML seed (Italian). For IT users — the default
-  // and the overwhelming majority — the HTML is already correct, the
-  // IT lang button is already marked .active, document.lang is already
-  // "it", and applyRound's first round matches the hardcoded HTML in
-  // the phone mockup. So setLang is a pure no-op and worse, calling it
-  // would lazy-fetch landing.translations.js (~7KB transfer + 22KB JS
-  // parse) for no reason. Skipping it is the entire point of the
-  // lazy-load refactor: PSI flagged the translations file as 66%
-  // unused on the boot path, and for IT visitors it's now 100% unused.
-  //
-  // For non-IT users (browser language English, or someone who
-  // previously toggled to EN and it's stored in localStorage), schedule
-  // setLang on the next frame so it lands after first paint. The page
-  // will paint Italian first, then swap to the user's language a frame
-  // later — a tiny visible flicker that's the price of skipping the
-  // sync translation load on the IT critical path.
-  if (currentLang !== 'it') {
-    requestAnimationFrame(function () { window.setLang(currentLang); });
   }
 
   // Heavier work: wait for idle (or fall back to a small timeout on

@@ -23,9 +23,14 @@
   function getStoredLang() {
     var stored = safeGet();
     if (stored && SUPPORTED.indexOf(stored) !== -1) return stored;
-    // Fall back to the browser language hint, then default.
-    var nav = (navigator.language || '').slice(0, 2).toLowerCase();
-    if (SUPPORTED.indexOf(nav) !== -1) return nav;
+    // No fallback to navigator.language. Doing so meant English-locale
+    // browsers triggered an auto-load of landing.translations.js on
+    // every first visit — and during the load + apply, the main thread
+    // was blocked for ~100-300ms (script parse + 70-node DOM walk),
+    // making buttons feel unresponsive. With explicit-only storage,
+    // first-visit users see Italian (the HTML seed) regardless of
+    // browser locale; the IT/EN toggle in the nav lets EN visitors
+    // opt in, and from then on their preference is persisted.
     return DEFAULT;
   }
 
@@ -57,31 +62,69 @@
     // 4. Update the document language attribute (cheap).
     document.documentElement.lang = lang;
 
-    // 3. Apply translations to all [data-i18n] elements. Defer the bulk
-    //    DOM work to the next frame so the click feedback (button active
-    //    state, language attr) paints first — otherwise the synchronous
-    //    rewrite of dozens of nodes blocks the click for ~100ms+ on
-    //    mid-tier mobiles and the whole interaction feels frozen.
+    // 3. Apply translations to all [data-i18n] elements in chunks so
+    //    user input (taps, scrolls) can be processed between batches.
+    //    Previously this was a single synchronous loop over 70+ nodes
+    //    that blocked the main thread for 50-200ms on slow mobile —
+    //    long enough that any tap during that window felt unresponsive
+    //    ("the button isn't clickable while the translation loads").
+    //    The chunked version processes nodes in 5ms slices, yielding
+    //    via scheduler.postTask (modern Chrome) or setTimeout (Safari,
+    //    Firefox) between slices. Each yield gives the browser a
+    //    chance to flush queued input and paint, so taps register
+    //    immediately even mid-translation.
     var didRun = false;
     var run = function () {
       if (didRun) return;
       didRun = true;
       var nodes = document.querySelectorAll('[data-i18n]');
-      for (var i = 0; i < nodes.length; i++) {
-        var el = nodes[i];
+      var i = 0;
+      var SLICE_MS = 5;
+
+      function applyOne(el) {
         var key = el.getAttribute('data-i18n');
         var val = dict[key];
-        if (val == null) continue;
+        if (val == null) return;
         if (looksLikeHtml(val)) {
-          // innerHTML only when the value actually contains markup.
           if (el.innerHTML !== val) el.innerHTML = val;
         } else {
-          // textContent is ~10x faster than innerHTML for plain strings
-          // and skips the parser entirely. It also clobbers any HTML
-          // child structure, which is exactly what we want for these.
           if (el.textContent !== val) el.textContent = val;
         }
       }
+
+      function yieldThen(fn) {
+        // scheduler.postTask with priority "user-blocking" yields
+        // immediately to higher-priority tasks (input, paint) but
+        // resumes promptly after. setTimeout(0) is the universal
+        // fallback — slightly higher latency but still gives input a
+        // chance to run.
+        if (typeof scheduler !== 'undefined' &&
+            typeof scheduler.postTask === 'function') {
+          scheduler.postTask(fn, { priority: 'user-blocking' });
+        } else {
+          setTimeout(fn, 0);
+        }
+      }
+
+      function processSlice() {
+        var deadline = (typeof performance !== 'undefined'
+          ? performance.now()
+          : Date.now()) + SLICE_MS;
+        while (i < nodes.length) {
+          applyOne(nodes[i]);
+          i++;
+          // Time-budget check every iteration. Cheap (~0.1µs) and the
+          // 5ms budget keeps each slice well under the input-handler
+          // budget so taps don't queue.
+          var now = (typeof performance !== 'undefined'
+            ? performance.now()
+            : Date.now());
+          if (now >= deadline) break;
+        }
+        if (i < nodes.length) yieldThen(processSlice);
+      }
+
+      processSlice();
     };
     if (typeof window.requestAnimationFrame === 'function') {
       window.requestAnimationFrame(run);
