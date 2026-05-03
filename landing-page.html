@@ -226,9 +226,14 @@
     .pack-tile-popup{position:absolute;opacity:0;pointer-events:none}
     .packs-link-btn{display:inline-block;background:#fff;color:var(--pink);font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:700;padding:.7rem 1.6rem;border-radius:999px;text-decoration:none;box-shadow:0 6px 18px -6px var(--pink-glow)}
     .social-section{background:#fff8ed}
-    .final-cta-section{background:linear-gradient(135deg,var(--pink) 0%,#f06292 50%,var(--cyan) 100%);color:#fff;text-align:center;padding:5rem 1.5rem}
-    .final-cta-section h2{color:#fff;font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:.75rem}
-    .final-cta-section p{color:rgba(255,255,255,.95);margin-bottom:1.5rem}
+    /* Final CTA: cream background with subtle pink/cyan radial hints,
+       NOT a pink/cyan solid gradient. Matches landing.css's design.
+       Earlier inline rules had `color:#fff` on h2/p which persisted
+       past landing.css (which doesn't set color on these), turning
+       the title white on the cream background — invisible. */
+    .final-cta-section{background:var(--bg);text-align:center;padding:5rem 1.5rem}
+    .final-cta-section h2{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;margin-bottom:1rem}
+    .final-cta-section p{font-size:1.1rem;color:var(--text-muted);font-weight:600;margin-bottom:2rem;max-width:480px;margin-left:auto;margin-right:auto}
     footer{background:linear-gradient(135deg,#f9d1dc 0%,#e8c4d4 100%);color:var(--text-muted);text-align:center;padding:2rem 1.5rem;font-size:.9rem;font-weight:600}
   </style>
 

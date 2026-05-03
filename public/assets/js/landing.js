@@ -143,109 +143,136 @@
 
 
   /* ── 4. Pack tile interactions ──────────────────────────────────────── */
-  // All DOM lookups + listener attachment for this block are wrapped in
-  // setupPackTileInteractions() so they only run during the deferred
-  // boot phase (initBackgroundWork). Doing this synchronously at IIFE-
-  // execute time was contributing ~200ms of input-delay during initial
-  // load — the user's tap on the hero CTA had to wait behind 14
-  // listeners + several DOM walks even though packs sit far below the
-  // fold and can't be interacted with in the first second anyway.
+  // Event-delegated click handling on the document, attached
+  // immediately at IIFE-execute. This replaces the previous
+  // setupPackTileInteractions() that was deferred to requestIdleCallback
+  // and attached 14 separate listeners (7 click + 7 mouseenter on each
+  // tile). Two problems with the old version:
+  //   1. The idle deferral meant on slow phones the listener could be
+  //      missing for 250ms+ after first paint — taps in that window
+  //      did nothing, then suddenly the sheet appeared (felt "super
+  //      slow" to the user).
+  //   2. openPackSheet did a double-rAF dance to trigger the transform
+  //      transition, adding ~32ms of latency on top of the CSS animation.
+  // Delegation fixes (1): one listener at boot covers all tiles, no
+  // per-tile attachment needed. Removing display:none from the bottom
+  // sheet's CSS (see landing.css) fixes (2): the sheet is always in
+  // the DOM positioned offscreen via translateY(100%); adding .open
+  // immediately triggers the slide-up transition with no rAF wait.
   var isMobileView = function () { return window.innerWidth <= 600; };
 
-  function setupPackTileInteractions() {
-    var packSheet         = document.getElementById('packSheet');
-    var packBackdrop      = document.getElementById('packBackdrop');
-    var packSheetTitle    = document.getElementById('packSheetTitle');
-    var packSheetDesc     = document.getElementById('packSheetDesc');
-    var packSheetExamples = document.getElementById('packSheetExamples');
+  // Cache sheet elements lazily on first use — these IDs are stable
+  // and the DOM nodes exist by the time landing.js (defer) runs.
+  var _sheet = null, _sheetBackdrop = null, _sheetTitle = null,
+      _sheetDesc = null, _sheetExamples = null;
+  function getSheetEls() {
+    if (_sheet) return;
+    _sheet         = document.getElementById('packSheet');
+    _sheetBackdrop = document.getElementById('packBackdrop');
+    _sheetTitle    = document.getElementById('packSheetTitle');
+    _sheetDesc     = document.getElementById('packSheetDesc');
+    _sheetExamples = document.getElementById('packSheetExamples');
+    if (_sheetBackdrop) _sheetBackdrop.addEventListener('click', closePackSheet);
+  }
 
-    function openPackSheet(tile) {
-      var popup = tile.querySelector('.pack-tile-popup');
-      if (!popup) return;
+  function openPackSheet(tile) {
+    getSheetEls();
+    if (!_sheet) return;
+    var popup = tile.querySelector('.pack-tile-popup');
+    if (!popup) return;
 
-      var title = tile.querySelector('h4');
-      var emoji = tile.querySelector('.pack-tile-emoji');
-      packSheetTitle.textContent = (emoji ? emoji.textContent + ' ' : '') +
-                                   (title ? title.textContent : '');
+    var title = tile.querySelector('h4');
+    var emoji = tile.querySelector('.pack-tile-emoji');
+    _sheetTitle.textContent = (emoji ? emoji.textContent + ' ' : '') +
+                              (title ? title.textContent : '');
 
-      var descEl = popup.querySelector('.pack-tile-desc');
-      packSheetDesc.textContent = descEl ? descEl.textContent : '';
+    var descEl = popup.querySelector('.pack-tile-desc');
+    _sheetDesc.textContent = descEl ? descEl.textContent : '';
 
-      packSheetExamples.innerHTML = '';
-      popup.querySelectorAll('.pack-tile-chip').forEach(function (c) {
-        var span = document.createElement('span');
-        span.className = c.className;
-        span.textContent = c.textContent;
-        packSheetExamples.appendChild(span);
-      });
-
-      packBackdrop.classList.add('open');
-      packSheet.style.display = 'block';
-      // Two RAFs to ensure the transition runs from the initial translateY(100%).
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () { packSheet.classList.add('open'); });
-      });
-    }
-
-    function closePackSheet() {
-      packSheet.classList.remove('open');
-      packBackdrop.classList.remove('open');
-      setTimeout(function () { packSheet.style.display = 'none'; }, 350);
-    }
-
-    if (packBackdrop) packBackdrop.addEventListener('click', closePackSheet);
-
-    // Clamp popup position so it doesn't overflow viewport (desktop/tablet only).
-    function clampPopup(tile) {
-      if (isMobileView()) return;
-      var popup = tile.querySelector('.pack-tile-popup');
-      if (!popup) return;
-
-      // Reset to centered before measuring.
-      popup.style.left = '50%';
-      popup.style.right = 'auto';
-      popup.style.transform = 'translateX(-50%) translateY(0)';
-
-      requestAnimationFrame(function () {
-        var rect = popup.getBoundingClientRect();
-        var vw = window.innerWidth;
-        if (rect.right > vw - 16) {
-          var shift = rect.right - vw + 20;
-          popup.style.left = 'calc(50% - ' + shift + 'px)';
-        } else if (rect.left < 16) {
-          var shift2 = 16 - rect.left;
-          popup.style.left = 'calc(50% + ' + shift2 + 'px)';
-        }
-      });
-    }
-
-    var packTiles = document.querySelectorAll('.pack-tile');
-    packTiles.forEach(function (tile) {
-      tile.addEventListener('click', function (e) {
-        if (isMobileView()) {
-          e.stopPropagation();
-          openPackSheet(tile);
-          return;
-        }
-        // Desktop: toggle 'touched' for click-to-open popup.
-        var wasOpen = tile.classList.contains('touched');
-        packTiles.forEach(function (t) { t.classList.remove('touched'); });
-        if (!wasOpen) {
-          tile.classList.add('touched');
-          clampPopup(tile);
-        }
-      });
-
-      tile.addEventListener('mouseenter', function () { clampPopup(tile); });
+    _sheetExamples.innerHTML = '';
+    popup.querySelectorAll('.pack-tile-chip').forEach(function (c) {
+      var span = document.createElement('span');
+      span.className = c.className;
+      span.textContent = c.textContent;
+      _sheetExamples.appendChild(span);
     });
 
-    // Click outside any tile closes all open popups.
-    document.addEventListener('click', function (e) {
-      if (!e.target.closest('.pack-tile')) {
-        packTiles.forEach(function (t) { t.classList.remove('touched'); });
+    // Sheet lives in the DOM at translateY(100%) by default (see
+    // landing.css). Adding .open triggers the slide-up transition
+    // immediately — no double-rAF needed because the element was
+    // already a visible (just offscreen) compositor target.
+    _sheetBackdrop.classList.add('open');
+    _sheet.classList.add('open');
+  }
+
+  function closePackSheet() {
+    if (!_sheet) return;
+    _sheet.classList.remove('open');
+    _sheetBackdrop.classList.remove('open');
+    // No setTimeout to set display:none — the sheet stays in the DOM
+    // at translateY(100%), invisible and pointer-events:none, ready
+    // for the next open. Cheaper than display thrash.
+  }
+
+  // Clamp popup position so it doesn't overflow viewport (desktop only).
+  function clampPopup(tile) {
+    if (isMobileView()) return;
+    var popup = tile.querySelector('.pack-tile-popup');
+    if (!popup) return;
+
+    popup.style.left = '50%';
+    popup.style.right = 'auto';
+    popup.style.transform = 'translateX(-50%) translateY(0)';
+
+    requestAnimationFrame(function () {
+      var rect = popup.getBoundingClientRect();
+      var vw = window.innerWidth;
+      if (rect.right > vw - 16) {
+        var shift = rect.right - vw + 20;
+        popup.style.left = 'calc(50% - ' + shift + 'px)';
+      } else if (rect.left < 16) {
+        var shift2 = 16 - rect.left;
+        popup.style.left = 'calc(50% + ' + shift2 + 'px)';
       }
     });
   }
+
+  // Single delegated click listener for both pack tiles AND the
+  // "click outside to close" behavior. Attached immediately at boot,
+  // so the very first user tap is handled instantly.
+  document.addEventListener('click', function (e) {
+    var tile = e.target.closest('.pack-tile');
+    if (tile) {
+      if (isMobileView()) {
+        e.stopPropagation();
+        openPackSheet(tile);
+        return;
+      }
+      // Desktop: toggle 'touched' for click-to-open popup.
+      var wasOpen = tile.classList.contains('touched');
+      // Close any other open tile first.
+      var open = document.querySelector('.pack-tile.touched');
+      if (open && open !== tile) open.classList.remove('touched');
+      if (!wasOpen) {
+        tile.classList.add('touched');
+        clampPopup(tile);
+      } else {
+        tile.classList.remove('touched');
+      }
+    } else {
+      // Click outside any tile closes the open popup.
+      var openTile = document.querySelector('.pack-tile.touched');
+      if (openTile) openTile.classList.remove('touched');
+    }
+  });
+
+  // Desktop hover popups still want the clamp call so they don't
+  // overflow the viewport. mouseenter only fires on devices with a
+  // hover capability, so this is a no-op on touch-only mobile.
+  document.addEventListener('mouseenter', function (e) {
+    var tile = e.target && e.target.closest && e.target.closest('.pack-tile');
+    if (tile) clampPopup(tile);
+  }, true);
 
 
   /* ── 5. Scroll-driven tutorial phone coordination ───────────────────── */
@@ -509,11 +536,15 @@
   function initBackgroundWork() {
     tutSteps.forEach(function (s) { s.classList.remove('active'); });
     setupTutorialObservers();
-    setupPackTileInteractions();
     setupVerdictReactions();
     startCarousel();
     startVoteCycle();
     armHandGesture();
+    // Pack tile interactions used to be set up here too, but are now
+    // attached at IIFE-execute time via document-level event delegation
+    // (see Section 4 above). That makes the very first tap on a pack
+    // tile responsive even on slow phones where the idle callback
+    // hadn't fired yet.
   }
 
   // Heavier work: wait for idle (or fall back to a small timeout on

@@ -1885,8 +1885,13 @@ section { padding: 5rem 1.5rem; }
 
 
 /* Mobile bottom-sheet overlay (created by JS) */
+/* Bottom sheet stays mounted in the DOM at all times — display:none /
+   block is gone. Hidden state = translateY(100%) (offscreen) +
+   pointer-events:none. This way adding .open immediately triggers
+   the slide-up transition on the next frame, no double-rAF dance
+   needed in JS to commit a display change first. Closes the gap
+   between user tap and visible animation start. */
 .pack-bottom-sheet {
-  display: none;
   position: fixed;
   bottom: 0; left: 0; right: 0;
   background: var(--bg-card);
@@ -1897,21 +1902,27 @@ section { padding: 5rem 1.5rem; }
   text-align: center;
   z-index: 200;
   transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .pack-bottom-sheet.open {
-  display: block;
   transform: translateY(0);
+  pointer-events: auto;
 }
 
 .pack-bottom-sheet-backdrop {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
   z-index: 199;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease-out;
 }
-.pack-bottom-sheet-backdrop.open { display: block; }
+.pack-bottom-sheet-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .pack-bottom-sheet .pack-tile-desc {
   font-size: 0.95rem;
@@ -2525,30 +2536,35 @@ section { padding: 5rem 1.5rem; }
     padding: 3px 9px;
     letter-spacing: 0.08em;
   }
+  /* Pack hero cards: ~15% smaller on mobile per design feedback —
+     the previous sizes felt oversized on a phone, eating up too much
+     vertical real estate and making the section feel heavy. */
   .pack-hero {
-    padding: 1.25rem 1rem 1.1rem;
-    border-radius: 20px;
-    margin-bottom: 1.75rem;
-    max-width: 300px;
+    padding: 1rem 0.85rem 0.9rem;
+    border-radius: 18px;
+    margin-bottom: 1.4rem;
+    max-width: 260px;
   }
   .pack-hero-emoji {
-    font-size: 2rem;
-    width: 54px;
-    height: 54px;
-    margin-bottom: 0.3rem;
+    font-size: 1.7rem;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 0.25rem;
   }
-  .pack-hero h3 { font-size: 1.05rem; margin-bottom: 0.25rem; }
-  .pack-hero p  { font-size: 0.82rem; line-height: 1.4; }
+  .pack-hero h3 { font-size: 0.95rem; margin-bottom: 0.2rem; }
+  .pack-hero p  { font-size: 0.75rem; line-height: 1.35; }
   .pack-hero .pack-badge {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.85rem;
-    margin-top: 0.65rem;
+    font-size: 0.62rem;
+    padding: 0.25rem 0.7rem;
+    margin-top: 0.5rem;
   }
   .pack-hero .pack-play-btn {
-    font-size: 0.9rem;
-    padding: 0.5rem 1.25rem;
-    margin-top: 0.7rem;
+    font-size: 0.82rem;
+    padding: 0.42rem 1.05rem;
+    margin-top: 0.55rem;
   }
+  /* Tighten the row gap to match the smaller cards. */
+  .pack-hero-row { gap: 0.85rem; margin: 0.5rem auto 2rem; }
   .packs-coming-label {
     font-size: 0.8rem;
     padding: 0.45rem 0.95rem;
