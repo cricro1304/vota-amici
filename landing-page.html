@@ -12,19 +12,106 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-  <!-- Google Fonts: loaded non-blocking (preload + onload swap, noscript fallback). -->
+  <!-- Preload the two stylesheets the browser will need anyway, so they
+       arrive in parallel with the HTML parse rather than waiting until
+       the parser hits the <link> tag. They are still requested as
+       blocking stylesheets below — preload just gets them in flight
+       earlier. This matters more than the previous async-onload trick
+       because async loading caused a FOUC: the page rendered with the
+       browser default font, then "snapped" into the styled layout once
+       landing.css arrived (often hundreds of ms later on Safari mobile). -->
+  <link rel="preload" as="style" href="assets/css/shared.css" />
+  <link rel="preload" as="style" href="assets/css/landing.css" />
+
+  <!-- Critical above-the-fold CSS, inlined so the hero paints in its
+       final shape on the very first frame — no font flash, no layout
+       jump, no "click hits the wrong spot because the button moved
+       300ms later". Keep this in sync with the corresponding rules in
+       shared.css / landing.css. The fallback `font-family` stack uses
+       system-ui metrics that closely match Nunito/Fredoka, so when the
+       Google Fonts swap lands the lines barely move. -->
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --pink:#e6366e;--pink-ink:#b01a52;--pink-light:#f9d1dc;--pink-glow:rgba(230,54,110,.25);
+      --cyan:#3ba3d0;--cyan-light:#c4e8f7;--teal:#2db88a;--yellow:#f5c518;--purple:#9b59b6;--orange:#f0883e;
+      --bg:#fff8ed;--bg-card:#fff;--text:#2b2640;--text-muted:#8a8494;
+    }
+    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+    body{
+      font-family:'Nunito',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Color Emoji',sans-serif;
+      background:var(--bg);color:var(--text);overflow-x:clip;
+      min-height:100vh;
+    }
+    h1,h2,h3,h4{font-family:'Fredoka',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Color Emoji',sans-serif}
+    /* Nav skeleton: fixed at top, gradient bg. Hero needs the nav-height
+       offset (5rem padding-top) to sit below it on first paint. */
+    nav{position:fixed;top:0;left:0;right:0;z-index:50;padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,var(--pink) 0%,#f06292 50%,var(--cyan) 100%)}
+    .nav-logo{font-family:'Fredoka',system-ui,sans-serif;font-weight:700;font-size:1.25rem;color:#fff;white-space:nowrap}
+    .nav-right{display:flex;align-items:center;gap:1rem}
+    .nav-link{font-family:'Fredoka',system-ui,sans-serif;font-weight:600;font-size:.95rem;color:#fff;text-decoration:none;opacity:.9}
+    .nav-cta{font-family:'Fredoka',system-ui,sans-serif;font-weight:700;font-size:.95rem;color:var(--pink);background:#fff;padding:.5rem 1.25rem;border-radius:2rem;text-decoration:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    .lang-toggle{display:flex;background:rgba(255,255,255,.2);border-radius:1rem;overflow:hidden}
+    .lang-btn{font-family:'Fredoka',system-ui,sans-serif;font-weight:600;font-size:.8rem;padding:.3rem .65rem;color:rgba(255,255,255,.7);background:transparent;border:none;cursor:pointer}
+    .lang-btn.active{background:#fff;color:var(--pink);border-radius:.85rem}
+    /* Flow grid + hero: same shape as final landing.css so the browser
+       reserves the right space immediately. Phone column hides until
+       the full landing.css applies, otherwise the iphone-frame would
+       paint as a black box without its rounded styling. */
+    .flow-wrapper{position:relative;width:100%;overflow-x:clip}
+    .flow-grid{display:grid;grid-template-columns:1fr 340px;gap:2rem;max-width:1100px;margin:0 auto;padding:0 1.5rem}
+    .flow-content{display:flex;flex-direction:column;min-width:0}
+    .hero-block{min-height:100vh;display:flex;align-items:center;padding:5rem 0 3rem;position:relative}
+    .hero-text{position:relative;z-index:2}
+    .hero-text h1{font-size:clamp(2.6rem,6.5vw,4.2rem);font-weight:700;line-height:1.05;margin-bottom:1.5rem;position:relative}
+    .hero-text h1 .line1{display:block;transform:rotate(-2deg);margin-bottom:.15em;text-shadow:3px 3px 0 rgba(230,54,110,.10)}
+    .hero-text h1 .highlight{display:block;background:linear-gradient(135deg,var(--pink),var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;transform:rotate(1.5deg) translateX(.15em);font-size:1.15em}
+    .hero-sub{font-size:clamp(1rem,2vw,1.2rem);color:var(--text-muted);font-weight:600;margin-bottom:.5rem;line-height:1.6}
+    .hero-tagline{font-family:'Fredoka',system-ui,sans-serif;font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--pink-ink);font-weight:500;margin-bottom:2rem}
+    .hero-cta{display:inline-flex;align-items:center;gap:.5rem;background:var(--pink);color:#fff;font-family:'Fredoka',system-ui,sans-serif;font-weight:700;font-size:1.25rem;padding:.9rem 2.2rem;border-radius:2rem;border:none;cursor:pointer;text-decoration:none;box-shadow:0 6px 24px var(--pink-glow);touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .2s,box-shadow .2s}
+    .hero-cta:active{transform:scale(.97)}
+    .hero-free{margin-top:.75rem;font-size:.9rem;color:var(--text-muted);font-weight:600}
+    /* Tablet/mobile: collapse the 2-col grid so the inline layout doesn't
+       briefly paint at desktop proportions before landing.css applies its
+       responsive rules. We DON'T hide .flow-phone here — landing.css
+       still renders it on smaller viewports (just laid out differently),
+       and hiding it inline would persist past the cascade. */
+    @media (max-width:980px){
+      .flow-grid{grid-template-columns:1fr}
+      .hero-block{min-height:auto;padding:5rem 0 1rem;text-align:center;flex-direction:column;align-items:center;justify-content:center}
+      .hero-text{text-align:center}
+    }
+    @media (max-width:768px){
+      nav{padding:.5rem .75rem;gap:.5rem}
+      .nav-logo{font-size:.95rem}
+      .nav-link{display:none}
+      .nav-right{gap:.5rem}
+      .nav-cta{font-size:.8rem;padding:.4rem .9rem}
+      .lang-btn{width:28px;height:28px;font-size:.7rem;display:flex;align-items:center;justify-content:center}
+      .hero-cta{font-size:1.1rem;padding:.85rem 1.8rem}
+    }
+  </style>
+
+  <!-- Google Fonts: keep async with display=swap so we don't block FCP
+       on a third-party request. The inline critical CSS above already
+       has a system-font fallback stack, so the page paints crisply
+       before the web fonts arrive; when they do, swap is mostly
+       unnoticeable. -->
   <link rel="preload" as="style"
         href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap"
         onload="this.onload=null;this.rel='stylesheet'" />
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap" /></noscript>
 
-  <!-- shared.css is small and loads critical tokens/reset → keep it blocking. -->
+  <!-- shared.css + landing.css: BLOCKING. The preload tags above kick
+       off the requests during HTML parse, so by the time the parser
+       reaches these tags the bytes are usually already in the cache.
+       Blocking is intentional: the previous async-onload pattern caused
+       a visible FOUC and made content paint "late" as the user scrolled
+       on Safari mobile (sections appeared unstyled until landing.css
+       finished applying). Keeping these blocking guarantees the entire
+       page is styled before first paint, so scroll feels instant. -->
   <link rel="stylesheet" href="assets/css/shared.css" />
-
-  <!-- landing.css is 65 KB: load non-blocking to free up LCP. -->
-  <link rel="preload" as="style" href="assets/css/landing.css"
-        onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="assets/css/landing.css" /></noscript>
+  <link rel="stylesheet" href="assets/css/landing.css" />
 </head>
 <body>
 

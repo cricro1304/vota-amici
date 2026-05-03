@@ -98,16 +98,24 @@
   }
 
   // Vote selection cycles through players every 1.2s while on screen 1.
+  // Cache .vote-btn lookup once instead of querying every tick — the
+  // selector is stable for the lifetime of the page.
+  var voteButtons = document.querySelectorAll('.vote-btn');
   var voteIndex = -1;
-  setInterval(function () {
-    if (heroCarouselRunning && screens[0].classList.contains('active')) {
-      var voteButtons = document.querySelectorAll('.vote-btn');
-      voteButtons.forEach(function (b) { b.classList.remove('selected'); });
-      voteIndex = (voteIndex + 1) % voteButtons.length;
-      voteButtons[voteIndex].classList.add('selected');
-      // The winner will be re-selected on the next screen change (see applyRound).
-    }
-  }, 1200);
+  var voteInterval = null;
+  function startVoteCycle() {
+    if (voteInterval) return;
+    voteInterval = setInterval(function () {
+      if (heroCarouselRunning && screens[0].classList.contains('active')) {
+        for (var i = 0; i < voteButtons.length; i++) {
+          voteButtons[i].classList.remove('selected');
+        }
+        voteIndex = (voteIndex + 1) % voteButtons.length;
+        voteButtons[voteIndex].classList.add('selected');
+        // The winner will be re-selected on the next screen change (see applyRound).
+      }
+    }, 1200);
+  }
 
   // Carousel timer — only advances when in hero mode.
   var carouselInterval = null;
@@ -289,8 +297,19 @@
 
 
   /* ── 5. Scroll-driven tutorial phone coordination ───────────────────── */
-  // A single scroll handler decides whether the phone shows the hero
-  // auto-cycling carousel or a specific tutorial step screen.
+  // The phone column shows either the auto-cycling hero carousel or one
+  // specific tutorial mockup, depending on which `.tutorial-step` is
+  // currently in the reading position.
+  //
+  // Implemented with IntersectionObserver instead of a scroll listener.
+  // The previous version called getBoundingClientRect() for every step
+  // on every rAF after scroll — that forced a layout/reflow per scroll
+  // frame, which Safari (both desktop and mobile) handles poorly. The
+  // visible symptom was content appearing "late" as the user scrolled
+  // past sections, plus delayed click responsiveness because the main
+  // thread was busy in layout. IntersectionObserver runs off the main
+  // thread and only fires when intersection state changes, so scroll
+  // stays at 60fps.
 
   var tutScreens     = document.querySelectorAll('.tut-app-screen');
   var tutSteps       = document.querySelectorAll('.tutorial-step');
@@ -336,63 +355,70 @@
     if (activeStep) activeStep.classList.add('active');
   }
 
-  // Uses getBoundingClientRect; trigger line is 65% down the viewport.
-  var rafScheduled = false;
+  function setupTutorialObservers() {
+    if (!tutSteps.length) return;
+    if (typeof window.IntersectionObserver !== 'function') return;
 
-  function onScrollUpdate() {
-    rafScheduled = false;
-    // Trigger line at 0.55 of viewport — step activates once its top has
-    // crossed past the middle of the screen, i.e. the user's eyes are on
-    // the step copy. 0.82 was too eager (phone flipped before the user
-    // could read the current step); 0.65 was slightly laggy; 0.55 lines
-    // activation up with reading position without feeling "early".
-    var defaultTrigger = window.innerHeight * 0.55;
-    var vh = window.innerHeight;
+    // Track which steps are currently "in the reading zone" (past 55% of
+    // viewport from top). The latest such step wins — same semantics as
+    // the old scroll handler, but driven by visibility events instead of
+    // per-frame layout reads.
+    var stepStates = {}; // screenIndex -> boolean (active in reading zone)
 
-    // Snapshot step positions. A step may override the default trigger
-    // point via `data-tut-start-at` (a fraction of viewport height) — this
-    // is how the "🎲 Scegli il pack" step gets to start earlier, since its
-    // phone mockup is the user's first impression of the tutorial and it
-    // was activating too late / getting skipped past on fast scrolls.
-    var stepRects = [];
-    tutSteps.forEach(function (step) {
-      var rect = step.getBoundingClientRect();
-      var startAt = parseFloat(step.getAttribute('data-tut-start-at'));
-      var trigger = isNaN(startAt) ? defaultTrigger : vh * startAt;
-      stepRects.push({
-        top: rect.top,
-        bottom: rect.bottom,
-        trigger: trigger,
-        screen: parseInt(step.getAttribute('data-tut-screen'), 10)
+    function recomputeActive() {
+      var activeScreen = 0;
+      // Iterate steps in DOM order so the latest one wins.
+      tutSteps.forEach(function (step) {
+        var screen = parseInt(step.getAttribute('data-tut-screen'), 10);
+        if (stepStates[screen]) activeScreen = screen;
       });
-    });
-
-    // Latest step whose top is above its own trigger line wins.
-    var activeScreen = 0;
-    for (var i = stepRects.length - 1; i >= 0; i--) {
-      if (stepRects[i].top <= stepRects[i].trigger) {
-        activeScreen = stepRects[i].screen;
-        break;
+      if (activeScreen > 0) {
+        enterTutorialMode();
+        setTutScreen(activeScreen);
+      } else {
+        enterHeroMode();
       }
     }
 
-    // Scrolled past the whole tutorial block → reset.
-    if (tutBlockEl && tutBlockEl.getBoundingClientRect().bottom < 0) {
-      activeScreen = 0;
-    }
+    // One observer per step so each can have its own rootMargin (the
+    // pack-picker step uses data-tut-start-at to activate earlier).
+    // rootMargin's bottom value pulls the trigger line up from the
+    // viewport bottom, so the step "enters the reading zone" when its
+    // top crosses that line — same as the old 0.55 trigger.
+    tutSteps.forEach(function (step) {
+      var screen  = parseInt(step.getAttribute('data-tut-screen'), 10);
+      var startAt = parseFloat(step.getAttribute('data-tut-start-at'));
+      var triggerFrac = isNaN(startAt) ? 0.55 : startAt;
+      // bottomMargin shifts the bottom edge of the root upward by
+      // (1 - triggerFrac) * 100% — so the step counts as intersecting
+      // once its top has crossed `triggerFrac` of the viewport.
+      var bottomPct = Math.round((1 - triggerFrac) * 100);
+      var rootMargin = '0px 0px -' + bottomPct + '% 0px';
 
-    if (activeScreen > 0) {
-      enterTutorialMode();
-      setTutScreen(activeScreen);
-    } else {
-      enterHeroMode();
-    }
-  }
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          stepStates[screen] = entry.isIntersecting;
+        });
+        recomputeActive();
+      }, { rootMargin: rootMargin, threshold: 0 });
+      observer.observe(step);
+    });
 
-  function scheduleScrollUpdate() {
-    if (rafScheduled) return;
-    rafScheduled = true;
-    requestAnimationFrame(onScrollUpdate);
+    // Once we've scrolled fully past the tutorial block, snap back to
+    // hero mode. A second observer on the block itself watches for that
+    // — cheaper than reading getBoundingClientRect() on every scroll.
+    if (tutBlockEl) {
+      var blockObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting && entry.boundingClientRect.bottom < 0) {
+            // Scrolled past the bottom of the tutorial block.
+            Object.keys(stepStates).forEach(function (k) { stepStates[k] = false; });
+            recomputeActive();
+          }
+        });
+      }, { threshold: 0 });
+      blockObserver.observe(tutBlockEl);
+    }
   }
 
 
@@ -513,11 +539,27 @@
   // user's last choice rather than the HTML defaults. The wrapped setLang
   // also (re-)arms the hand-gesture observer.
   window.setLang(currentLang);
-  startCarousel();
 
-  tutSteps.forEach(function (s) { s.classList.remove('active'); });
-  if (tutSteps.length > 0) {
-    window.addEventListener('scroll', scheduleScrollUpdate, { passive: true });
-    onScrollUpdate();
+  // Defer the auto-cycling timers + tutorial observer setup until after
+  // the page has settled. This keeps the boot critical path tiny — the
+  // hero CTA becomes interactive on the very first frame instead of
+  // waiting behind the synchronous DOM walk these helpers do. Without
+  // the deferral, on Safari mobile the Play Now button looked clickable
+  // but didn't respond for a noticeable beat after first paint because
+  // landing.js was still wiring up observers and intervals.
+  function initBackgroundWork() {
+    tutSteps.forEach(function (s) { s.classList.remove('active'); });
+    setupTutorialObservers();
+    startCarousel();
+    startVoteCycle();
+  }
+  if (typeof window.requestIdleCallback === 'function') {
+    // Cap at 200ms so the tutorial mockup is wired up before the user
+    // can realistically scroll into it, even on idle-deprived devices.
+    window.requestIdleCallback(initBackgroundWork, { timeout: 200 });
+  } else {
+    // Safari doesn't ship requestIdleCallback; fall back to a 0-delay
+    // setTimeout, which still yields one task to the renderer.
+    setTimeout(initBackgroundWork, 0);
   }
 })();

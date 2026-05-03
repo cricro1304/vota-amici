@@ -2600,3 +2600,68 @@ section { padding: 5rem 1.5rem; }
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── Tap responsiveness + Safari mobile perf tweaks ─────────────────────────
+   These were added after a round of mobile testing surfaced two issues:
+     1. The Play Now CTA "looked clickable but registered seconds late" on
+        iOS — the classic 300ms tap delay plus :hover styles being held in
+        a sticky state, plus an oversized tap-highlight flash.
+     2. Scrolling on Safari (mobile + desktop) felt laggy and content
+        below the fold appeared to "load late" when scrolled into view.
+        Profiling showed `filter: blur(60px)` on the hero blobs and the
+        repeated `backdrop-filter` rules were creating expensive
+        compositor layers that re-rasterized on every scroll frame.
+   ─────────────────────────────────────────────────────────────────────── */
+
+/* Disable iOS Safari's 300ms double-tap delay on every interactive
+   surface. `manipulation` keeps pinch-to-zoom but kills the tap delay.
+   `-webkit-tap-highlight-color: transparent` removes the gray flash so
+   :active styles (already wired up via `transform: scale(.97)`) are the
+   only feedback the user sees. */
+.hero-cta,
+.nav-cta,
+.pack-play-btn,
+.packs-link-btn,
+.verdict-cta-btn,
+.tut-start-btn,
+.lang-btn,
+.novita-strip,
+.pack-tile,
+.mode-card,
+.vote-btn,
+.tut-vote-btn,
+.tut-pack-row {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile-specific: cut the GPU cost of the hero blobs. blur(60px) on a
+   400px element burns a lot of fillrate on phone GPUs and contributes
+   to the laggy-scroll feeling on Safari iOS. Halving the radius is
+   visually almost identical (the blobs are already 50% opacity behind
+   the hero) but ~4x cheaper to rasterize. We also drop the float
+   animation since it forces continuous re-rasterization of the blur. */
+@media (max-width: 768px) {
+  .blob {
+    filter: blur(30px);
+    animation: none !important;
+  }
+  /* Pause the iphone float so the phone column isn't continuously
+     re-compositing while the user scrolls past it. */
+  .iphone-frame { animation: none !important; }
+}
+
+/* Honor reduced-motion preferences across the board. Several of the
+   continuous animations (blob float, slot-roll, marquee, phone float)
+   are decorative and contribute to the same scroll-jank Safari users
+   complained about. Users on iOS who toggle "Reduce Motion" already
+   ask for this, so it doubles as a perf escape hatch. */
+@media (prefers-reduced-motion: reduce) {
+  .blob,
+  .iphone-frame,
+  .question-track,
+  .question-track-2,
+  .hero-sub .slot-track {
+    animation: none !important;
+  }
+}
