@@ -35,13 +35,13 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Nunito', 'Noto Color Emoji', sans-serif;
+  font-family: 'Nunito', 'Nunito Fallback', 'Noto Color Emoji', sans-serif;
   background: var(--bg);
   color: var(--text);
   overflow-x: clip;
 }
 
-h1, h2, h3, h4, .fredoka { font-family: 'Fredoka', 'Noto Color Emoji', sans-serif; }
+h1, h2, h3, h4, .fredoka { font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif; }
 
 
 /* ── Nav ────────────────────────────────────────────────────────────────── */
@@ -57,7 +57,7 @@ nav {
 }
 
 .nav-logo {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 1.25rem;
   color: white;
@@ -72,7 +72,7 @@ nav {
 }
 
 .nav-link {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
   color: white;
@@ -83,7 +83,7 @@ nav {
 .nav-link:hover { opacity: 1; }
 
 .nav-cta {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--pink);
@@ -108,7 +108,7 @@ nav {
 }
 
 .lang-btn {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 0.8rem;
   padding: 0.3rem 0.65rem;
@@ -137,7 +137,7 @@ footer {
 }
 
 footer .footer-logo {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   color: var(--pink);
   font-size: 1.1rem;

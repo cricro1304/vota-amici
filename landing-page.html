@@ -38,6 +38,40 @@
        system-ui metrics that closely match Nunito/Fredoka, so when the
        Google Fonts swap lands the lines barely move. -->
   <style>
+    /* ── Fallback @font-face with metric overrides ─────────────────────
+       Google Fonts (Nunito + Fredoka) load async; without help, when
+       they swap in they reflow every line of text on the page because
+       Arial (the system fallback) has different metrics. PSI reported
+       CLS 0.094 — almost entirely from this swap.
+
+       These two @font-face rules define a "Nunito Fallback" and
+       "Fredoka Fallback" that wrap Arial with ascent/descent/size
+       overrides chosen to match the eventual web font's line box
+       almost exactly. The body / h1-4 stacks below use the fallback
+       FIRST, then fall through to the real font once it's loaded.
+       Net effect: when Nunito/Fredoka arrive, the line box stays the
+       same size, only the glyph shapes change → CLS contribution
+       collapses from ~0.094 to ~0.
+
+       Override values are from the standard
+       https://github.com/khempenius/font-fallbacks-dataset metrics
+       table for Nunito / Fredoka against Arial. */
+    @font-face {
+      font-family: 'Nunito Fallback';
+      src: local('Arial');
+      ascent-override: 101%;
+      descent-override: 32%;
+      line-gap-override: 0%;
+      size-adjust: 100%;
+    }
+    @font-face {
+      font-family: 'Fredoka Fallback';
+      src: local('Arial');
+      ascent-override: 92%;
+      descent-override: 25%;
+      line-gap-override: 0%;
+      size-adjust: 108%;
+    }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
     :root{
       --pink:#e6366e;--pink-ink:#b01a52;--pink-light:#f9d1dc;--pink-glow:rgba(230,54,110,.25);
@@ -46,20 +80,20 @@
     }
     html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     body{
-      font-family:'Nunito',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Color Emoji',sans-serif;
+      font-family:'Nunito','Nunito Fallback',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Color Emoji',sans-serif;
       background:var(--bg);color:var(--text);overflow-x:clip;
       min-height:100vh;
     }
-    h1,h2,h3,h4{font-family:'Fredoka',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Color Emoji',sans-serif}
+    h1,h2,h3,h4{font-family:'Fredoka','Fredoka Fallback',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Color Emoji',sans-serif}
     /* Nav skeleton: fixed at top, gradient bg. Hero needs the nav-height
        offset (5rem padding-top) to sit below it on first paint. */
     nav{position:fixed;top:0;left:0;right:0;z-index:50;padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,var(--pink) 0%,#f06292 50%,var(--cyan) 100%)}
-    .nav-logo{font-family:'Fredoka',system-ui,sans-serif;font-weight:700;font-size:1.25rem;color:#fff;white-space:nowrap}
+    .nav-logo{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:700;font-size:1.25rem;color:#fff;white-space:nowrap}
     .nav-right{display:flex;align-items:center;gap:1rem}
-    .nav-link{font-family:'Fredoka',system-ui,sans-serif;font-weight:600;font-size:.95rem;color:#fff;text-decoration:none;opacity:.9}
-    .nav-cta{font-family:'Fredoka',system-ui,sans-serif;font-weight:700;font-size:.95rem;color:var(--pink);background:#fff;padding:.5rem 1.25rem;border-radius:2rem;text-decoration:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    .nav-link{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:600;font-size:.95rem;color:#fff;text-decoration:none;opacity:.9}
+    .nav-cta{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:700;font-size:.95rem;color:var(--pink);background:#fff;padding:.5rem 1.25rem;border-radius:2rem;text-decoration:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .lang-toggle{display:flex;background:rgba(255,255,255,.2);border-radius:1rem;overflow:hidden}
-    .lang-btn{font-family:'Fredoka',system-ui,sans-serif;font-weight:600;font-size:.8rem;padding:.3rem .65rem;color:rgba(255,255,255,.7);background:transparent;border:none;cursor:pointer}
+    .lang-btn{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:600;font-size:.8rem;padding:.3rem .65rem;color:rgba(255,255,255,.7);background:transparent;border:none;cursor:pointer}
     .lang-btn.active{background:#fff;color:var(--pink);border-radius:.85rem}
     /* Flow grid + hero: same shape as final landing.css so the browser
        reserves the right space immediately. Phone column hides until
@@ -74,8 +108,8 @@
     .hero-text h1 .line1{display:block;transform:rotate(-2deg);margin-bottom:.15em;text-shadow:3px 3px 0 rgba(230,54,110,.10)}
     .hero-text h1 .highlight{display:block;background:linear-gradient(135deg,var(--pink),var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;transform:rotate(1.5deg) translateX(.15em);font-size:1.15em}
     .hero-sub{font-size:clamp(1rem,2vw,1.2rem);color:var(--text-muted);font-weight:600;margin-bottom:.5rem;line-height:1.6}
-    .hero-tagline{font-family:'Fredoka',system-ui,sans-serif;font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--pink-ink);font-weight:500;margin-bottom:2rem}
-    .hero-cta{display:inline-flex;align-items:center;gap:.5rem;background:var(--pink);color:#fff;font-family:'Fredoka',system-ui,sans-serif;font-weight:700;font-size:1.25rem;padding:.9rem 2.2rem;border-radius:2rem;border:none;cursor:pointer;text-decoration:none;box-shadow:0 6px 24px var(--pink-glow);touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .2s,box-shadow .2s}
+    .hero-tagline{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--pink-ink);font-weight:500;margin-bottom:2rem}
+    .hero-cta{display:inline-flex;align-items:center;gap:.5rem;background:var(--pink);color:#fff;font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:700;font-size:1.25rem;padding:.9rem 2.2rem;border-radius:2rem;border:none;cursor:pointer;text-decoration:none;box-shadow:0 6px 24px var(--pink-glow);touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .2s,box-shadow .2s}
     .hero-cta:active{transform:scale(.97)}
     .hero-free{margin-top:.75rem;font-size:.9rem;color:var(--text-muted);font-weight:600}
     /* Tablet/mobile: collapse the 2-col grid so the inline layout doesn't
@@ -348,7 +382,7 @@
             <div class="tut-app-screen" id="tutScreen5">
               <div class="tut-lobby-title" data-i18n="demo_header">🎉 Chi è il più...?</div>
               <div style="display:flex; flex-direction:column; gap:8px; padding:4px 2px;">
-                <div style="font-family:'Fredoka','Noto Color Emoji',sans-serif; font-weight:700; font-size:13px; color:var(--text-muted); text-align:center;" data-i18n="tut_pack_card_title">🎲 Scegli un pack</div>
+                <div style="font-family:'Fredoka','Fredoka Fallback','Noto Color Emoji',sans-serif; font-weight:700; font-size:13px; color:var(--text-muted); text-align:center;" data-i18n="tut_pack_card_title">🎲 Scegli un pack</div>
                 <div style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:-4px;" data-i18n="tut_pack_card_sub">Il mazzo giusto per il tuo gruppo</div>
                 <div class="tut-pack-row tut-pack-row-selected">
                   <span class="tut-pack-emoji">🎭</span>
@@ -392,7 +426,7 @@
             <div class="tut-app-screen" id="tutScreen4">
               <div class="tut-lobby-title" data-i18n="demo_header">🎉 Chi è il più...?</div>
               <div style="display:flex; flex-direction:column; gap:10px; padding:6px 4px;">
-                <div style="font-family:'Fredoka','Noto Color Emoji',sans-serif; font-weight:700; font-size:13px; color:var(--text-muted); text-align:center;" data-i18n="tut_modes_card_title">🎲 Modalità di gioco</div>
+                <div style="font-family:'Fredoka','Fredoka Fallback','Noto Color Emoji',sans-serif; font-weight:700; font-size:13px; color:var(--text-muted); text-align:center;" data-i18n="tut_modes_card_title">🎲 Modalità di gioco</div>
                 <div style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:-4px;" data-i18n="tut_modes_card_sub">Scegli quali domande includere</div>
                 <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:6px;">
                   <span style="background:var(--pink); color:#fff; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700;">🌸 Leggero</span>

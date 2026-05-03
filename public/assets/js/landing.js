@@ -147,13 +147,18 @@
     // Toggle the animation off/on so the keyframe re-reads the fresh
     // width. Without this, the scroll-left/scroll-right animations stay
     // anchored to the previous content's width and visibly stall on the
-    // language toggle.
+    // language toggle. Use a double-rAF instead of `void offsetWidth` —
+    // the offsetWidth read is a synchronous forced layout (PSI flagged
+    // it as 39ms of forced reflow on initial boot). The rAF version
+    // lets the browser do the work between paint frames where it's
+    // free, with no main-thread cost during the boot critical path.
     var prev = track.style.animation;
     track.style.animation = 'none';
-    // Force a reflow so the "none" actually lands before we restore.
-    // Reading offsetWidth is the canonical way to do this.
-    void track.offsetWidth; // eslint-disable-line no-unused-expressions
-    track.style.animation = prev || '';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        track.style.animation = prev || '';
+      });
+    });
   }
 
   function buildCarousel() {
@@ -462,10 +467,11 @@
       }
 
       // Pop animation — re-trigger by removing + re-adding the class.
+      // Double-rAF avoids the forced reflow of `void chip.offsetWidth`.
       chip.classList.remove('bump');
-      // Force a reflow so the removal lands before we re-add.
-      void chip.offsetWidth;
-      chip.classList.add('bump');
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { chip.classList.add('bump'); });
+      });
 
       // Floating "+1" indicator.
       var floater = document.createElement('span');
@@ -510,8 +516,12 @@
     var hand = document.querySelector('.hand-gesture');
     if (!hand) return;
     hand.classList.remove('play');
-    void hand.offsetWidth; // force reflow so the keyframes restart
-    hand.classList.add('play');
+    // Double-rAF replaces the previous `void hand.offsetWidth` reflow.
+    // The IntersectionObserver fires this on initial visibility, which
+    // PSI was attributing as ~39ms of forced reflow during boot.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { hand.classList.add('play'); });
+    });
   }
 
   function armHandGesture() {

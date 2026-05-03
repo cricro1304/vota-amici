@@ -128,7 +128,7 @@
    Both prefix and rolling words share the same font + line-box so the
    slot stays vertically locked to the surrounding text baseline. */
 .hero-sub .slot-prefix {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   color: var(--text-dark, #222);
   line-height: 1.6;
@@ -169,7 +169,7 @@
   display: block;
   height: 1.6em;
   line-height: 1.6em;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   color: var(--pink);
   white-space: nowrap;
@@ -219,7 +219,7 @@
 }
 
 .hero-tagline {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-size: clamp(0.95rem, 1.8vw, 1.1rem);
   color: var(--pink-ink);
   font-weight: 500;
@@ -232,7 +232,7 @@
   gap: 0.5rem;
   background: var(--pink);
   color: white;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 1.25rem;
   padding: 0.9rem 2.2rem;
@@ -370,7 +370,7 @@
   background: linear-gradient(135deg, var(--pink), #f06292, var(--cyan));
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 14px;
 }
@@ -388,14 +388,14 @@
 .screen-question .q-badge {
   background: var(--pink-light);
   color: var(--pink-ink);
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 10px;
   padding: 4px 12px;
   border-radius: 12px;
 }
 .screen-question .q-text {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 18px;
   text-align: center;
@@ -423,7 +423,7 @@
   border: 2px solid #eee;
   border-radius: 14px;
   padding: 8px 10px;
-  font-family: 'Nunito', 'Noto Color Emoji', sans-serif;
+  font-family: 'Nunito', 'Nunito Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 11px;
   color: var(--text);
@@ -460,14 +460,14 @@
 }
 
 .result-label {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 13px;
   color: var(--text-muted);
 }
 
 .result-q {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 14px;
   color: var(--text);
@@ -508,11 +508,11 @@
   font-size: 22px;
   font-weight: 800;
   color: white;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
 }
 
 .result-name {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 22px;
   color: var(--text);
@@ -661,14 +661,14 @@ section { padding: 5rem 1.5rem; }
 .tut-pack-emoji { font-size: 22px; line-height: 1; }
 .tut-pack-info { flex: 1; min-width: 0; text-align: left; }
 .tut-pack-name {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 12px;
   color: #111;
   line-height: 1.1;
 }
 .tut-pack-sub {
-  font-family: 'Nunito', 'Noto Color Emoji', sans-serif;
+  font-family: 'Nunito', 'Nunito Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 10px;
   color: var(--text-muted);
@@ -687,7 +687,7 @@ section { padding: 5rem 1.5rem; }
   flex: none;
 }
 .tut-pack-soon {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 9px;
   text-transform: uppercase;
@@ -701,7 +701,7 @@ section { padding: 5rem 1.5rem; }
 /* Tutorial "✨ Nuovo" marker — same footprint as `.tut-pack-soon` but
  * pink/gradient so the Coppie row reads as *released*, not queued. */
 .tut-pack-new {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 800;
   font-size: 9px;
   text-transform: uppercase;
@@ -718,7 +718,7 @@ section { padding: 5rem 1.5rem; }
 .tut-lobby { align-items: center; }
 
 .tut-lobby-title {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 13px;
   text-align: center;
@@ -733,7 +733,7 @@ section { padding: 5rem 1.5rem; }
   border: 2px dashed var(--pink);
   border-radius: 14px;
   padding: 10px 24px;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 28px;
   letter-spacing: 6px;
@@ -790,7 +790,7 @@ section { padding: 5rem 1.5rem; }
 }
 
 .tut-player-name {
-  font-family: 'Nunito', 'Noto Color Emoji', sans-serif;
+  font-family: 'Nunito', 'Nunito Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 11px;
   color: var(--text);
@@ -808,7 +808,7 @@ section { padding: 5rem 1.5rem; }
 
 .tut-waiting {
   margin-top: 12px;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 11px;
   color: var(--text-muted);
@@ -833,7 +833,7 @@ section { padding: 5rem 1.5rem; }
   margin-top: 10px;
   background: var(--pink);
   color: white;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 12px;
   padding: 7px 24px;
@@ -850,7 +850,7 @@ section { padding: 5rem 1.5rem; }
   background: linear-gradient(135deg, var(--pink), #f06292, var(--cyan));
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 13px;
 }
@@ -867,7 +867,7 @@ section { padding: 5rem 1.5rem; }
 .tut-vote-badge {
   background: var(--pink-light);
   color: var(--pink-ink);
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 9px;
   padding: 3px 10px;
@@ -877,7 +877,7 @@ section { padding: 5rem 1.5rem; }
 .tut-vote-emoji { font-size: 32px; }
 
 .tut-vote-question {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 16px;
   text-align: center;
@@ -903,7 +903,7 @@ section { padding: 5rem 1.5rem; }
   border: 2px solid #eee;
   border-radius: 12px;
   padding: 7px 8px;
-  font-family: 'Nunito', 'Noto Color Emoji', sans-serif;
+  font-family: 'Nunito', 'Nunito Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 10px;
   color: var(--text);
@@ -950,7 +950,7 @@ section { padding: 5rem 1.5rem; }
   background: linear-gradient(135deg, var(--pink), #f06292, var(--cyan));
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 13px;
 }
@@ -965,7 +965,7 @@ section { padding: 5rem 1.5rem; }
 }
 
 .tut-result-label {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 12px;
   color: var(--text-muted);
@@ -1004,11 +1004,11 @@ section { padding: 5rem 1.5rem; }
   font-size: 20px;
   font-weight: 800;
   color: white;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
 }
 
 .tut-result-name {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 20px;
   color: var(--text);
@@ -1104,7 +1104,7 @@ section { padding: 5rem 1.5rem; }
   border-radius: 50%;
   background: var(--pink);
   color: white;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
   flex-shrink: 0;
@@ -1113,7 +1113,7 @@ section { padding: 5rem 1.5rem; }
 .tut-step-emoji { font-size: 1.5rem; }
 
 .tutorial-step h3 {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text);
@@ -1190,7 +1190,7 @@ section { padding: 5rem 1.5rem; }
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.65rem 1.3rem;
   border-radius: 2rem;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
   white-space: nowrap;
@@ -1306,7 +1306,7 @@ section { padding: 5rem 1.5rem; }
   right: 12px;
   background: #111;
   color: #fff;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 1.35rem;        /* 🔞 emoji reads as an icon, needs to be big */
   line-height: 1;
@@ -1344,7 +1344,7 @@ section { padding: 5rem 1.5rem; }
 .mode-card.mode-neutro .mode-meter-dot.on { background: var(--cyan); }
 .mode-card.mode-spicy  .mode-meter-dot.on { background: #f97316; }
 .mode-meter-label {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -1355,7 +1355,7 @@ section { padding: 5rem 1.5rem; }
 
 /* --- Title + copy -------------------------------------------------------- */
 .mode-card h3 {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 1.9rem;
   margin: 0 0 0.5rem;
@@ -1387,7 +1387,7 @@ section { padding: 5rem 1.5rem; }
   font-size: 0.82rem;
   font-weight: 700;
   color: #374151;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08),
               0 6px 14px rgba(0, 0, 0, 0.06);
   transition: transform 0.2s ease;
@@ -1453,7 +1453,7 @@ section { padding: 5rem 1.5rem; }
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 800;
   font-size: 1.05rem;
   color: white;
@@ -1493,7 +1493,7 @@ section { padding: 5rem 1.5rem; }
   background: linear-gradient(90deg, #ffe3ee 0%, #fff1e6 100%);
   border: 1.5px dashed #e6366e;
   color: #e6366e;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
   text-decoration: none;
@@ -1622,7 +1622,7 @@ section { padding: 5rem 1.5rem; }
 .pack-hero .pack-badge {
   display: inline-block;
   margin-top: 0.85rem;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 800;
   font-size: 0.78rem;
   padding: 0.35rem 1rem;
@@ -1653,7 +1653,7 @@ section { padding: 5rem 1.5rem; }
   margin-top: 0.85rem;
   background: white;
   color: var(--pink);
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   padding: 0.6rem 1.5rem;
@@ -1674,7 +1674,7 @@ section { padding: 5rem 1.5rem; }
   align-items: center;
   gap: 0.5rem;
   text-align: center;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 800;
   font-size: 0.95rem;
   text-transform: uppercase;
@@ -1762,7 +1762,7 @@ section { padding: 5rem 1.5rem; }
 }
 
 .pack-tile h4 {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-size: 1.1rem;
   font-weight: 800;
   margin: 0;
@@ -1777,7 +1777,7 @@ section { padding: 5rem 1.5rem; }
 .pack-tile .pack-tile-tag {
   display: inline-block;
   margin: 0;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 800;
   font-size: 0.65rem;
   text-transform: uppercase;
@@ -1926,7 +1926,7 @@ section { padding: 5rem 1.5rem; }
 }
 
 .pack-bottom-sheet-title {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 1.2rem;
   margin-bottom: 0.5rem;
@@ -1996,7 +1996,7 @@ section { padding: 5rem 1.5rem; }
   display: inline-block;
   background: linear-gradient(135deg, var(--yellow) 0%, var(--orange) 100%);
   color: var(--text);
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   padding: 0.45rem 1rem;
   border-radius: 999px;
@@ -2085,7 +2085,7 @@ section { padding: 5rem 1.5rem; }
   top: 1rem;
   right: 0.9rem;
   transform: rotate(-14deg);
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 0.7rem;
   letter-spacing: 0.18em;
@@ -2100,7 +2100,7 @@ section { padding: 5rem 1.5rem; }
 }
 
 .verdict-title {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 1.15rem;
   line-height: 1.15;
@@ -2134,13 +2134,13 @@ section { padding: 5rem 1.5rem; }
   color: white;
   font-weight: 800;
   font-size: 0.8rem;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
   border: 2px solid white;
   flex-shrink: 0;
 }
 .verdict-name {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--text);
@@ -2232,7 +2232,7 @@ section { padding: 5rem 1.5rem; }
 }
 
 .verdict-votes {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -2258,7 +2258,7 @@ section { padding: 5rem 1.5rem; }
   animation: verdictCrownWobble 2.4s ease-in-out infinite;
 }
 .verdict-card-cta .verdict-cta-title {
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 1.3rem;
   color: var(--text);
@@ -2280,7 +2280,7 @@ section { padding: 5rem 1.5rem; }
 .verdict-card-cta .verdict-cta-btn {
   background: linear-gradient(135deg, var(--pink) 0%, #f06292 100%);
   color: white;
-  font-family: 'Fredoka', 'Noto Color Emoji', sans-serif;
+  font-family: 'Fredoka', 'Fredoka Fallback', 'Noto Color Emoji', sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
   padding: 0.65rem 1.4rem;
