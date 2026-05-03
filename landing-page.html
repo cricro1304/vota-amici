@@ -110,6 +110,20 @@
     .hero-text h1 .line1{display:block;transform:rotate(-2deg);margin-bottom:.15em;text-shadow:3px 3px 0 rgba(230,54,110,.10)}
     .hero-text h1 .highlight{display:block;background:linear-gradient(135deg,var(--pink),var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;transform:rotate(1.5deg) translateX(.15em);font-size:1.15em}
     .hero-sub{font-size:clamp(1rem,2vw,1.2rem);color:var(--text-muted);font-weight:600;margin-bottom:.5rem;line-height:1.6}
+    /* Slot-machine collapse rules. The hero-sub contains 7 stacked
+       <span class="slot-word"> elements that an animation rolls
+       through one at a time. Without these constraints applied on the
+       first paint, all 7 words show stacked vertically (~10em of extra
+       hero height) until landing.css arrives — causing massive CLS
+       (0.9+) on the .hero-block when the block finally collapses.
+       Inlining the height/overflow rules anchors the slot to one
+       word's height on the very first frame; the actual roll animation
+       starts later when landing.css applies, but the layout is already
+       correct so no shift happens. */
+    .hero-sub .slot-prefix{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:700;line-height:1.6;vertical-align:baseline;margin-right:.35ch}
+    .hero-sub .slot-machine{display:inline-block;height:1.6em;line-height:1.6em;overflow:hidden;vertical-align:top}
+    .hero-sub .slot-track{display:block}
+    .hero-sub .slot-word{display:block;height:1.6em;line-height:1.6em;font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:700;color:var(--pink);white-space:nowrap;text-align:left}
     .hero-tagline{font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-size:clamp(.95rem,1.8vw,1.1rem);color:var(--pink-ink);font-weight:500;margin-bottom:2rem}
     .hero-cta{display:inline-flex;align-items:center;gap:.5rem;background:var(--pink);color:#fff;font-family:'Fredoka','Fredoka Fallback',system-ui,sans-serif;font-weight:700;font-size:1.25rem;padding:.9rem 2.2rem;border-radius:2rem;border:none;cursor:pointer;text-decoration:none;box-shadow:0 6px 24px var(--pink-glow);touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .2s,box-shadow .2s}
     .hero-cta:active{transform:scale(.97)}
