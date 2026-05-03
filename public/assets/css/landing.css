@@ -581,21 +581,34 @@ section { padding: 5rem 1.5rem; }
 
 
 /* ── 3. Tutorial block ──────────────────────────────────────────────────── */
-/* Full-bleed pink background.
-   The tut-block sits in the LEFT column of the desktop flow-grid, so any
-   `left:50%; margin-left:-50vw` trick on a pseudo-element either misaligns
-   (desktop) or only just barely fits (mobile/tablet edge cases). The most
-   reliable full-bleed technique that doesn't care about the element's grid
-   position is: paint the background on the element itself, extend it
-   horizontally with a huge box-shadow, and clip the shadow vertically with
-   clip-path so it only bleeds left/right (not into the surrounding sections).
-   body { overflow-x: hidden } prevents the extension from causing scroll. */
+/* Full-bleed pink background using a pseudo-element instead of the
+   previous `box-shadow: 0 0 0 100vmax` + `clip-path: inset(0 -100vmax)`
+   trick. That trick worked but created a giant compositor layer
+   spanning ~200vmax in both directions, which Safari rasterized lazily
+   — when the user scrolled into the tutorial section the background
+   would briefly flash blank as the rasterizer caught up. The pseudo
+   approach uses a fixed -50vw / -50vw extent (capped to the viewport,
+   not vmax), so the layer is only as large as it actually needs to be.
+   body { overflow-x: clip } still prevents the bleed from causing a
+   horizontal scrollbar. */
 .tut-block {
   padding: 4rem 0 6rem;
   position: relative;
+  background: transparent;
+  /* `isolation: isolate` keeps the z-index:-1 pseudo bounded inside
+     this section's stacking context, so it can't accidentally render
+     under sibling sections above/below. */
+  isolation: isolate;
+}
+.tut-block::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: -50vw;
+  right: -50vw;
   background: #f9d1dc;
-  box-shadow: 0 0 0 100vmax #f9d1dc;
-  clip-path: inset(0 -100vmax);
 }
 
 .tut-block .section-title    { margin-bottom: 0.75rem; }
@@ -1157,7 +1170,10 @@ section { padding: 5rem 1.5rem; }
   flex-shrink: 0;
   width: max-content;
   animation: scroll-left 30s linear infinite;
-  will-change: transform;
+  /* No `will-change: transform` — the infinite animation already
+     promotes the track to a compositor layer; will-change just keeps
+     an extra always-rasterized layer in Safari's cache, which delayed
+     paint of the rest of the section on scroll-in. */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -1165,8 +1181,12 @@ section { padding: 5rem 1.5rem; }
 
 .question-chip {
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(8px);
+  /* Solid translucent background instead of `backdrop-filter: blur()`.
+     The marquee renders 40+ chips — each blur layer was forcing Safari
+     to defer rasterization, producing a visible blank frame when the
+     section scrolled into view. The solid color reads identically over
+     the gradient bg behind the marquee but composites instantly. */
+  background: rgba(255, 255, 255, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.65rem 1.3rem;
   border-radius: 2rem;
@@ -1307,11 +1327,12 @@ section { padding: 5rem 1.5rem; }
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.7);
+  /* Solid background instead of backdrop-filter — same reasoning as
+     .question-chip above: Safari defers rasterizing backdrop-filter
+     layers, which made the modes section flash blank on scroll-in. */
+  background: rgba(255, 255, 255, 0.78);
   border-radius: 999px;
   margin-bottom: 0.9rem;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
 }
 .mode-meter-dot {
   width: 8px;
@@ -1659,9 +1680,8 @@ section { padding: 5rem 1.5rem; }
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--pink-ink);
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  /* Solid bg replaces backdrop-filter — see .question-chip note. */
+  background: rgba(255, 255, 255, 0.85);
   padding: 0.55rem 1.25rem;
   border-radius: 999px;
   border: 1.5px dashed rgba(230, 54, 110, 0.35);
@@ -2664,4 +2684,32 @@ section { padding: 5rem 1.5rem; }
   .hero-sub .slot-track {
     animation: none !important;
   }
+}
+
+/* ── Section-level paint containment ────────────────────────────────────────
+   `contain: paint` tells the browser that nothing inside these sections
+   visually overflows their box, so each section can be painted
+   independently of the others. On Safari (both desktop and iOS) this
+   eliminates the "scroll into a section, see a blank moment, content
+   appears" symptom — without containment, Safari was waiting for the
+   surrounding layout/paint pipeline before rasterizing each section as
+   it scrolled into view. With containment, each section is rasterized
+   eagerly when it enters the viewport because the browser knows it can
+   isolate the work.
+
+   Sections that legitimately overflow their box (the hero block has a
+   ::before that bleeds left/right of the column, the tut-block uses a
+   pseudo for the same trick, the question-section's marquee mask
+   extends visually) are intentionally excluded. */
+.modes-section,
+.packs-section,
+.social-section,
+.final-cta-section,
+.questions-section {
+  /* `layout` + `paint` together tell the browser this section is fully
+     self-contained — neither its descendants' layout nor its painting
+     escape the section box. That lets style/layout/paint for the rest
+     of the document proceed in parallel, which materially shrinks the
+     first-paint budget on a long landing page like this one. */
+  contain: layout paint;
 }

@@ -535,31 +535,52 @@
 
 
   /* ── 7. Boot ────────────────────────────────────────────────────────── */
-  // Apply the stored/preferred language on boot so the page renders in the
-  // user's last choice rather than the HTML defaults. The wrapped setLang
-  // also (re-)arms the hand-gesture observer.
-  window.setLang(currentLang);
+  // Critical path: keep this section tiny so the hero CTA is interactive
+  // on the very first frame. Anything that walks the DOM, sets up
+  // observers, or starts an interval gets deferred to either the next
+  // frame (rAF) or to idle time.
+  //
+  // Why this matters: Chrome's INP panel was reporting 500ms+ input
+  // delay on the hero-cta during initial load — the user's tap landed
+  // while the main thread was still busy with style/layout/paint work
+  // for the rest of the page. Even an empty `<a>` click gets queued
+  // behind that work. Deferring our JS work until after first paint
+  // moves us out of the user's tap window.
+
+  // Apply the stored/preferred language. The HTML is seeded with
+  // Italian, so for the (overwhelmingly common) Italian visitor this is
+  // effectively a no-op on the i18n side — but it still walks 70+
+  // [data-i18n] nodes and updates the doc lang attribute, plus calls
+  // buildCarousel() and applyRound() which each do several querySelector
+  // walks. None of this needs to land in the first paint frame; the
+  // visible hero text is already correct. Defer to rAF so first paint
+  // (and the first user click) win the main thread.
+  function bootI18n() {
+    window.setLang(currentLang);
+  }
 
   // Defer the auto-cycling timers + tutorial observer setup until after
-  // the page has settled. This keeps the boot critical path tiny — the
-  // hero CTA becomes interactive on the very first frame instead of
-  // waiting behind the synchronous DOM walk these helpers do. Without
-  // the deferral, on Safari mobile the Play Now button looked clickable
-  // but didn't respond for a noticeable beat after first paint because
-  // landing.js was still wiring up observers and intervals.
+  // the page has fully settled. setupTutorialObservers() in particular
+  // installs an IntersectionObserver per step which, on Safari, can
+  // briefly jank the first paint if it runs synchronously.
   function initBackgroundWork() {
     tutSteps.forEach(function (s) { s.classList.remove('active'); });
     setupTutorialObservers();
     startCarousel();
     startVoteCycle();
   }
+
+  // First scheduled work: i18n on the next frame, so it lands right
+  // after first paint but before the user has had time to look around.
+  requestAnimationFrame(bootI18n);
+
+  // Heavier work: wait for idle (or fall back to a small timeout on
+  // Safari, which doesn't ship requestIdleCallback). The 250ms timeout
+  // cap means even on a CPU-pegged device the tutorial mockups are
+  // wired up before the user can realistically scroll into them.
   if (typeof window.requestIdleCallback === 'function') {
-    // Cap at 200ms so the tutorial mockup is wired up before the user
-    // can realistically scroll into it, even on idle-deprived devices.
-    window.requestIdleCallback(initBackgroundWork, { timeout: 200 });
+    window.requestIdleCallback(initBackgroundWork, { timeout: 250 });
   } else {
-    // Safari doesn't ship requestIdleCallback; fall back to a 0-delay
-    // setTimeout, which still yields one task to the renderer.
-    setTimeout(initBackgroundWork, 0);
+    setTimeout(initBackgroundWork, 50);
   }
 })();

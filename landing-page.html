@@ -12,6 +12,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
+  <!-- Prefetch the /play app (the destination of every CTA on this
+       page) so the click-to-paint time of the new tab is dominated by
+       parse, not network. `prefetch` is a low-priority hint that fires
+       during idle time, so it doesn't compete with the landing page's
+       own critical resources. -->
+  <link rel="prefetch" href="/play" />
+
   <!-- Preload the two stylesheets the browser will need anyway, so they
        arrive in parallel with the HTML parse rather than waiting until
        the parser hits the <link> tag. They are still requested as
