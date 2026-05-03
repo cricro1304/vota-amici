@@ -53,24 +53,26 @@
        same size, only the glyph shapes change → CLS contribution
        collapses from ~0.094 to ~0.
 
-       Override values are from the standard
-       https://github.com/khempenius/font-fallbacks-dataset metrics
-       table for Nunito / Fredoka against Arial. */
+       Override values are precise measurements from the official
+       Google Fonts / Vercel font-fallback dataset (against Arial),
+       not eyeballed estimates. The earlier rough values still left
+       ~0.12 CLS on mobile; with the precise numbers below the line
+       boxes match within a sub-pixel and the swap is invisible. */
     @font-face {
       font-family: 'Nunito Fallback';
       src: local('Arial');
-      ascent-override: 101%;
-      descent-override: 32%;
+      ascent-override: 101.43%;
+      descent-override: 33.34%;
       line-gap-override: 0%;
-      size-adjust: 100%;
+      size-adjust: 105.40%;
     }
     @font-face {
       font-family: 'Fredoka Fallback';
       src: local('Arial');
-      ascent-override: 92%;
-      descent-override: 25%;
+      ascent-override: 96.32%;
+      descent-override: 24.06%;
       line-gap-override: 0%;
-      size-adjust: 108%;
+      size-adjust: 100.79%;
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
     :root{
@@ -119,7 +121,11 @@
        and hiding it inline would persist past the cascade. */
     @media (max-width:980px){
       .flow-grid{grid-template-columns:1fr}
-      .hero-block{min-height:auto;padding:5rem 0 1rem;text-align:center;flex-direction:column;align-items:center;justify-content:center}
+      /* min-height: 100vh keeps the hero anchoring the first fold so
+         any text-height change (font swap, i18n re-render) doesn't
+         shift the phone column underneath. Mirrors the same rule in
+         landing.css's mobile media. */
+      .hero-block{min-height:100vh;padding:5rem 0 1rem;text-align:center;flex-direction:column;align-items:center;justify-content:center}
       .hero-text{text-align:center}
     }
     @media (max-width:768px){

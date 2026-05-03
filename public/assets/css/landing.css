@@ -2452,7 +2452,16 @@ section { padding: 5rem 1.5rem; }
   .screen-carousel.faded   { opacity: 1 !important; }
 
   .hero-block {
-    min-height: auto;
+    /* Reserve a full viewport-height of space on mobile. The hero text
+       is ~5–7 lines depending on language (Italian runs longer than
+       English), and without a fixed reservation any height change from
+       a font-swap or i18n re-render would push the iphone-frame below
+       it down by 100+ pixels — that was contributing the bulk of the
+       0.123 mobile CLS. With min-height: 100vh the hero owns the first
+       fold of the page no matter what its text height is, so the phone
+       column underneath sits at a deterministic position that only
+       depends on viewport size, not on rendered text size. */
+    min-height: 100vh;
     padding: 5rem 0 1rem;
     text-align: center;
     display: flex;
