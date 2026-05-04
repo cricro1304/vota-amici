@@ -5,6 +5,78 @@
    ========================================================================== */
 
 
+/* ── @font-face: self-hosted woff2 ────────────────────────────────────────
+   Fonts ship from /fonts/ (placed there by scripts/fetch-fonts.js, copied
+   into dist/ by build.sh's `cp -R public/. dist/`). Self-hosting saves
+   ~600-1000ms of FCP/LCP on Slow 4G compared to fonts.gstatic.com,
+   because:
+     • Same-origin → no extra DNS+TCP+TLS handshake
+     • Same connection → HTTP/2 multiplexes with HTML/CSS, no separate
+       connection-level overhead
+     • Cache partitioning (Chrome Oct 2020) killed the cross-site CDN
+       advantage Google Fonts used to have
+   Latin subset only (~16 KB per weight) — the page is IT/EN, no other
+   scripts. `font-display: swap` paints fallback text immediately and
+   swaps to the web font when it arrives; the 'Nunito Fallback' /
+   'Fredoka Fallback' rules in landing-page.html's inline critical CSS
+   have ascent/descent overrides so the swap is invisible (no CLS).
+
+   Of these 7 weights, Fredoka 700 + Nunito 600 are <link rel="preload">'d
+   in landing-page.html / packs.html so they start fetching during HTML
+   parse — those are the LCP element (H1) and the hero subhead. The
+   other 5 fetch lazily when the parser encounters text that uses them
+   (which only happens below the fold). */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/fredoka-500-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/fredoka-600-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/fredoka-700-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/nunito-400-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/nunito-600-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/nunito-700-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/nunito-800-latin.woff2') format('woff2');
+}
+
+
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
   --pink:        #e6366e;  /* brand pink — backgrounds / accents */

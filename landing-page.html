@@ -9,8 +9,20 @@
   <meta property="og:description" content="Il party game che mette alla prova le amicizie. Chi è il più pigro? Il più drammatico? Scoprilo adesso!" />
   <meta property="og:type" content="website" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Preload the two fonts above the fold needs (Fredoka 700 = the H1 /
+       LCP element, Nunito 600 = hero subhead). Same-origin woff2 served
+       from /fonts/ — see shared.css for the full @font-face block and
+       scripts/fetch-fonts.js for how the woff2 files were sourced.
+       The `crossorigin` attribute on a font preload is REQUIRED even
+       same-origin: without it the preload doesn't match the actual font
+       request (which is always made with CORS) and the browser
+       re-downloads the file. The other 5 weights (Fredoka 500/600,
+       Nunito 400/700/800) lazy-fetch when text using them is rendered,
+       all of which is below the fold so no critical-path competition. -->
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="/fonts/fredoka-700-latin.woff2" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="/fonts/nunito-600-latin.woff2" />
 
   <!-- Prefetch the /play app (the destination of every CTA on this
        page) so the click-to-paint time of the new tab is dominated by
@@ -201,15 +213,21 @@
        only cares about what's painted in the viewport. */
   </style>
 
-  <!-- Google Fonts: keep async with display=swap so we don't block FCP
-       on a third-party request. The inline critical CSS above already
-       has a system-font fallback stack, so the page paints crisply
-       before the web fonts arrive; when they do, swap is mostly
-       unnoticeable. -->
-  <link rel="preload" as="style"
-        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap"
-        onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap" /></noscript>
+  <!-- Google Fonts removed (was: a third-party CSS fetch from
+       fonts.googleapis.com that resolved to woff2 URLs on
+       fonts.gstatic.com). On Slow 4G that cost ~600-1000ms of LCP
+       because gstatic is a separate origin (separate DNS/TCP/TLS
+       handshake) AND because the woff2 URL discovery had to wait for
+       the CSS round-trip to complete. Self-hosted Latin-subsetted
+       woff2 files now ship from /fonts/ on the same connection as
+       the HTML — see shared.css for the @font-face block and
+       scripts/fetch-fonts.js for how to refresh the files. The two
+       above-the-fold weights are preloaded above; the rest lazy-load
+       when the parser hits text that needs them. The `Noto Color
+       Emoji` family used to be in the URL too, but every modern
+       device (Android, iOS, macOS, Windows) ships its own color emoji
+       font — the OS's emoji is what actually renders, the gstatic
+       download was wasted bytes. -->
 
   <!-- shared.css: ASYNC. Was previously render-blocking with the
        comment "needs to land in the first paint frame to avoid a nav

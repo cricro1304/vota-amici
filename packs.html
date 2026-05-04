@@ -6,14 +6,17 @@
   <title>Pacchetti | Chi è il più...?</title>
   <meta name="description" content="Tutti i pacchetti di domande: Coppie, Fratelli, Famiglia, Colleghi, Coinquilini, Viaggi, Per conoscersi meglio, Versione Spicy e l'Originale gratuito." />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-  <!-- Google Fonts: loaded non-blocking. -->
-  <link rel="preload" as="style"
-        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap"
-        onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" /></noscript>
+  <!-- Self-hosted fonts: same setup as landing-page.html. The two
+       weights this page actually uses above the fold (Fredoka 700 for
+       the page title, Nunito 600 for body intro text) are preloaded;
+       the rest lazy-load via @font-face declarations in shared.css.
+       Google Fonts (fonts.googleapis.com / fonts.gstatic.com) was
+       removed — see scripts/fetch-fonts.js for the source of the
+       woff2 files in /fonts/. -->
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="/fonts/fredoka-700-latin.woff2" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="/fonts/nunito-600-latin.woff2" />
 
   <link rel="stylesheet" href="assets/css/shared.css" />
   <link rel="stylesheet" href="assets/css/packs.css" />
