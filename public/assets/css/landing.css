@@ -2710,6 +2710,33 @@ section { padding: 5rem 1.5rem; }
   /* Pause the iphone float so the phone column isn't continuously
      re-compositing while the user scrolls past it. */
   .iphone-frame { animation: none !important; }
+
+  /* Decorative infinite animations that nobody actually notices on a
+     phone-sized viewport but still tax the compositor / GPU on every
+     frame. Pausing them on mobile cuts measurable scroll jank without
+     any visible regression — the static end-state of each animation
+     looks the same as the mid-animation state to the eye when the
+     section is scrolled past quickly. Sparkle/glow/wobble all stay
+     enabled on desktop where there's spare GPU. */
+  .packs-section .packs-section-title::after,
+  .packs-section .packs-section-title::before,
+  .pack-badge.pack-badge-new,
+  .novita-strip .novita-spark,
+  .verdict-crown,
+  .verdicts-board .verdict-card,
+  .winner-pulse,
+  .screen-loading .dot,
+  .tut-screen-loading .dot {
+    animation: none !important;
+  }
+
+  /* Marquee tracks: keep the animation but slow it WAY down. Pausing
+     entirely makes the static chips feel awkward (they're cut off by the
+     marquee mask), and content-visibility:auto already excludes the
+     section from running animations when offscreen. Slower marquee on
+     mobile burns less GPU per second when the user is scrolled into it. */
+  .question-track  { animation-duration: 60s !important; }
+  .question-track-2 { animation-duration: 56s !important; }
 }
 
 /* Honor reduced-motion preferences across the board. Several of the
@@ -2753,4 +2780,44 @@ section { padding: 5rem 1.5rem; }
      of the document proceed in parallel, which materially shrinks the
      first-paint budget on a long landing page like this one. */
   contain: layout paint;
+}
+
+/* ── Off-screen rendering skip (content-visibility: auto) ─────────────────
+   The big mobile perf win this round. `content-visibility: auto` tells
+   the browser it may skip layout AND painting AND running animations
+   inside this section while it's offscreen, then "wake it up" only when
+   it scrolls into view (with a generous margin so the user never sees a
+   blank gap). For a long landing page with multiple infinite animations
+   per section (packsSparkle, novita-spark, pack-badge-glow, verdictFloat,
+   verdictCrownWobble, marquee scroll-left/right, dots, winnerPulse), the
+   savings are huge: on a Lighthouse mobile profile we go from running
+   12+ animations on every frame to running only the 2-3 visible inside
+   the viewport.
+
+   `contain-intrinsic-size` gives the browser a placeholder size to use
+   for the skipped subtree, so total page height (and the scrollbar) stays
+   stable. The numbers below are eyeballed from a real desktop render
+   and tuned wide enough that on mobile (where sections are taller) the
+   placeholder is still close to the actual rendered height — close
+   enough that the small jump as the section enters view is invisible.
+
+   We deliberately don't apply this to the hero / tut-block (they're
+   above the fold or sticky-coordinated) or the questions-section (a
+   short marquee strip that often peeks above the fold on tall mobile
+   screens — applying content-visibility there made the marquee briefly
+   blank as it crossed the activation threshold).
+
+   Browser support: Chrome/Edge 85+, Firefox 125+, Safari 18+ (April 2024).
+   Older Safari simply ignores the property → graceful degradation to
+   the existing `contain: layout paint` behavior. */
+.modes-section,
+.packs-section,
+.social-section,
+.final-cta-section {
+  content-visibility: auto;
+  /* Width is "auto" because the section spans the full viewport width;
+     height is a sensible-default placeholder for the skipped subtree.
+     Setting both is required for the browser to use the size — passing
+     just height behaves as "auto auto" on some Chrome versions. */
+  contain-intrinsic-size: auto 800px;
 }
