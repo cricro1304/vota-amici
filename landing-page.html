@@ -16,8 +16,19 @@
        page) so the click-to-paint time of the new tab is dominated by
        parse, not network. `prefetch` is a low-priority hint that fires
        during idle time, so it doesn't compete with the landing page's
-       own critical resources. -->
+       own critical resources.
+
+       We prefetch BOTH the index.html shell AND the 3MB Flutter bundle
+       (main.dart.js). Without prefetching the bundle, tapping Play Now
+       took 3-5s before the app became interactive even on a fast
+       connection — the new tab opened, fetched index.html, parsed it,
+       discovered the script tag, then started downloading 3MB. With
+       both prefetched, the new tab opens with the bundle already in
+       cache, so /play paints in ~500ms-1s. flutter_bootstrap.js + the
+       canvaskit chunk are smaller dependents Flutter loads in parallel;
+       prefetching the main bundle is the highest-leverage hit. */ -->
   <link rel="prefetch" href="/play" />
+  <link rel="prefetch" href="/play/main.dart.js" as="script" />
 
   <!-- Preload the two stylesheets the browser will need anyway, so they
        arrive in parallel with the HTML parse rather than waiting until
@@ -175,6 +186,25 @@
       .lang-btn{width:28px;height:28px;font-size:.7rem;display:flex;align-items:center;justify-content:center}
       .hero-cta{font-size:1.1rem;padding:.85rem 1.8rem}
     }
+    /* Mobile pack-tile + pack-hero sizing inlined so the section paints
+       at the final compact size on the very first frame. Without this,
+       the desktop minmax(190px,1fr) grid renders the tiles full-width
+       on a 360px phone for ~100-300ms until landing.css arrives, then
+       they snap to 2-col compact — visually a giant CLS jolt the user
+       described as "too wide" on first sight. The numbers below mirror
+       the @media (max-width:600px) block in landing.css. */
+    @media (max-width:600px){
+      .packs-grid{grid-template-columns:repeat(2,1fr);gap:.55rem;padding:0 .5rem;max-width:420px}
+      .pack-tile{padding:.85rem .4rem .75rem;border-radius:16px;gap:.35rem}
+      .pack-tile-emoji{font-size:22px;width:40px;height:40px}
+      .pack-tile h4{font-size:.82rem}
+      .pack-tile-tag{font-size:.55rem;padding:2px 7px;letter-spacing:.06em}
+      .pack-hero{padding:1rem .85rem .9rem;border-radius:18px;max-width:260px;flex:1 1 220px}
+      .pack-hero-emoji{font-size:1.7rem;width:46px;height:46px;margin-bottom:.25rem}
+      .pack-hero h3{font-size:.95rem;margin-bottom:.2rem}
+      .pack-hero p{font-size:.75rem;line-height:1.35}
+      .pack-hero-row{gap:.85rem;margin:.5rem auto 2rem}
+    }
     /* Below-the-fold "skeleton" rules: just enough to keep section
        backgrounds, layouts, and section-titles looking right if the
        user scrolls before async landing.css arrives. Specific decoration
@@ -282,7 +312,7 @@
     </div>
     <a href="landing-page.html" class="nav-link">🏠 Home</a>
     <a href="packs.html" class="nav-link" data-i18n="nav_packs">Pacchetti 🎲</a>
-    <a href="/play" class="nav-cta" target="_blank" data-i18n="nav_cta">Gioca Gratis 🎮</a>
+    <a href="/play" class="nav-cta" target="_blank" rel="noopener" data-i18n="nav_cta">Gioca Gratis 🎮</a>
   </div>
 </nav>
 
@@ -314,7 +344,7 @@
             Ora lo decidono i tuoi amici. In segreto. 👀
           </p>
           <p class="hero-tagline" data-i18n="hero_tagline">Il party game che svela cosa pensano davvero i tuoi amici</p>
-          <a href="/play" class="hero-cta" target="_blank" data-i18n="hero_cta">🎮 Gioca Ora. È Gratis!</a>
+          <a href="/play" class="hero-cta" target="_blank" rel="noopener" data-i18n="hero_cta">🎮 Gioca Ora. È Gratis!</a>
           <p class="hero-free" data-i18n="hero_free">Niente download, niente account. Solo voti, drama, e qualche amicizia in bilico.</p>
         </div>
       </div>
@@ -371,7 +401,7 @@
           </div>
         </div>
         <div style="text-align:center; margin-top:2rem;">
-          <a href="/play" class="hero-cta" target="_blank" data-i18n="tut_play_btn">🎮 Gioca Ora. È Gratis!</a>
+          <a href="/play" class="hero-cta" target="_blank" rel="noopener" data-i18n="tut_play_btn">🎮 Gioca Ora. È Gratis!</a>
         </div>
       </div>
     </div>
@@ -909,7 +939,7 @@
         <div class="verdict-cta-emoji">🎭</div>
         <div class="verdict-cta-title" data-i18n="verdict_cta_title">E il tuo gruppo?</div>
         <p class="verdict-cta-sub" data-i18n="verdict_cta_sub">Scopri chi è <em>davvero</em> il più pigro, simpatico, competitivo o dispettoso tra i tuoi amici.</p>
-        <a href="/play" target="_blank" class="verdict-cta-btn" data-i18n="verdict_cta_btn">Gioca ora →</a>
+        <a href="/play" target="_blank" rel="noopener" class="verdict-cta-btn" data-i18n="verdict_cta_btn">Gioca ora →</a>
       </article>
 
     </div>
@@ -920,7 +950,7 @@
 <section class="final-cta-section" id="play">
   <h2 data-i18n="cta_title">Pronto a sapere cosa pensano davvero? 👀</h2>
   <p data-i18n="cta_sub">Apri una stanza, chiama gli amici, lascia parlare i voti.</p>
-  <a href="/play" class="hero-cta" target="_blank" data-i18n="cta_btn">🚀 Gioca Ora. È Gratis!</a>
+  <a href="/play" class="hero-cta" target="_blank" rel="noopener" data-i18n="cta_btn">🚀 Gioca Ora. È Gratis!</a>
   <p class="hero-free" style="margin-top: 1rem;" data-i18n="cta_note">Funziona su qualsiasi telefono. Basta un browser.</p>
 </section>
 

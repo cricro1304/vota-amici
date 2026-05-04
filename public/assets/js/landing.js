@@ -155,10 +155,11 @@
   //   2. openPackSheet did a double-rAF dance to trigger the transform
   //      transition, adding ~32ms of latency on top of the CSS animation.
   // Delegation fixes (1): one listener at boot covers all tiles, no
-  // per-tile attachment needed. Removing display:none from the bottom
-  // sheet's CSS (see landing.css) fixes (2): the sheet is always in
-  // the DOM positioned offscreen via translateY(100%); adding .open
-  // immediately triggers the slide-up transition with no rAF wait.
+  // per-tile attachment needed. The bottom sheet now toggles via
+  // display:none ↔ display:block (see .pack-bottom-sheet in landing.css)
+  // — no slide-up transition, no rAF wait. The user explicitly asked
+  // for "click → appear, no bouncing of the cards", so we ditched the
+  // animation entirely on mobile. Tap → instant sheet visible.
   var isMobileView = function () { return window.innerWidth <= 600; };
 
   // Cache sheet elements lazily on first use — these IDs are stable
@@ -197,10 +198,9 @@
       _sheetExamples.appendChild(span);
     });
 
-    // Sheet lives in the DOM at translateY(100%) by default (see
-    // landing.css). Adding .open triggers the slide-up transition
-    // immediately — no double-rAF needed because the element was
-    // already a visible (just offscreen) compositor target.
+    // Sheet hidden via display:none in CSS; .open flips to display:block.
+    // No transitions, no rAF deferrals — the element appears in the same
+    // frame as the user's tap. Mobile users perceive this as instant.
     _sheetBackdrop.classList.add('open');
     _sheet.classList.add('open');
   }
@@ -209,9 +209,8 @@
     if (!_sheet) return;
     _sheet.classList.remove('open');
     _sheetBackdrop.classList.remove('open');
-    // No setTimeout to set display:none — the sheet stays in the DOM
-    // at translateY(100%), invisible and pointer-events:none, ready
-    // for the next open. Cheaper than display thrash.
+    // Sheet flips back to display:none immediately (no transition to
+    // wait out). Cheap and predictable.
   }
 
   // Clamp popup position so it doesn't overflow viewport (desktop only).

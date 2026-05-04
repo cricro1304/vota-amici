@@ -1901,13 +1901,18 @@ section { padding: 5rem 1.5rem; }
   padding: 1.5rem 1.5rem 2rem;
   text-align: center;
   z-index: 200;
-  transform: translateY(100%);
-  pointer-events: none;
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Instant show/hide. Earlier this used a slide-up transform transition
+     (translateY(100%) → 0 over 280ms with a custom cubic-bezier),
+     which the user described as "bouncy" — they want the sheet to just
+     APPEAR on tap, no animation. We hide via display:none and toggle to
+     display:block on .open. The pack-tile event delegation fires
+     openPackSheet synchronously, so there's no rAF wait either. Net
+     latency from tap → visible = the touch-event roundtrip alone
+     (~16ms), which is below the perceptual threshold for "instant". */
+  display: none;
 }
 .pack-bottom-sheet.open {
-  transform: translateY(0);
-  pointer-events: auto;
+  display: block;
 }
 
 .pack-bottom-sheet-backdrop {
@@ -1915,11 +1920,13 @@ section { padding: 5rem 1.5rem; }
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
   z-index: 199;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease-out;
+  /* Same story as the sheet itself — no fade-in. The 180ms opacity
+     transition felt like the page was "thinking" before the sheet
+     committed; instant overlay reads as a more direct response. */
+  display: none;
 }
 .pack-bottom-sheet-backdrop.open {
+  display: block;
   opacity: 1;
   pointer-events: auto;
 }
@@ -2514,27 +2521,32 @@ section { padding: 5rem 1.5rem; }
 @media (max-width: 600px) {
   .pack-tile-popup { display: none !important; }
 
-  /* Packs: tighter 2-col grid, compact tiles */
+  /* Packs: tighter 2-col grid, compact tiles. User feedback round N+1
+     — the previous mobile sizes still felt "too wide". Cut padding ~30%
+     and shrink emoji/title another notch. The grid stays 2-col so each
+     tile lands at roughly 145-155px wide on a typical 360-390px phone,
+     which finally feels like a tile rather than a card. */
   .packs-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.7rem;
-    padding: 0 0.25rem;
+    gap: 0.55rem;
+    padding: 0 0.5rem;
+    max-width: 420px;
   }
   .pack-tile {
-    padding: 1.1rem 0.55rem 1rem;
-    border-radius: 18px;
-    gap: 0.5rem;
+    padding: 0.85rem 0.4rem 0.75rem;
+    border-radius: 16px;
+    gap: 0.35rem;
   }
   .pack-tile-emoji {
-    font-size: 28px;
-    width: 52px;
-    height: 52px;
+    font-size: 22px;
+    width: 40px;
+    height: 40px;
   }
-  .pack-tile h4    { font-size: 0.95rem; }
+  .pack-tile h4    { font-size: 0.82rem; }
   .pack-tile .pack-tile-tag {
-    font-size: 0.6rem;
-    padding: 3px 9px;
-    letter-spacing: 0.08em;
+    font-size: 0.55rem;
+    padding: 2px 7px;
+    letter-spacing: 0.06em;
   }
   /* Pack hero cards: ~15% smaller on mobile per design feedback —
      the previous sizes felt oversized on a phone, eating up too much
