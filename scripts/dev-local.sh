@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Full local preview that mirrors the Vercel production build.
-#   http://localhost:3000/            → redirects to /landing-page.html
-#   http://localhost:3000/packs       → packs.html
-#   http://localhost:3000/play        → Flutter web app
-#   http://localhost:3000/room/ABCDE  → Flutter SPA (shared invite links)
+#   http://localhost:3000/                  → serves landing-page.html (rewrite, URL stays /)
+#   http://localhost:3000/en                → serves en/landing-page.html (rewrite)
+#   http://localhost:3000/packs             → packs.html
+#   http://localhost:3000/play              → Flutter web app
+#   http://localhost:3000/room/ABCDE        → Flutter SPA (shared invite links)
+#   http://localhost:3000/landing-page.html → 301 → /  (canonicalize the .html URL)
 #
 # Requires: Flutter SDK (the one build.sh clones into _flutter/ is fine), Node.
 set -euo pipefail

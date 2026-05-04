@@ -19,9 +19,9 @@
        re-downloads the file. The other 5 weights (Fredoka 500/600,
        Nunito 400/700/800) lazy-fetch when text using them is rendered,
        all of which is below the fold so no critical-path competition. -->
-  <link rel="preload" as="font" type="font/woff2" crossorigin
+  <link rel="preload" as="font" type="font/woff2" crossorigin fetchpriority="high"
         href="/fonts/fredoka-700-latin.woff2" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin
+  <link rel="preload" as="font" type="font/woff2" crossorigin fetchpriority="high"
         href="/fonts/nunito-600-latin.woff2" />
 
   <!-- Prefetch the /play app (the destination of every CTA on this
