@@ -1,19 +1,56 @@
 import 'package:flutter/material.dart';
 
-/// Apple-style-ish emoji rendering that is *consistent across every device*.
+/// Thin shim around [Text] kept only to avoid a callsite-wide rename across
+/// the screen widgets that already import `EmojiText`.
 ///
-/// The marketing landing (`landing-page.html`) just uses system emoji, which
-/// on the author's Mac renders as Apple Color Emoji. Flutter Web with the
-/// CanvasKit renderer doesn't fall back to the OS emoji font, so on the same
-/// Mac the flutter app showed monochrome/tofu glyphs. To get parity we ship
-/// Twemoji (open-source, SVG-based, Apple-inspired) via jsdelivr's CDN and
-/// swap every emoji codepoint in a Text for a small Image.network.
+/// Originally this widget intercepted every emoji codepoint in [text] and
+/// replaced it with an `Image.network` pointing at a Noto Color Emoji PNG
+/// served by `cdn.jsdelivr.net`. That workaround was needed when the
+/// Flutter web build used the **CanvasKit renderer**, which ships its own
+/// Skia-based text engine and cannot see OS-installed emoji fonts —
+/// without the PNG swap, every emoji rendered as a monochrome tofu box on
+/// macOS / iOS / Windows.
 ///
-/// Usage:
+/// The web build now forces the **HTML renderer** (see
+/// `flutter_app/web/index.html`'s `initializeEngine({ renderer: "html" })`).
+/// Under HTML rendering Flutter draws text via the DOM, and the browser's
+/// emoji-font fallback works naturally — meaning each platform shows its
+/// own emoji set:
+///
+///   - macOS / iOS  → Apple Color Emoji
+///   - Windows      → Segoe UI Emoji
+///   - Android      → Noto Color Emoji
+///   - Linux        → Noto / distro choice
+///
+/// The `_emojiFallback` list in `lib/core/theme.dart` is wired into every
+/// TextStyle via `fontFamilyFallback`, so the right font is consulted on
+/// each platform with no per-widget setup. Native iOS/Android builds were
+/// always fine — Flutter has system access to the platform's emoji font
+/// directly.
+///
+/// Removing the CDN-PNG path:
+///   - Drops a per-emoji round-trip to `cdn.jsdelivr.net` on first paint
+///     (some screens fired ~10–20 fetches before becoming interactive).
+///   - Restores Apple-style emoji on macOS/iOS instead of forced Noto.
+///   - Eliminates the runtime `cdn.jsdelivr.net` dependency and its
+///     blocked-CDN failure mode.
+///
+/// The widget API is preserved (`text`, `style`, `textAlign`, `emojiSize`)
+/// so the existing ~70 callsites compile without edits. `emojiSize` is
+/// retained for source compat only — its value is ignored because OS
+/// emoji glyphs size with the surrounding text run, not as a separately
+/// sized box. To make an emoji bigger, set `fontSize` on `style`, which
+/// every callsite that cared was already doing.
+///
+/// Usage (unchanged):
 ///   EmojiText('Chi è il più pigro? 😴', style: displayFont(...))
+///   EmojiText('🎲', style: TextStyle(fontSize: 32))
 ///
-/// Or inline in a RichText:
-///   Text.rich(TextSpan(children: buildEmojiSpans('🎉 Chi è il più...?', ...)))
+/// This file can eventually be deleted by replacing every `EmojiText(` /
+/// `import '../widgets/emoji_text.dart';` with `Text(` and removing the
+/// import — the shim exists purely to keep the diff for the perf fix
+/// surgical. Doing the rename later is ~70 mechanical edits with no
+/// behavior change.
 class EmojiText extends StatelessWidget {
   const EmojiText(
     this.text, {
@@ -27,182 +64,17 @@ class EmojiText extends StatelessWidget {
   final TextStyle? style;
   final TextAlign? textAlign;
 
-  /// Rendered height of each emoji. Defaults to `style.fontSize * 1.15` so
-  /// an emoji in a 20-px run ends up ~23 px tall — matching how system
-  /// emoji tend to overhang their text box.
+  /// Retained for source-compat with existing callsites; the value is
+  /// ignored because OS-rendered emoji glyphs size with the surrounding
+  /// text run automatically. Set `fontSize` on [style] instead.
   final double? emojiSize;
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = style ?? DefaultTextStyle.of(context).style;
-    final size = emojiSize ?? (baseStyle.fontSize ?? 14) * 1.15;
-    return Text.rich(
-      TextSpan(
-        children: buildEmojiSpans(text, baseStyle, emojiSize: size),
-      ),
+    return Text(
+      text,
+      style: style,
       textAlign: textAlign,
-    );
-  }
-}
-
-/// Public helper — splits [text] into text spans and WidgetSpans for each
-/// emoji run. The emoji image uses Twemoji's 72x72 PNG for crispness on
-/// hi-DPI screens.
-List<InlineSpan> buildEmojiSpans(
-  String text,
-  TextStyle baseStyle, {
-  required double emojiSize,
-}) {
-  final spans = <InlineSpan>[];
-  final buffer = StringBuffer();
-  final runes = text.runes.toList();
-  var i = 0;
-
-  void flushText() {
-    if (buffer.isEmpty) return;
-    spans.add(TextSpan(text: buffer.toString(), style: baseStyle));
-    buffer.clear();
-  }
-
-  while (i < runes.length) {
-    final r = runes[i];
-    if (_isEmojiStart(r)) {
-      // Collect a full emoji run: base + variation selectors + ZWJ sequences.
-      final group = <int>[r];
-      var j = i + 1;
-      while (j < runes.length) {
-        final n = runes[j];
-        if (n == _zwj && j + 1 < runes.length && _isEmojiBase(runes[j + 1])) {
-          group.add(n);
-          group.add(runes[j + 1]);
-          j += 2;
-          continue;
-        }
-        if (n == _vs16 || n == _vs15 || _isSkinTone(n) || _isKeycap(n)) {
-          group.add(n);
-          j += 1;
-          continue;
-        }
-        // Regional indicator pair (flags): two RI codepoints in a row.
-        if (_isRegionalIndicator(r) &&
-            _isRegionalIndicator(n) &&
-            group.length == 1) {
-          group.add(n);
-          j += 1;
-          continue;
-        }
-        break;
-      }
-
-      flushText();
-      spans.add(
-        WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: _TwemojiImage(
-            codepoints: group,
-            size: emojiSize,
-            fallback: String.fromCharCodes(group),
-            fallbackStyle: baseStyle,
-          ),
-        ),
-      );
-      i = j;
-    } else {
-      buffer.writeCharCode(r);
-      i += 1;
-    }
-  }
-  flushText();
-  return spans;
-}
-
-// --- emoji codepoint classification -----------------------------------------
-
-const int _zwj = 0x200D;
-const int _vs15 = 0xFE0E; // text-style variation selector
-const int _vs16 = 0xFE0F; // emoji-style variation selector
-
-bool _isSkinTone(int r) => r >= 0x1F3FB && r <= 0x1F3FF;
-bool _isKeycap(int r) => r == 0x20E3;
-bool _isRegionalIndicator(int r) => r >= 0x1F1E6 && r <= 0x1F1FF;
-
-bool _isEmojiBase(int r) =>
-    (r >= 0x1F300 && r <= 0x1FAFF) ||
-    (r >= 0x2600 && r <= 0x27BF) ||
-    (r >= 0x2300 && r <= 0x23FF) ||
-    (r >= 0x2B00 && r <= 0x2BFF) ||
-    (r >= 0x2190 && r <= 0x21FF) ||
-    (r >= 0x25A0 && r <= 0x25FF) ||
-    _isRegionalIndicator(r) ||
-    _isSkinTone(r) ||
-    r == 0x203C || r == 0x2049 ||
-    r == 0x2122 || r == 0x2139 ||
-    r == 0x3030 || r == 0x303D ||
-    r == 0x3297 || r == 0x3299 ||
-    // Keycap digits need to be treated as emoji only when followed by the
-    // combining enclosing keycap — the caller handles that via _isKeycap.
-    (r >= 0x0030 && r <= 0x0039) ||
-    r == 0x0023 || r == 0x002A;
-
-/// A slightly stricter test than [_isEmojiBase]: only codepoints that are
-/// safe to *start* an emoji run (i.e. we don't want to grab every literal
-/// digit '5' or '#' unless it's followed by a keycap marker).
-bool _isEmojiStart(int r) {
-  if (_isEmojiBase(r) && (r < 0x0030 || r > 0x0039) && r != 0x0023 && r != 0x002A) {
-    return true;
-  }
-  // Keycap sequences always look like: digit/# + VS16 + 0x20E3.
-  // We detect them with a 3-char lookahead in the main loop instead, to
-  // keep this function O(1).
-  return false;
-}
-
-// --- Twemoji CDN image ------------------------------------------------------
-
-class _TwemojiImage extends StatelessWidget {
-  const _TwemojiImage({
-    required this.codepoints,
-    required this.size,
-    required this.fallback,
-    required this.fallbackStyle,
-  });
-
-  final List<int> codepoints;
-  final double size;
-  final String fallback;
-  final TextStyle fallbackStyle;
-
-  /// Noto's filename convention: `emoji_u` + each codepoint as lowercase hex,
-  /// joined by *underscores*, with variation-selector `FE0F` stripped.
-  String get _slug {
-    final parts = <String>[];
-    for (final cp in codepoints) {
-      if (cp == _vs16) continue;
-      parts.add(cp.toRadixString(16));
-    }
-    return 'emoji_u${parts.join('_')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Google's Noto Color Emoji — open-source (OFL 1.1), so no licensing
-    // grey area. 128px PNGs are the smallest Noto publishes and still sharp
-    // on retina. Served from jsdelivr's mirror of googlefonts/noto-emoji.
-    final url =
-        'https://cdn.jsdelivr.net/gh/googlefonts/noto-emoji@main/png/128/$_slug.png';
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Image.network(
-        url,
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-        gaplessPlayback: true,
-        filterQuality: FilterQuality.medium,
-        errorBuilder: (_, __, ___) =>
-            Text(fallback, style: fallbackStyle.copyWith(fontSize: size)),
-      ),
     );
   }
 }
