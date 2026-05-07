@@ -29,28 +29,38 @@ final shareServiceProvider =
     Provider<ShareService>((_) => locator<ShareService>());
 
 // --- Reactive streams: room, players, rounds -----------------------------
+//
+// All room-scoped providers below are `.autoDispose` so when no widget is
+// watching them their underlying subscriptions tear down — see
+// RoomRepository.watchRoom for the realtime + REST-watchdog pair we want
+// to release. Without autoDispose, every roomId you ever visited keeps
+// an open realtime channel and an 8-second polling timer for the rest
+// of the session. Riverpod waits one frame after the last listener
+// detaches before disposing, so a normal lobby → voting → results →
+// lobby navigation does NOT cause flapping rebuilds.
 
-/// Stream of the current room. Updates come via Supabase Realtime deltas —
-/// NO refetch on change (this is the big efficiency win over the web app).
+/// Stream of the current room. Updates come via Supabase Realtime deltas
+/// plus a REST watchdog that catches silent realtime stalls — see
+/// `RoomRepository.watchRoom` for the merge policy.
 final roomProvider =
-    StreamProvider.family<Room?, String>((ref, roomId) {
+    StreamProvider.autoDispose.family<Room?, String>((ref, roomId) {
   return ref.watch(roomRepositoryProvider).watchRoom(roomId);
 });
 
 final playersProvider =
-    StreamProvider.family<List<Player>, String>((ref, roomId) {
+    StreamProvider.autoDispose.family<List<Player>, String>((ref, roomId) {
   return ref.watch(roomRepositoryProvider).watchPlayers(roomId);
 });
 
 final roundsProvider =
-    StreamProvider.family<List<Round>, String>((ref, roomId) {
+    StreamProvider.autoDispose.family<List<Round>, String>((ref, roomId) {
   return ref.watch(gameRepositoryProvider).watchRounds(roomId);
 });
 
 /// Derived: the round matching room.current_round. Computed from existing
 /// streams — no separate query.
 final currentRoundProvider =
-    Provider.family<Round?, String>((ref, roomId) {
+    Provider.autoDispose.family<Round?, String>((ref, roomId) {
   final room = ref.watch(roomProvider(roomId)).valueOrNull;
   final rounds = ref.watch(roundsProvider(roomId)).valueOrNull ?? const [];
   if (room == null || room.currentRound == 0) return null;
@@ -63,7 +73,7 @@ final currentRoundProvider =
 /// Votes for the CURRENT round only. Scoped stream means we don't get
 /// notified about votes in other rooms or previous rounds.
 final currentRoundVotesProvider =
-    StreamProvider.family<List<Vote>, String>((ref, roomId) {
+    StreamProvider.autoDispose.family<List<Vote>, String>((ref, roomId) {
   final round = ref.watch(currentRoundProvider(roomId));
   if (round == null) return const Stream.empty();
   return ref.watch(gameRepositoryProvider).watchVotesForRound(round.id);
@@ -86,7 +96,7 @@ final allQuestionsByIdProvider =
 });
 
 final currentQuestionTextProvider =
-    Provider.family<String?, String>((ref, roomId) {
+    Provider.autoDispose.family<String?, String>((ref, roomId) {
   final round = ref.watch(currentRoundProvider(roomId));
   if (round == null) return null;
   final map = ref.watch(allQuestionsByIdProvider).valueOrNull ?? const {};
@@ -97,7 +107,7 @@ final currentQuestionTextProvider =
 /// screen to style the question card differently for light / neutro / spicy
 /// prompts (so a 🌶️ question is visually obvious before the vote).
 final currentQuestionProvider =
-    Provider.family<Question?, String>((ref, roomId) {
+    Provider.autoDispose.family<Question?, String>((ref, roomId) {
   final round = ref.watch(currentRoundProvider(roomId));
   if (round == null) return null;
   final map = ref.watch(allQuestionsByIdProvider).valueOrNull ?? const {};

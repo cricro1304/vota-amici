@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
+
 import '../core/constants.dart';
 import '../models/pack.dart';
 import '../models/player.dart';
@@ -181,12 +183,38 @@ class GameService {
     final trimmed = playerName.trim();
     final finalName = await _uniqueNameFor(roomId: room.id, desired: trimmed);
 
-    final player = await roomRepository.createPlayer(
-      roomId: room.id,
-      name: finalName,
-      browserId: browserId,
-    );
-    return (room: room, player: player);
+    try {
+      final player = await roomRepository.createPlayer(
+        roomId: room.id,
+        name: finalName,
+        browserId: browserId,
+      );
+      return (room: room, player: player);
+    } on PostgrestException catch (e) {
+      // 23505 = unique_violation. The DB has a partial UNIQUE index on
+      // (room_id, browser_id) WHERE browser_id IS NOT NULL — see
+      // `supabase/migrations/20260506120000_document_browser_id_and_unique_index.sql`.
+      // We get here when a concurrent insert from the SAME browser
+      // landed between our step-(2) lookup and this createPlayer call —
+      // most reproducible with a fast double-tap on "Entra" before the
+      // _loading flag flips, or a second tab racing the first. Recover
+      // by re-running the browser-fingerprint lookup; the row that won
+      // the race IS the one we should be returning.
+      if (e.code == '23505' &&
+          browserId != null &&
+          browserId.isNotEmpty) {
+        final byBrowser = await roomRepository.findPlayerByRoomAndBrowser(
+          roomId: room.id,
+          browserId: browserId,
+        );
+        if (byBrowser != null) {
+          return (room: room, player: byBrowser);
+        }
+      }
+      // Anything else (different unique violation, network error, RLS
+      // failure) is not something we can paper over — surface it.
+      rethrow;
+    }
   }
 
   /// Returns [desired] if no player in the room already has that exact name

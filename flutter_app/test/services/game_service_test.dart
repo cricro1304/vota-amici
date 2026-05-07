@@ -10,6 +10,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 import 'package:vota_amici/models/player.dart';
 import 'package:vota_amici/models/room.dart';
@@ -264,6 +265,80 @@ void main() {
           browserId: 'browser-new',
         ),
         throwsA(isA<GameException>()),
+      );
+    });
+
+    test(
+        'Given the browser-fingerprint lookup misses but a concurrent '
+        'insert lands a row first (race triggered by the new partial '
+        'UNIQUE index on players(room_id, browser_id)), When createPlayer '
+        'throws 23505, Then joinRoom re-fetches by browser_id and '
+        'returns the row that won the race instead of bubbling the '
+        'PostgrestException up to the UI',
+        () async {
+      final room = makeRoom();
+      final winner = makePlayer(id: 'pWinner', browserId: 'browser-Z');
+      when(roomRepo.findRoomByCode('ABCDE')).thenAnswer((_) async => room);
+      // Counter-based stub: first call is the pre-insert miss, second is
+      // the post-23505 recovery hit. Mockito's `when(...).thenAnswer(...)`
+      // is last-write-wins per matcher, so we encode the sequence inside
+      // a single thenAnswer body.
+      var browserLookupCalls = 0;
+      when(roomRepo.findPlayerByRoomAndBrowser(
+        roomId: 'r1',
+        browserId: 'browser-Z',
+      )).thenAnswer((_) async {
+        browserLookupCalls += 1;
+        return browserLookupCalls == 1 ? null : winner;
+      });
+      when(roomRepo.createPlayer(
+        roomId: 'r1',
+        name: 'Ale',
+        browserId: 'browser-Z',
+      )).thenThrow(
+        PostgrestException(
+          message: 'duplicate key value violates unique constraint',
+          code: '23505',
+        ),
+      );
+
+      final result = await service.joinRoom(
+        roomCode: 'ABCDE',
+        playerName: 'Ale',
+        browserId: 'browser-Z',
+      );
+
+      expect(result.player.id, 'pWinner');
+      // Both lookups happened — the pre-insert miss AND the post-23505
+      // recovery hit.
+      expect(browserLookupCalls, 2);
+    });
+
+    test(
+        'Given a non-23505 PostgrestException is raised by createPlayer, '
+        'When joinRoom is called, Then it rethrows instead of swallowing '
+        '(the unique-violation recovery is narrow on purpose — RLS '
+        'failures and network errors must reach the UI)',
+        () async {
+      final room = makeRoom();
+      when(roomRepo.findRoomByCode('ABCDE')).thenAnswer((_) async => room);
+      when(roomRepo.findPlayerByRoomAndBrowser(
+        roomId: 'r1',
+        browserId: 'browser-Q',
+      )).thenAnswer((_) async => null);
+      when(roomRepo.createPlayer(
+        roomId: 'r1',
+        name: 'Ale',
+        browserId: 'browser-Q',
+      )).thenThrow(PostgrestException(message: 'rls denied', code: '42501'));
+
+      expect(
+        () => service.joinRoom(
+          roomCode: 'ABCDE',
+          playerName: 'Ale',
+          browserId: 'browser-Q',
+        ),
+        throwsA(isA<PostgrestException>()),
       );
     });
   });
