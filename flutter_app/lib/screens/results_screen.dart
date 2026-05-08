@@ -132,12 +132,32 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         ? players.where((p) => counts[p.id] == maxVotes).toList()
         : const <Player>[];
 
-    return PopIn(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'ROUND ${room.currentRound}',
+    // Wrap the whole reveal in a scroll view so a wide Wrap of winner
+    // rings (8+ players all tied at 1 vote on round 1 is the realistic
+    // case) doesn't push the host's "Prossimo Round" / "Fine Partita"
+    // buttons below the viewport. The LayoutBuilder + ConstrainedBox(
+    // minHeight: viewport) + IntrinsicHeight chain is the canonical
+    // Flutter pattern for "Spacer keeps pushing buttons to the bottom
+    // when content fits, page becomes scrollable when it overflows":
+    //   • content fits      → intrinsic < viewport → Column = viewport,
+    //                         Spacer fills the gap, page does not scroll.
+    //   • content overflows → intrinsic > viewport → Column = intrinsic,
+    //                         Spacer collapses to 0, SingleChildScrollView
+    //                         lets the user scroll to the buttons.
+    // Same family of fix as LobbyScreen — see that file for the simpler
+    // "no Spacer, just stack everything" case.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: IntrinsicHeight(
+            child: PopIn(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'ROUND ${room.currentRound}',
             style: bodyFont(
               color: AppColors.mutedFg,
               letterSpacing: 2,
@@ -307,7 +327,11 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               ),
             ),
           ],
-        ],
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

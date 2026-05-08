@@ -178,10 +178,22 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     final pack = Pack.byDbId(room.packId);
     final isCouples = pack.kind == PackKind.couples;
 
-return PopIn(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    // Wrap the whole lobby in a SingleChildScrollView so a long player
+    // list never clips the Inizia Partita button below the viewport.
+    // GameLayout already gives us a bounded `Expanded > Center >
+    // ConstrainedBox(maxWidth: 480) > Padding`; without scrolling, the
+    // Column inside that just overflows when player count × row height
+    // exceeds the available space, and the host literally cannot reach
+    // the start button. AlwaysScrollableScrollPhysics matches the
+    // pattern used on the end screen — the rubber-band feel hints that
+    // the content can scroll even before it actually overflows, which
+    // is reassuring on tall lobbies that aren't quite over the limit.
+    return PopIn(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           if (hasBots)
             Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -309,7 +321,8 @@ return PopIn(
                 ),
               ],
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
